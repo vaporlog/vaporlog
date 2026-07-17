@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import mascotUrl from "@/assets/mascot.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,7 +62,7 @@ export default function AppLayout() {
             className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
           >
             <img
-              src="/brand/favicon-192.png"
+              src={mascotUrl}
               alt=""
               className="size-7"
             />
