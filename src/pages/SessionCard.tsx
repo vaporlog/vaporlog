@@ -3,7 +3,7 @@ import { ArrowRight, Compass } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import { getPublicSession, useStrains } from "@/lib/data";
+import { usePublicSessions, useStrains } from "@/lib/data";
 import { displayStrainName } from "@/components/session-card/display";
 import LearnBlock from "@/components/session-card/LearnBlock";
 import PublicSessionCard from "@/components/session-card/PublicSessionCard";
@@ -68,7 +68,26 @@ export default function SessionCard() {
   // meantime; this hook re-renders the page once the catalog lands).
   // Must run unconditionally, before the not-found early return.
   useStrains();
-  const session = id !== undefined ? getPublicSession(id) : undefined;
+  // Cloud-backed public sessions: the not-found card only renders once the
+  // cache has hydrated — before that an unknown id is indistinguishable
+  // from a session that is still on its way.
+  const { sessions, loading } = usePublicSessions();
+  const session =
+    id !== undefined ? sessions.find((s) => s.id === id) : undefined;
+
+  if (loading) {
+    return (
+      <section
+        className="flex flex-col items-center gap-4 py-16 text-center"
+        role="status"
+      >
+        <h1 className="text-2xl font-semibold">Loading session…</h1>
+        <p className="max-w-md text-muted-foreground">
+          Pulling this public session from the cloud.
+        </p>
+      </section>
+    );
+  }
 
   if (session === undefined) {
     return <SessionNotFound />;

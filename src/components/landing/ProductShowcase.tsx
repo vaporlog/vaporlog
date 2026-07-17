@@ -1,13 +1,12 @@
 import Reveal from "@/components/landing/Reveal";
 import SessionLogCard from "@/components/landing/SessionLogCard";
-import { getCommunitySessions } from "@/lib/data";
+import { usePublicSessions } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
 
 /** The OG Kush · 195°C · Mighty+ session — a real entry from the seed data. */
 const SHOWCASE_ID = "2026-05-02-og-kush-terphunter";
 
-function findShowcaseSession(): SessionLog | undefined {
-  const sessions = getCommunitySessions();
+function findShowcaseSession(sessions: SessionLog[]): SessionLog | undefined {
   return (
     sessions.find((s) => s.id === SHOWCASE_ID) ??
     sessions.find((s) => s.rating >= 9) ??
@@ -20,9 +19,13 @@ function findShowcaseSession(): SessionLog | undefined {
  * community session, rendered as product UI — one idea on this screen (#6).
  */
 export default function ProductShowcase() {
-  const session = findShowcaseSession();
-  // Production ships with no community sessions, so there is nothing real
-  // to demo — the section quietly bows out rather than faking an entry.
+  const { sessions, loading } = usePublicSessions();
+  // While the cloud cache hydrates — and whenever there are no public
+  // sessions at all — there is nothing real to demo, so the section
+  // quietly bows out rather than faking an entry.
+  if (loading) return null;
+
+  const session = findShowcaseSession(sessions);
   if (!session) return null;
 
   return (

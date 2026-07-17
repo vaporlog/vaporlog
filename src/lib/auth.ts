@@ -1,26 +1,27 @@
 /**
- * vaporlog — local account system (auth core).
+ * vaporlog — auth core (Supabase Auth).
  *
- * Accounts are stored locally but shaped exactly like the future Supabase
- * implementation (spec decision 10): an accounts table, a session record,
- * salted password hashes, and a public `Account` type that never exposes
- * credentials. Swapping this module for Supabase Auth later should not
- * change any call site.
+ * Accounts live in Supabase: one `auth.users` row per account plus a
+ * `public.profiles` row (handle + birthdate) created by the
+ * `on_auth_user_created` database trigger (see supabase/schema.sql).
  *
- * Storage:
- *   - localStorage["vaporlog.accounts"]  StoredAccount[] (incl. passHash+salt)
- *   - localStorage["vaporlog.session"]   { accountId } — the signed-in account
+ * Handle-based sign-in over Supabase email auth: the app never collects a
+ * real email — the handle is mapped to a synthetic address
+ * (`<handle>@vaporlog.app`) and that is what Supabase authenticates.
+ * Handles are unique case-insensitively (unique index on lower(handle)).
  *
- * Passwords are NEVER stored in plaintext: SHA-256 over `<salt>:<password>`
- * via Web Crypto (`crypto.subtle`), with a per-user random 16-byte salt.
- * `crypto.subtle` requires a secure context — localhost qualifies.
+ * Synchronous reads: `getCurrentAccount()` stays sync, backed by an
+ * in-memory cache that is hydrated at module init via
+ * `supabase.auth.getSession()` and kept fresh via
+ * `supabase.auth.onAuthStateChange`. Identity fields come from
+ * `user_metadata` immediately and are then corrected from the `profiles`
+ * table in the background (the table is the source of truth).
  *
- * Migration: the first successful `signUp` moves the pre-auth local-first
- * data (`vaporlog.sessions`, `vaporlog.mystrains`, `vaporlog.mydevices`)
- * into the new account's namespace and removes the legacy keys. The legacy
- * `vaporlog.profile` is absorbed by the account row itself (username +
- * birthdate + createdAt) and removed as well.
+ * The public API of this module is a contract — other layers (data.ts,
+ * AppLayout, the welcome flow) code against it and must not need changes.
  */
+import type { AuthError, Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import { validateUsername } from "@/lib/profile-flow";
 
 /* ------------------------------------------------------------------ */
@@ -29,28 +30,16 @@ import { validateUsername } from "@/lib/profile-flow";
 
 /**
  * The public account shape — what every consumer is allowed to see.
- * Deliberately excludes `passHash` and `salt`.
+ * `id` is the Supabase auth user uuid.
  */
 export interface Account {
   id: string;
+  /** The user's handle (pseudonym) — stored lowercase in `profiles`. */
   username: string;
   /** ISO date (YYYY-MM-DD) — collected at the 21+ age gate. */
   birthdate: string;
   /** ISO 8601 timestamp. */
   createdAt: string;
-}
-
-/** The persisted account row: the public shape plus credentials. */
-interface StoredAccount extends Account {
-  /** Hex-encoded SHA-256 of `<salt>:<password>`. */
-  passHash: string;
-  /** Hex-encoded random 16-byte salt. */
-  salt: string;
-}
-
-/** Shape of localStorage["vaporlog.session"]. */
-interface SessionRecord {
-  accountId: string;
 }
 
 export interface SignUpInput {
@@ -61,122 +50,148 @@ export interface SignUpInput {
 }
 
 /* ------------------------------------------------------------------ */
-/* Storage keys                                                        */
-/* ------------------------------------------------------------------ */
-
-/** localStorage key for the account table (StoredAccount[]). */
-export const ACCOUNTS_STORAGE_KEY = "vaporlog.accounts";
-/** localStorage key for the current session ({ accountId }). */
-export const SESSION_STORAGE_KEY = "vaporlog.session";
-
-/**
- * Legacy pre-auth keys, known here ONLY for one-time migration into the
- * first account's namespace. data.ts / personal.ts own the live keys.
- */
-const LEGACY_SESSIONS_KEY = "vaporlog.sessions";
-const LEGACY_MY_STRAINS_KEY = "vaporlog.mystrains";
-const LEGACY_MY_DEVICES_KEY = "vaporlog.mydevices";
-const LEGACY_PROFILE_KEY = "vaporlog.profile";
-
-/* ------------------------------------------------------------------ */
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
 /** Minimum password length (local MVP — no confirmation field). */
 export const PASSWORD_MIN_LENGTH = 6;
 
-const SALT_BYTES = 16;
+/**
+ * Single error for unknown handle AND wrong password — never reveal which
+ * one failed. (Supabase likewise returns one "invalid credentials" error
+ * for both, so this stays enforceable.)
+ */
 const GENERIC_CREDENTIAL_ERROR = "Incorrect username or password.";
+const HANDLE_TAKEN_ERROR = "That handle is taken.";
+
+/** Domain used to turn handles into synthetic Supabase auth emails. */
+const SYNTHETIC_EMAIL_DOMAIN = "vaporlog.app";
 
 /* ------------------------------------------------------------------ */
-/* Web Crypto helpers                                                  */
+/* Handle ↔ synthetic email                                            */
 /* ------------------------------------------------------------------ */
 
-function bytesToHex(bytes: Uint8Array): string {
-  let hex = "";
-  for (const byte of bytes) {
-    hex += byte.toString(16).padStart(2, "0");
-  }
-  return hex;
-}
-
-function randomSalt(): string {
-  const bytes = new Uint8Array(SALT_BYTES);
-  crypto.getRandomValues(bytes);
-  return bytesToHex(bytes);
-}
-
-/** SHA-256 hex digest of `<salt>:<password>`. Never logs or stores input. */
-async function hashPassword(password: string, salt: string): Promise<string> {
-  if (typeof crypto === "undefined" || !crypto.subtle) {
-    throw new Error(
-      "Secure password hashing is unavailable — vaporlog needs a secure (localhost or HTTPS) context.",
-    );
-  }
-  const data = new TextEncoder().encode(`${salt}:${password}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return bytesToHex(new Uint8Array(digest));
+/**
+ * Maps a handle to the synthetic email Supabase actually authenticates.
+ * Handles are validated as `[A-Za-z0-9-]+` (see profile-flow.ts), so the
+ * result is always a RFC-safe mailbox. Always lowercase — handle
+ * uniqueness is case-insensitive end to end.
+ */
+function syntheticEmail(handle: string): string {
+  return `${handle.toLowerCase().trim()}@${SYNTHETIC_EMAIL_DOMAIN}`;
 }
 
 /* ------------------------------------------------------------------ */
-/* Storage helpers (never throw — corrupt data reads as empty)         */
+/* In-memory session cache (keeps getCurrentAccount synchronous)       */
 /* ------------------------------------------------------------------ */
 
-function readAccounts(): StoredAccount[] {
-  try {
-    const raw = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isStoredAccount);
-  } catch {
-    return [];
-  }
-}
+let accountCache: Account | null = null;
 
-function isStoredAccount(value: unknown): value is StoredAccount {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.id === "string" &&
-    typeof v.username === "string" &&
-    typeof v.birthdate === "string" &&
-    typeof v.passHash === "string" &&
-    typeof v.salt === "string" &&
-    typeof v.createdAt === "string"
-  );
-}
-
-function writeAccounts(accounts: StoredAccount[]): void {
-  localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
-}
-
-function readSession(): SessionRecord | null {
-  try {
-    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    const accountId = (parsed as Record<string, unknown>).accountId;
-    return typeof accountId === "string" ? { accountId } : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(record: SessionRecord): void {
-  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(record));
-}
-
-/** Strips credentials — the only way an account leaves this module. */
-function toAccount(stored: StoredAccount): Account {
+/** Builds the public Account from a Supabase auth user (metadata first). */
+function accountFromUser(user: User): Account {
+  const metadata = user.user_metadata as Record<string, unknown>;
+  const metaHandle =
+    typeof metadata.handle === "string" ? metadata.handle : undefined;
+  const metaBirthdate =
+    typeof metadata.birthdate === "string" ? metadata.birthdate : undefined;
   return {
-    id: stored.id,
-    username: stored.username,
-    birthdate: stored.birthdate,
-    createdAt: stored.createdAt,
+    id: user.id,
+    // Fallback: the local part of the synthetic email IS the handle.
+    username: metaHandle ?? user.email?.split("@")[0] ?? "",
+    birthdate: metaBirthdate ?? "",
+    createdAt: user.created_at,
   };
 }
+
+/**
+ * Replaces the cache and notifies listeners only when something actually
+ * changed (onAuthStateChange also fires on token refreshes — those should
+ * not re-render the app).
+ */
+function setCache(next: Account | null): void {
+  const prev = accountCache;
+  const changed =
+    (prev === null) !== (next === null) ||
+    (prev !== null &&
+      next !== null &&
+      (prev.id !== next.id ||
+        prev.username !== next.username ||
+        prev.birthdate !== next.birthdate ||
+        prev.createdAt !== next.createdAt));
+  accountCache = next;
+  if (changed) notifyAuthChanged();
+}
+
+/**
+ * Corrects the cache from the `profiles` table (the source of truth for
+ * handle/birthdate) in the background. Runs after every cache write; the
+ * sync getter never waits for it.
+ */
+async function hydrateFromProfile(userId: string): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("handle, birthdate, created_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data) return;
+    // The user may have signed out / switched accounts while we waited.
+    if (accountCache?.id !== userId) return;
+    setCache({
+      id: userId,
+      username: data.handle ?? accountCache.username,
+      birthdate: data.birthdate ?? accountCache.birthdate,
+      createdAt: data.created_at ?? accountCache.createdAt,
+    });
+  } catch {
+    /* offline / RLS hiccup — metadata-derived cache stays, never fatal */
+  }
+}
+
+function applySession(session: Session | null): void {
+  const user = session?.user ?? null;
+  if (!user) {
+    setCache(null);
+    return;
+  }
+  setCache(accountFromUser(user));
+  void hydrateFromProfile(user.id);
+}
+
+/*
+ * Auth-readiness gate. The initial getSession() restore is async, so a
+ * signed-in user's first synchronous getCurrentAccount() read is null —
+ * without a gate, route guards briefly bounce them to /welcome before the
+ * session lands. whenAuthReady() lets the app shell hold first render
+ * until the restore settles (success OR failure — it must never hang).
+ */
+let resolveAuthReady!: () => void;
+const authReady = new Promise<void>((resolve) => {
+  resolveAuthReady = resolve;
+});
+
+/** Resolves once the initial persisted-session restore has settled. */
+export function whenAuthReady(): Promise<void> {
+  return authReady;
+}
+
+/* Hydrate the cache once at module load (restores a persisted session). */
+void supabase.auth
+  .getSession()
+  .then(({ data }) => {
+    applySession(data.session);
+  })
+  .catch(() => {
+    /* offline — stay signed out locally; never block first render */
+  })
+  .finally(() => {
+    resolveAuthReady();
+  });
+
+/* Keep the cache fresh for the lifetime of the page. */
+supabase.auth.onAuthStateChange((_event, session) => {
+  applySession(session);
+});
 
 /* ------------------------------------------------------------------ */
 /* Auth-change notification (lets the app shell react to sign-in/out)  */
@@ -198,39 +213,38 @@ export function onAuthChange(listener: () => void): () => void {
 }
 
 /* ------------------------------------------------------------------ */
-/* Legacy data migration (first signUp adopts pre-auth local data)     */
+/* Error mapping                                                       */
 /* ------------------------------------------------------------------ */
 
-function migrateLegacyKey(legacyKey: string, accountKey: string): void {
-  try {
-    const raw = localStorage.getItem(legacyKey);
-    if (raw === null) return;
-    // Never overwrite data the account may already have.
-    if (localStorage.getItem(accountKey) === null) {
-      localStorage.setItem(accountKey, raw);
-    }
-    localStorage.removeItem(legacyKey);
-  } catch {
-    /* storage unavailable — migration is best-effort, data stays put */
-  }
-}
-
 /**
- * Moves pre-auth local-first data into `accountId`'s namespace and removes
- * the legacy keys. Runs on the first successful signUp (the only moment
- * legacy data can belong to a brand-new account). The legacy profile has no
- * namespace to move into — the account row IS its new home (username,
- * birthdate, createdAt) — so it is simply removed once the account exists.
+ * Maps a signUp failure to a user-facing message.
+ *
+ * Handle collisions surface two ways:
+ *   1. The deterministic pre-check in `signUp` (SELECT on profiles).
+ *   2. A race against the case-insensitive unique index — the trigger
+ *      raises and Supabase reports a database/unique error (GoTrue
+ *      sanitizes trigger exceptions to "Database error saving new user",
+ *      so matching is deliberately broad). The pre-check makes this path
+ *      vanishingly rare; the mapping keeps it user-friendly.
+ * Everything else passes Supabase's message through (those are written
+ * for end users: weak password, rate limit, …) with a neutral fallback.
  */
-function migrateLegacyData(accountId: string): void {
-  migrateLegacyKey(LEGACY_SESSIONS_KEY, `vaporlog.sessions.${accountId}`);
-  migrateLegacyKey(LEGACY_MY_STRAINS_KEY, `vaporlog.mystrains.${accountId}`);
-  migrateLegacyKey(LEGACY_MY_DEVICES_KEY, `vaporlog.mydevices.${accountId}`);
-  try {
-    localStorage.removeItem(LEGACY_PROFILE_KEY);
-  } catch {
-    /* storage unavailable — migration is best-effort, data stays put */
+function mapSignUpError(error: AuthError): Error {
+  const text = `${error.code ?? ""} ${error.message}`.toLowerCase();
+  if (
+    text.includes("already") ||
+    text.includes("duplicate") ||
+    text.includes("unique") ||
+    text.includes("database error")
+  ) {
+    return new Error(HANDLE_TAKEN_ERROR);
   }
+  if (text.includes("password")) {
+    return new Error(
+      `Passwords are at least ${PASSWORD_MIN_LENGTH} characters.`,
+    );
+  }
+  return new Error(error.message || "Sign-up failed — please try again.");
 }
 
 /* ------------------------------------------------------------------ */
@@ -238,40 +252,25 @@ function migrateLegacyData(accountId: string): void {
 /* ------------------------------------------------------------------ */
 
 /**
- * Every account, public shape only (no credentials). Used by the data
- * layer to aggregate public sessions across accounts.
- */
-export function listAccounts(): Account[] {
-  return readAccounts().map(toAccount);
-}
-
-/**
- * The signed-in account, or `null`. Never throws; a dangling session
- * (account deleted) is cleaned up and reads as signed-out.
+ * The signed-in account, or `null`. SYNCHRONOUS — reads the in-memory
+ * cache hydrated at module init and maintained via onAuthStateChange.
+ * Never throws.
  */
 export function getCurrentAccount(): Account | null {
-  const session = readSession();
-  if (!session) return null;
-  const stored = readAccounts().find((a) => a.id === session.accountId);
-  if (!stored) {
-    try {
-      localStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }
-  return toAccount(stored);
+  return accountCache;
 }
 
 /**
  * Creates an account and signs in. Rejects (throws Error) with a
  * human-readable message when:
- *   - the username is taken (case-insensitive),
+ *   - the username fails validation or is taken (case-insensitive),
  *   - the password is shorter than PASSWORD_MIN_LENGTH,
- *   - the username or birthdate fails validation (21+).
- * On the FIRST signUp, legacy pre-auth data is migrated into the new
- * account's namespace.
+ *   - the birthdate is not an ISO date (21+ gate ran upstream).
+ *
+ * The DB trigger on auth.users creates the matching `profiles` row from
+ * the metadata passed here. When the Supabase project has email
+ * confirmation enabled, signUp returns no session — in that case we fall
+ * back to one direct password sign-in.
  */
 export async function signUp(input: SignUpInput): Promise<Account> {
   const username = input.username.trim();
@@ -280,68 +279,97 @@ export async function signUp(input: SignUpInput): Promise<Account> {
     throw new Error(usernameCheck.error ?? "Enter a username.");
   }
   if (input.password.length < PASSWORD_MIN_LENGTH) {
-    throw new Error(`Passwords are at least ${PASSWORD_MIN_LENGTH} characters.`);
+    throw new Error(
+      `Passwords are at least ${PASSWORD_MIN_LENGTH} characters.`,
+    );
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.birthdate)) {
     throw new Error("A valid birthdate is required.");
   }
 
-  const accounts = readAccounts();
-  const taken = accounts.some(
-    (a) => a.username.toLowerCase() === username.toLowerCase(),
-  );
-  if (taken) {
-    throw new Error("That username is taken — try another one.");
+  const handle = username.toLowerCase();
+  const email = syntheticEmail(handle);
+
+  // Deterministic taken-handle check (profiles are world-readable per
+  // RLS). The unique index on lower(handle) remains the real guard.
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id")
+    .ilike("handle", handle)
+    .maybeSingle();
+  if (existing) {
+    throw new Error(HANDLE_TAKEN_ERROR);
   }
 
-  const salt = randomSalt();
-  const passHash = await hashPassword(input.password, salt);
-  const stored: StoredAccount = {
-    id: crypto.randomUUID(),
-    username,
-    birthdate: input.birthdate,
-    passHash,
-    salt,
-    createdAt: new Date().toISOString(),
-  };
-  writeAccounts([...accounts, stored]);
-  migrateLegacyData(stored.id);
-  writeSession({ accountId: stored.id });
-  notifyAuthChanged();
-  return toAccount(stored);
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: input.password,
+    options: { data: { handle, birthdate: input.birthdate } },
+  });
+  if (error) {
+    throw mapSignUpError(error);
+  }
+
+  let session = data.session;
+  let user = data.user;
+
+  // Email-confirmation configs return no session — try signing in once.
+  if (!session) {
+    const { data: fallback, error: fallbackError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password: input.password,
+      });
+    if (fallbackError || !fallback.session) {
+      throw new Error(
+        "Account created — please confirm it, then sign in.",
+      );
+    }
+    session = fallback.session;
+    user = fallback.user;
+  }
+
+  if (!user) {
+    throw new Error("Sign-up failed — please try again.");
+  }
+
+  const account = accountFromUser(user);
+  setCache(account);
+  void hydrateFromProfile(user.id);
+  return account;
 }
 
 /**
- * Signs in with username + password. Rejects with a single generic
- * message for both unknown usernames and wrong passwords — never reveal
- * which one failed.
+ * Signs in with handle + password. Rejects with a single generic message
+ * for both unknown handles and wrong passwords — never reveal which one
+ * failed.
  */
 export async function signIn(
   username: string,
   password: string,
 ): Promise<Account> {
-  const name = username.trim().toLowerCase();
-  const stored = readAccounts().find(
-    (a) => a.username.toLowerCase() === name,
-  );
-  if (!stored) {
+  const email = syntheticEmail(username);
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error || !data.session || !data.user) {
     throw new Error(GENERIC_CREDENTIAL_ERROR);
   }
-  const passHash = await hashPassword(password, stored.salt);
-  if (passHash !== stored.passHash) {
-    throw new Error(GENERIC_CREDENTIAL_ERROR);
-  }
-  writeSession({ accountId: stored.id });
-  notifyAuthChanged();
-  return toAccount(stored);
+  const account = accountFromUser(data.user);
+  setCache(account);
+  void hydrateFromProfile(data.user.id);
+  return account;
 }
 
-/** Signs out the current account (no-op when already signed out). */
+/**
+ * Signs out the current account (no-op when already signed out). Clears
+ * the local cache synchronously so the UI reacts immediately; the remote
+ * Supabase sign-out (which also fires onAuthStateChange) is best-effort.
+ */
 export function signOut(): void {
-  try {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
-  notifyAuthChanged();
+  setCache(null);
+  void supabase.auth.signOut().catch(() => {
+    /* network hiccup — local sign-out already happened, never fatal */
+  });
 }

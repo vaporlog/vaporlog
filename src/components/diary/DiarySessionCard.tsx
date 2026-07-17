@@ -17,6 +17,8 @@ import {
 interface DiarySessionCardProps {
   session: SessionLog;
   onTogglePublic: (id: string) => void;
+  /** True while this card's publish/unpublish request is in flight. */
+  pending?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ interface DiarySessionCardProps {
 export function DiarySessionCard({
   session,
   onTogglePublic,
+  pending = false,
 }: DiarySessionCardProps) {
   const strainName = displayStrainName(session.strainSlug);
   const deviceName = displayDeviceName(session.deviceSlug);
@@ -93,6 +96,7 @@ export function DiarySessionCard({
               id={`public-${session.id}`}
               checked={session.isPublic}
               onCheckedChange={() => onTogglePublic(session.id)}
+              disabled={pending}
               aria-label={`Make “${strainName}” session public`}
             />
             <Label

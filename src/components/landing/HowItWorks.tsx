@@ -1,6 +1,6 @@
 import { PenLine, Sparkles, Users, type LucideIcon } from "lucide-react";
 import Reveal from "@/components/landing/Reveal";
-import { getCommunitySessions } from "@/lib/data";
+import { usePublicSessions } from "@/lib/data";
 
 interface Step {
   icon: LucideIcon;
@@ -10,7 +10,8 @@ interface Step {
 
 /** How it works — three steps, one screen, one idea. */
 export default function HowItWorks() {
-  const sessionsCount = getCommunitySessions().length;
+  const { sessions, loading } = usePublicSessions();
+  const sessionsCount = sessions.length;
 
   const STEPS: Step[] = [
     {
@@ -26,9 +27,10 @@ export default function HowItWorks() {
     {
       icon: Users,
       title: "Learn from experts",
-      // No public sessions yet at launch: describe the feed, skip the zero.
+      // Count-free until the public feed hydrates — and whenever it is
+      // empty: describe the feed, skip the zero.
       body:
-        sessionsCount > 0
+        !loading && sessionsCount > 0
           ? `${sessionsCount} public sessions from connoisseurs, down to the exact degree. Copy what works.`
           : "A public feed of sessions from connoisseurs, down to the exact degree. Copy what works.",
     },

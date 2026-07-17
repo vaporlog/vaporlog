@@ -15,7 +15,7 @@ import {
   communityAverageMap,
   strainMatchesQuery,
 } from "@/components/strains/strain-utils";
-import { getCommunitySessions, getVocab, useStrains } from "@/lib/data";
+import { getVocab, usePublicSessions, useStrains } from "@/lib/data";
 
 type TypeFilter = "all" | "Indica" | "Sativa" | "Hybrid";
 type SortKey = "name" | "thc" | "rating";
@@ -45,7 +45,13 @@ export default function Strains() {
 
   const { strains, loading } = useStrains();
   const effects = useMemo(() => getVocab().effects, []);
-  const averages = useMemo(() => communityAverageMap(getCommunitySessions()), []);
+  // Cloud-backed public sessions — averages fill in once the cache
+  // hydrates; until then there is simply no rating signal.
+  const { sessions: communitySessions } = usePublicSessions();
+  const averages = useMemo(
+    () => communityAverageMap(communitySessions),
+    [communitySessions],
+  );
   // With zero community sessions (e.g. production at launch) there is no
   // rating signal — cards hide their rating row and the rating sort option
   // goes away so it can't masquerade as a meaningful order.

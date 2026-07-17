@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useEffect, useState } from "react";
 import {
   createBrowserRouter,
   Navigate,
@@ -7,6 +7,7 @@ import {
 import AppLayout from "@/components/AppLayout";
 import AgeGate from "@/components/AgeGate";
 import Landing from "@/pages/Landing";
+import { whenAuthReady } from "@/lib/auth";
 
 /*
  * Route-level code splitting: the landing page stays in the entry chunk
@@ -69,5 +70,20 @@ const router = createBrowserRouter(
 );
 
 export default function App() {
+  // Hold first render until the persisted Supabase session restores —
+  // otherwise a signed-in user deep-linking into /log or /diary would
+  // briefly bounce through /welcome before the session lands.
+  const [authReady, setAuthReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void whenAuthReady().then(() => {
+      if (alive) setAuthReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!authReady) return null;
   return <RouterProvider router={router} />;
 }

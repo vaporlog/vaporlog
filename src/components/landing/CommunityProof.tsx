@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import Reveal from "@/components/landing/Reveal";
 import SessionLogCard from "@/components/landing/SessionLogCard";
-import { getCommunitySessions } from "@/lib/data";
+import { usePublicSessions } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
 
 /** Real community proof: three distinct connoisseurs, devices and temps. */
@@ -11,8 +11,7 @@ const PROOF_IDS = [
   "2026-05-02-blue-dream-vaporenthusiast", // 9  · Venty · 175°C
 ];
 
-function pickProofSessions(): SessionLog[] {
-  const all = getCommunitySessions();
+function pickProofSessions(all: SessionLog[]): SessionLog[] {
   const picked = PROOF_IDS.map((id) => all.find((s) => s.id === id)).filter(
     (s): s is SessionLog => s !== undefined,
   );
@@ -24,10 +23,15 @@ function pickProofSessions(): SessionLog[] {
  * Social proof (viral-product #29): real public sessions from real
  * pseudonyms, numbers in the headline (#3). Each card opens the actual
  * public session page — proof you can click, not praise we wrote.
+ * While the cloud cache hydrates the section stays out of the way — the
+ * zero-count variant only renders for a confirmed empty feed.
  */
 export default function CommunityProof() {
-  const all = getCommunitySessions();
-  const sessions = pickProofSessions();
+  const { sessions: all, loading } = usePublicSessions();
+
+  if (loading) return null;
+
+  const sessions = pickProofSessions(all);
 
   // Production launches with an empty public feed: invite the first
   // members instead of quoting counts that would all read zero.

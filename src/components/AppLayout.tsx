@@ -48,8 +48,10 @@ export default function AppLayout() {
   // And immediately on explicit sign-in / sign-out events.
   useEffect(() => onAuthChange(() => setAccount(getCurrentAccount())), []);
 
-  function handleLogOut() {
-    signOut();
+  async function handleLogOut() {
+    // signOut resolves once the cloud session is cleared; the auth-change
+    // event it emits re-renders this header into the signed-out state.
+    await signOut();
     navigate("/");
   }
 

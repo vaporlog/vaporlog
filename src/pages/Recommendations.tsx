@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,12 @@ import {
 } from "@/components/ui/empty";
 import StrainCard from "@/components/strains/StrainCard";
 import { communityAverageMap } from "@/components/strains/strain-utils";
-import { getCommunitySessions, getMySessions, useStrains } from "@/lib/data";
+import { useMySessions, usePublicSessions, useStrains } from "@/lib/data";
 import {
   getCommunityTopStrains,
   getLovedSessions,
   getRecommendations,
 } from "@/lib/recommend";
-import type { SessionLog } from "@/lib/types";
 
 const RECOMMENDATION_COUNT = 6;
 const COMMUNITY_FALLBACK_COUNT = 4;
@@ -30,16 +29,18 @@ const COMMUNITY_FALLBACK_COUNT = 4;
  * With zero community sessions (production at launch) the cold-start page is
  * just the "log a session" prompt — the community section hides entirely.
  *
- * Scoring runs against the FULL lazy catalog, so the page waits for
- * `useStrains()` before computing anything — otherwise an empty catalog
- * would masquerade as the cold-start state.
+ * Scoring runs against the FULL lazy catalog plus cloud-backed sessions, so
+ * the page waits for `useStrains()`, `useMySessions()` and
+ * `usePublicSessions()` before computing anything — otherwise a
+ * not-yet-hydrated cache would masquerade as the cold-start state.
  */
 export default function Recommendations() {
-  // Read once — this page does not edit sessions, so a stable snapshot is fine.
-  const [mySessions] = useState<SessionLog[]>(() => getMySessions());
+  const { sessions: mySessions, loading: myLoading } = useMySessions();
+  const { sessions: communitySessions, loading: communityLoading } =
+    usePublicSessions();
+  const { strains: catalog, loading: catalogLoading } = useStrains();
+  const loading = catalogLoading || myLoading || communityLoading;
 
-  const { strains: catalog, loading } = useStrains();
-  const communitySessions = useMemo(() => getCommunitySessions(), []);
   const averages = useMemo(
     () => communityAverageMap(communitySessions),
     [communitySessions],
@@ -69,10 +70,10 @@ export default function Recommendations() {
           className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"
           role="status"
         >
-          <p className="font-medium">Loading the catalog…</p>
+          <p className="font-medium">Loading your palate…</p>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Your palate gets matched against the full strain catalog as soon
-            as it arrives.
+            Your sessions and the full strain catalog are on their way —
+            matching starts as soon as they arrive.
           </p>
         </div>
       </section>

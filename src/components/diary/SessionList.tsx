@@ -4,10 +4,16 @@ import { DiarySessionCard } from "./DiarySessionCard";
 interface SessionListProps {
   sessions: SessionLog[];
   onTogglePublic: (id: string) => void;
+  /** Session id whose publish toggle is currently awaiting the cloud. */
+  pendingToggleId?: string | null;
 }
 
-/** All personal sessions, newest first (getMySessions() already orders them). */
-export function SessionList({ sessions, onTogglePublic }: SessionListProps) {
+/** All personal sessions, newest first (useMySessions() already orders them). */
+export function SessionList({
+  sessions,
+  onTogglePublic,
+  pendingToggleId = null,
+}: SessionListProps) {
   return (
     <section aria-labelledby="diary-sessions-heading" className="space-y-3">
       <h2
@@ -22,6 +28,7 @@ export function SessionList({ sessions, onTogglePublic }: SessionListProps) {
             key={session.id}
             session={session}
             onTogglePublic={onTogglePublic}
+            pending={session.id === pendingToggleId}
           />
         ))}
       </div>

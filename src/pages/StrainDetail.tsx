@@ -9,7 +9,7 @@ import {
   communitySessionsFor,
   formatRating,
 } from "@/components/strains/strain-utils";
-import { getCommunitySessions, useStrains } from "@/lib/data";
+import { usePublicSessions, useStrains } from "@/lib/data";
 import type { ReactNode } from "react";
 
 /** Small labeled chip section (terpenes, aromas, effects). */
@@ -44,11 +44,15 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
  *
  * The strain resolves from the lazy catalog (`useStrains`): a loading state
  * shows while the catalog chunk is fetched, and "not found" only renders
- * once the full catalog is in memory.
+ * once the full catalog is in memory. Community sessions are cloud-backed
+ * (`usePublicSessions`): the "no public sessions yet" state waits for the
+ * cache to hydrate so it never flashes early.
  */
 export default function StrainDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { strains, loading } = useStrains();
+  const { sessions: communitySessions, loading: sessionsLoading } =
+    usePublicSessions();
   const strain = slug ? strains.find((s) => s.slug === slug) : undefined;
 
   if (loading) {
@@ -79,11 +83,8 @@ export default function StrainDetail() {
     );
   }
 
-  const communitySessions = communitySessionsFor(
-    strain.slug,
-    getCommunitySessions(),
-  );
-  const average = communityAverage(strain.slug, getCommunitySessions());
+  const strainSessions = communitySessionsFor(strain.slug, communitySessions);
+  const average = communityAverage(strain.slug, communitySessions);
 
   return (
     <div className="flex flex-col gap-8">
@@ -166,9 +167,18 @@ export default function StrainDetail() {
         <h2 className="border-b border-border pb-2 text-lg font-semibold">
           Sessions from the community
         </h2>
-        {communitySessions.length > 0 ? (
+        {sessionsLoading ? (
+          <div
+            className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center"
+            role="status"
+          >
+            <p className="text-sm font-medium text-foreground">
+              Loading community sessions…
+            </p>
+          </div>
+        ) : strainSessions.length > 0 ? (
           <div className="divide-y divide-border/60">
-            {communitySessions.map((session) => (
+            {strainSessions.map((session) => (
               <CommunitySessionItem key={session.id} session={session} />
             ))}
           </div>

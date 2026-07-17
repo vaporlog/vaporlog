@@ -91,6 +91,7 @@ export default function LogSession() {
   }, [pendingStrain, catalogLoading, catalog]);
 
   const [triedSave, setTriedSave] = useState(false);
+  const [saving, setSaving] = useState(false);
   const strainRef = useRef<HTMLDivElement>(null);
   const deviceRef = useRef<HTMLDivElement>(null);
   const ratingRef = useRef<HTMLDivElement>(null);
@@ -145,7 +146,8 @@ export default function LogSession() {
     );
   }, [draft.deviceSlug]);
 
-  function handleSave() {
+  async function handleSave() {
+    if (saving) return;
     if (!draft.strainSlug || !draft.deviceSlug || draft.rating === null) {
       setTriedSave(true);
       // Wayfinding: jump to the first missing piece.
@@ -176,7 +178,18 @@ export default function LogSession() {
       createdAt: "", // saveSession stamps the current time
     };
 
-    saveSession(session);
+    setSaving(true);
+    try {
+      await saveSession(session);
+    } catch {
+      // The draft is still autosaved locally — nothing is lost, so say so.
+      toast.error("Couldn't save that session", {
+        description:
+          "Check your connection and try again — your draft is still here.",
+      });
+      setSaving(false);
+      return;
+    }
     clearDraft();
     toast.success("Session saved", {
       description: `${strainName ?? "Your session"} · ${draft.rating}/10 — added to your diary.`,
@@ -423,11 +436,14 @@ export default function LogSession() {
           <button
             type="button"
             onClick={handleSave}
+            disabled={saving}
+            aria-busy={saving}
             className={cn(
               "pressable herb-hover min-h-12 flex-1 rounded-xl bg-herb text-base font-semibold text-herb-foreground sm:flex-none sm:px-8",
+              saving && "cursor-wait opacity-70",
             )}
           >
-            Save session
+            {saving ? "Saving…" : "Save session"}
           </button>
         </div>
       </div>

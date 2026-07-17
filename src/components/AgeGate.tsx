@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { getCurrentAccount } from "@/lib/auth";
+import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
 
 /**
  * Auth route guard (spec decision 5: 21+, account required).
@@ -9,9 +10,21 @@ import { getCurrentAccount } from "@/lib/auth";
  * the age gate + account creation/sign-in flow. Public surfaces —
  * landing, strain catalog, community feed, public session cards — must
  * NOT be wrapped by this guard.
+ *
+ * The account cache hydrates asynchronously (Supabase session restore) and
+ * changes on sign-in/sign-out, so the guard subscribes to auth events and
+ * re-evaluates instead of reading once.
  */
 export default function AgeGate() {
-  if (!getCurrentAccount()) {
+  const [account, setAccount] = useState<Account | null>(() =>
+    getCurrentAccount(),
+  );
+  useEffect(
+    () => onAuthChange(() => setAccount(getCurrentAccount())),
+    [],
+  );
+
+  if (!account) {
     return <Navigate to="/welcome" replace />;
   }
   return <Outlet />;

@@ -10,7 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { getAllPublicSessions, useStrains } from "@/lib/data";
+import { usePublicSessions, useStrains } from "@/lib/data";
 import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
 import FeedFilters from "@/components/feed/FeedFilters";
 import FeedSessionCard from "@/components/feed/FeedSessionCard";
@@ -27,12 +27,13 @@ import {
 /**
  * /feed — the community feed.
  *
- * Every public session on the device (seed community sessions + every
- * account's published sessions), newest first, via getAllPublicSessions().
- * Device / temperature-zone / mood filters combine (AND); the option lists
- * are derived from the sessions on display so a filter can never point at
- * something the feed has never seen. Public route — signed-out visitors
- * can browse it; private sessions never reach this page.
+ * Every public session (from every member, cloud-backed), newest first,
+ * via usePublicSessions(). Device / temperature-zone / mood filters combine
+ * (AND); the option lists are derived from the sessions on display so a
+ * filter can never point at something the feed has never seen. Public
+ * route — signed-out visitors can browse it; private sessions never reach
+ * this page. While the cloud cache hydrates, a loading state shows instead
+ * of the empty state.
  */
 
 const INITIAL_FILTERS: FeedFilterState = {
@@ -42,8 +43,9 @@ const INITIAL_FILTERS: FeedFilterState = {
 };
 
 export default function Feed() {
-  // Read once per mount — navigating away and back re-reads localStorage.
-  const sessions = useMemo(() => getAllPublicSessions(), []);
+  // Cloud-backed public sessions; re-renders when the cache hydrates and
+  // whenever a session is published/unpublished.
+  const { sessions, loading } = usePublicSessions();
   const [filters, setFilters] = useState<FeedFilterState>(INITIAL_FILTERS);
 
   // The empty feed's call to action depends on auth state; re-read it on
@@ -85,7 +87,17 @@ export default function Feed() {
         </p>
       </header>
 
-      {sessions.length > 0 ? (
+      {loading ? (
+        <div
+          className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"
+          role="status"
+        >
+          <p className="font-medium">Loading the feed…</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Public sessions from every member are on their way.
+          </p>
+        </div>
+      ) : sessions.length > 0 ? (
         <>
           <div className="flex flex-wrap items-center gap-2">
             <FeedFilters

@@ -1,18 +1,21 @@
 import { Link } from "react-router-dom";
 import CtaButton from "@/components/landing/CtaButton";
 import Reveal from "@/components/landing/Reveal";
-import { getCommunitySessions, getDevices, useStrains } from "@/lib/data";
+import { getDevices, usePublicSessions, useStrains } from "@/lib/data";
 
 /**
  * Hero — sells alone (viral-product #20): a headline a fifth-grader gets
  * (#7) with emotional charge (#18), a subhead of numbers not adjectives
  * (#3), and one CTA (#22) that says what happens next (#28). Counts are
- * live from the catalog — never hardcoded.
+ * live from the catalog — never hardcoded. While public sessions hydrate
+ * from the cloud (or when there are none), the count-free variant shows —
+ * it never quotes a zero.
  */
 export default function Hero() {
   const { strains } = useStrains();
+  const { sessions, loading: sessionsLoading } = usePublicSessions();
   const devicesCount = getDevices().length;
-  const sessionsCount = getCommunitySessions().length;
+  const sessionsCount = sessions.length;
   const strainLabel =
     strains.length > 0
       ? `${strains.length.toLocaleString("en-US")} strains`
@@ -33,7 +36,7 @@ export default function Hero() {
       </Reveal>
 
       <Reveal delayMs={120}>
-        {sessionsCount > 0 ? (
+        {!sessionsLoading && sessionsCount > 0 ? (
           <p className="max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
             Log the strain, the temperature, the taste, and how it felt — and
             never lose a perfect session again. Start with{" "}
@@ -48,9 +51,9 @@ export default function Hero() {
             to learn from.
           </p>
         ) : (
-          // Production launches with an empty public feed: name the real
-          // catalog and invite the first public session instead of quoting
-          // a zero.
+          // Count-free variant: while public sessions hydrate — and whenever
+          // the public feed is empty — name the real catalog and invite the
+          // first public session instead of quoting a zero.
           <p className="max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
             Log the strain, the temperature, the taste, and how it felt — and
             never lose a perfect session again. Start with{" "}

@@ -17,21 +17,29 @@
  *                               Rollup tree-shakes the whole JSON module out
  *                               of production builds; see COMMUNITY_SESSIONS)
  *   - Controlled vocabularies:  src/data/vocab.json (static import)
- *   - Personal diary entries:   localStorage["vaporlog.sessions.<accountId>"]
- *                               (per-account; legacy "vaporlog.sessions" is
- *                               the anonymous fallback and is migrated into
- *                               the first account at signUp — see lib/auth.ts)
- *   - Accounts/session:         lib/auth.ts (localStorage["vaporlog.accounts"])
+ *   - Personal diary entries:   Supabase `sessions` table (cloud), mirrored
+ *                               into in-memory caches so the sync getters
+ *                               below keep working; reactive access via
+ *                               useMySessions() / usePublicSessions().
+ *                               Legacy localStorage keys
+ *                               ("vaporlog.sessions[.<accountId>]") are read
+ *                               exactly once per user and uploaded to the
+ *                               cloud on first sign-in — see
+ *                               migrateLegacySessions().
+ *   - Accounts/session:         lib/auth.ts (Supabase Auth)
  *   - Legacy local profile:     localStorage["vaporlog.profile"]
  *
  * Privacy rule (spec decision 5): personal sessions are private by
- * default and never leave the device in this MVP.
+ * default; only `is_public` rows are visible to other users, enforced
+ * server-side by row-level security (see supabase/schema.sql).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import seed from "@/data/seed.json";
 import demoSessions from "@/data/demo-sessions.json";
 import vocab from "@/data/vocab.json";
-import { getCurrentAccount, listAccounts } from "@/lib/auth";
+import { getCurrentAccount, onAuthChange } from "@/lib/auth";
+import type { Account } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import type {
   DemoSessionsData,
   Device,
@@ -43,15 +51,18 @@ import type {
 } from "@/lib/types";
 
 /**
- * Legacy (pre-auth) localStorage key for personal sessions. Still the
- * fallback when nobody is signed in, and the source migrated into the
- * first account's namespace at signUp.
+ * Legacy (pre-auth / pre-cloud) localStorage key for personal sessions.
+ * No longer written — read exactly once per user by the legacy cloud
+ * migration (see migrateLegacySessions), then removed.
  */
 export const SESSIONS_STORAGE_KEY = "vaporlog.sessions";
 /** localStorage key for the legacy local profile (Profile). */
 export const PROFILE_STORAGE_KEY = "vaporlog.profile";
 
-/** Prefix for per-account session lists: `vaporlog.sessions.<accountId>`. */
+/**
+ * Prefix of the legacy per-account session lists:
+ * `vaporlog.sessions.<accountId>`. Migration source only.
+ */
 const ACCOUNT_SESSIONS_PREFIX = `${SESSIONS_STORAGE_KEY}.`;
 
 const seedData = seed as unknown as SeedData;
@@ -231,27 +242,292 @@ export function getVocab(): Vocab {
 /**
  * Returns the demo community sessions (read-only expert sessions from
  * vaporium). DEV-ONLY: returns `[]` in production builds, where the feed
- * shows only sessions real users published from this device.
+ * shows only sessions real users published.
  */
 export function getCommunitySessions(): SessionLog[] {
   return COMMUNITY_SESSIONS;
 }
 
 /* ------------------------------------------------------------------ */
-/* Session storage helpers                                             */
+/* Cloud session rows (snake_case ↔ SessionLog mapping)                */
 /* ------------------------------------------------------------------ */
 
 /**
- * Storage key for the CURRENT account's session list. When nobody is
- * signed in this falls back to the legacy anonymous key so pre-auth
- * behavior (and any unguarded caller) keeps working exactly as before.
+ * Shape of one row in the Supabase `sessions` table (see
+ * supabase/schema.sql). The column set mirrors SessionLog one-to-one in
+ * snake_case — including amount_g / moods / activities — plus user_id
+ * (ownership) and a denormalized `author` handle maintained by a DB
+ * trigger. created_at doubles as SessionLog.createdAt (sent explicitly
+ * on write so migrated legacy sessions keep their original dates).
  */
-function currentSessionsKey(): string {
-  const account = getCurrentAccount();
-  return account ? `${ACCOUNT_SESSIONS_PREFIX}${account.id}` : SESSIONS_STORAGE_KEY;
+interface SessionRow {
+  id: string;
+  user_id: string;
+  strain_slug: string;
+  device_slug: string;
+  temperature_c: number | null;
+  duration_min: number | null;
+  amount_g: number | null;
+  rating: number;
+  aromas: string[] | null;
+  flavors: string[] | null;
+  moods: string[] | null;
+  activities: string[] | null;
+  notes: string | null;
+  is_public: boolean;
+  author: string | null;
+  created_at: string;
 }
 
-/** Reads a session list from one storage key. Never throws. */
+/** PostgREST embed of the author profile: object (many-to-one) or array. */
+type ProfileEmbed = { handle: string } | { handle: string }[] | null;
+
+type PublicSessionRow = SessionRow & { profiles: ProfileEmbed };
+
+function embeddedHandle(embed: ProfileEmbed): string | null {
+  if (!embed) return null;
+  if (Array.isArray(embed)) return embed[0]?.handle ?? null;
+  return typeof embed.handle === "string" ? embed.handle : null;
+}
+
+/** Maps a cloud row to the app shape; `authorFallback` is the handle. */
+function rowToSession(row: SessionRow, authorFallback: string): SessionLog {
+  return {
+    id: row.id,
+    strainSlug: row.strain_slug,
+    deviceSlug: row.device_slug,
+    temperatureC: row.temperature_c,
+    durationMin: row.duration_min,
+    amountG: row.amount_g,
+    rating: row.rating,
+    aromas: row.aromas ?? [],
+    flavors: row.flavors ?? [],
+    moods: row.moods ?? [],
+    activities: row.activities ?? [],
+    notes: row.notes ?? "",
+    isPublic: row.is_public,
+    author: authorFallback,
+    createdAt: row.created_at,
+  };
+}
+
+/** Maps a session to a cloud row for insert/upsert. */
+function sessionToRow(
+  session: SessionLog,
+  userId: string,
+): Record<string, unknown> {
+  return {
+    id: session.id,
+    user_id: userId,
+    strain_slug: session.strainSlug,
+    device_slug: session.deviceSlug,
+    temperature_c: session.temperatureC,
+    duration_min: session.durationMin,
+    amount_g: session.amountG,
+    rating: session.rating,
+    aromas: session.aromas,
+    flavors: session.flavors,
+    moods: session.moods,
+    activities: session.activities,
+    notes: session.notes,
+    is_public: session.isPublic,
+    created_at: session.createdAt,
+  };
+}
+
+/** Newest-first comparator (createdAt desc) used for both caches. */
+function newestFirst(a: SessionLog, b: SessionLog): number {
+  return b.createdAt.localeCompare(a.createdAt);
+}
+
+/* ------------------------------------------------------------------ */
+/* In-memory session caches + external store                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Sessions live in Supabase; these module-level caches mirror them so the
+ * synchronous getters (getMySessions / getAllPublicSessions /
+ * getPublicSession) keep their pre-cloud signatures. Hydration triggers:
+ *   - module boot:      public sessions are fetched (always, signed in
+ *                       or not) and own sessions too when a session is
+ *                       already restored;
+ *   - auth change:      signing in hydrates own sessions (after the
+ *                       legacy migration), signing out clears them.
+ * React consumers should prefer useMySessions() / usePublicSessions(),
+ * which re-render when the caches change.
+ */
+interface SessionsState {
+  sessions: SessionLog[];
+  loading: boolean;
+}
+
+/** Current account's sessions, newest first (empty when signed out). */
+let mySessionsCache: SessionLog[] = [];
+/** Cloud public sessions only (no demo merge), newest first. */
+let publicCloudCache: SessionLog[] = [];
+/** Demo sessions (dev-only) + publicCloudCache, newest first. */
+let publicMergedCache: SessionLog[] = mergePublic(publicCloudCache);
+/** False until the first public fetch settles (success or failure). */
+let publicReady = false;
+
+let myState: SessionsState = { sessions: mySessionsCache, loading: false };
+let publicState: SessionsState = {
+  sessions: publicMergedCache,
+  loading: true,
+};
+
+const sessionListeners = new Set<() => void>();
+
+function emitSessions(): void {
+  for (const listener of sessionListeners) listener();
+}
+
+function subscribeSessions(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
+/** Merges the dev-only demo sessions with the cloud public sessions. */
+function mergePublic(cloud: SessionLog[]): SessionLog[] {
+  return [...COMMUNITY_SESSIONS, ...cloud].sort(newestFirst);
+}
+
+function setMyCache(sessions: SessionLog[], loading: boolean): void {
+  mySessionsCache = sessions;
+  myState = { sessions, loading };
+  emitSessions();
+}
+
+function setPublicCloudCache(cloud: SessionLog[], ready: boolean): void {
+  publicCloudCache = cloud;
+  publicMergedCache = mergePublic(cloud);
+  publicReady = ready;
+  publicState = { sessions: publicMergedCache, loading: !ready };
+  emitSessions();
+}
+
+/**
+ * Point-in-time copy of every cache reference, for optimistic-mutation
+ * rollback. Restoring re-establishes the exact previous array/state
+ * identities so useSyncExternalStore snapshots stay consistent.
+ */
+interface CacheSnapshot {
+  myCache: SessionLog[];
+  myState: SessionsState;
+  cloud: SessionLog[];
+  merged: SessionLog[];
+  publicState: SessionsState;
+  publicReady: boolean;
+}
+
+function snapshotCaches(): CacheSnapshot {
+  return {
+    myCache: mySessionsCache,
+    myState,
+    cloud: publicCloudCache,
+    merged: publicMergedCache,
+    publicState,
+    publicReady,
+  };
+}
+
+function restoreCaches(snapshot: CacheSnapshot): void {
+  mySessionsCache = snapshot.myCache;
+  myState = snapshot.myState;
+  publicCloudCache = snapshot.cloud;
+  publicMergedCache = snapshot.merged;
+  publicState = snapshot.publicState;
+  publicReady = snapshot.publicReady;
+  emitSessions();
+}
+
+/** Optimistically inserts/replaces one session in the public cache. */
+function upsertPublicCache(session: SessionLog): void {
+  const rest = publicCloudCache.filter((s) => s.id !== session.id);
+  setPublicCloudCache([session, ...rest].sort(newestFirst), publicReady);
+}
+
+/* ------------------------------------------------------------------ */
+/* Cloud hydration                                                     */
+/* ------------------------------------------------------------------ */
+
+/** Invalidates in-flight own-session fetches (bumped on sign-out). */
+let myHydrateToken = 0;
+/** Invalidates superseded public fetches. */
+let publicFetchToken = 0;
+
+/**
+ * Fetches every cloud session owned by `account` into the personal cache.
+ * Runs the legacy localStorage → cloud migration first so freshly
+ * uploaded rows are included. Safe to call repeatedly; a stale response
+ * (sign-out or newer hydration while in flight) is discarded.
+ */
+async function hydrateMySessions(account: Account): Promise<void> {
+  const token = ++myHydrateToken;
+  setMyCache(mySessionsCache, true);
+  try {
+    await migrateLegacySessions(account);
+  } catch (error) {
+    // Not fatal: the flag stays unset and the next sign-in retries.
+    console.warn("vaporlog: legacy session migration failed; will retry on next sign-in.", error);
+  }
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("user_id", account.id)
+    .order("created_at", { ascending: false });
+  if (token !== myHydrateToken) return; // signed out / re-hydrated in flight
+  if (error) {
+    console.warn("vaporlog: could not load your sessions.", error);
+    setMyCache([], false);
+    return;
+  }
+  const rows = (data ?? []) as SessionRow[];
+  setMyCache(rows.map((row) => rowToSession(row, account.username)), false);
+  // The migration may have published rows — refresh the public feed.
+  void refreshPublicSessions();
+}
+
+/** Fetches all public cloud sessions (plus author handles) into the cache. */
+async function refreshPublicSessions(): Promise<void> {
+  const token = ++publicFetchToken;
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("*, profiles(handle)")
+    .eq("is_public", true)
+    .order("created_at", { ascending: false });
+  if (token !== publicFetchToken) return;
+  if (error) {
+    console.warn("vaporlog: could not load public sessions.", error);
+    if (!publicReady) setPublicCloudCache(publicCloudCache, true);
+    return;
+  }
+  const rows = (data ?? []) as PublicSessionRow[];
+  setPublicCloudCache(
+    rows.map((row) => rowToSession(row, embeddedHandle(row.profiles) ?? "anonymous")),
+    true,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Legacy localStorage → cloud migration                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Per-user localStorage flag marking a completed legacy migration:
+ * `vaporlog.cloud-migrated.<userId>` === "1". Set only after every legacy
+ * list uploaded successfully (or nothing was found), so a failed attempt
+ * is retried on the next sign-in. Upserts on preserved ids make retries
+ * idempotent.
+ */
+const MIGRATION_DONE_PREFIX = "vaporlog.cloud-migrated.";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Reads a legacy session list from one localStorage key. Never throws. */
 function readSessionsAt(key: string): SessionLog[] {
   try {
     const raw = localStorage.getItem(key);
@@ -263,20 +539,73 @@ function readSessionsAt(key: string): SessionLog[] {
   }
 }
 
-/**
- * Every session stored by EVERY account (plus any legacy anonymous
- * sessions not yet migrated). Includes private sessions — callers must
- * filter `isPublic` when the data crosses an account boundary.
- */
-function getAllStoredSessions(): SessionLog[] {
-  const all: SessionLog[] = [];
-  for (const account of listAccounts()) {
-    all.push(...readSessionsAt(`${ACCOUNT_SESSIONS_PREFIX}${account.id}`));
+/** Every legacy session key: the anonymous key + all per-account keys. */
+function legacySessionKeys(): string[] {
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (
+      key === SESSIONS_STORAGE_KEY ||
+      (key !== null && key.startsWith(ACCOUNT_SESSIONS_PREFIX))
+    ) {
+      keys.push(key);
+    }
   }
-  // Legacy anonymous sessions (removed by signUp migration; only present
-  // on devices that never created an account).
-  all.push(...readSessionsAt(SESSIONS_STORAGE_KEY));
-  return all;
+  return keys;
+}
+
+/**
+ * One-time upload of pre-cloud localStorage sessions ("vaporlog.sessions"
+ * and every "vaporlog.sessions.<oldAccountId>") into the signed-in user's
+ * cloud account, preserving is_public flags and timestamps. Runs on the
+ * first auth-change into a signed-in state; idempotent via the per-user
+ * completion flag + upserts on preserved (uuid-shaped) ids. On success
+ * the legacy keys are removed; on failure the flag stays unset so the
+ * next sign-in retries. Throws when the upload fails.
+ */
+async function migrateLegacySessions(account: Account): Promise<void> {
+  const flagKey = `${MIGRATION_DONE_PREFIX}${account.id}`;
+  let alreadyDone = false;
+  let keys: string[] = [];
+  try {
+    alreadyDone = localStorage.getItem(flagKey) === "1";
+    if (!alreadyDone) keys = legacySessionKeys();
+  } catch {
+    return; // storage unavailable — nothing we can do from here
+  }
+  if (alreadyDone) return;
+
+  // Dedupe by id (the same entry should never sit under two legacy keys,
+  // but the old signUp migration left room for it on shared devices).
+  const byId = new Map<string, SessionLog>();
+  for (const key of keys) {
+    for (const session of readSessionsAt(key)) {
+      if (typeof session?.id === "string" && !byId.has(session.id)) {
+        byId.set(session.id, session);
+      }
+    }
+  }
+
+  if (byId.size > 0) {
+    const rows = Array.from(byId.values()).map((session) =>
+      sessionToRow(
+        // The sessions PK is a uuid — regenerate ids that are not.
+        UUID_RE.test(session.id)
+          ? session
+          : { ...session, id: crypto.randomUUID() },
+        account.id,
+      ),
+    );
+    const { error } = await supabase.from("sessions").upsert(rows);
+    if (error) throw error;
+  }
+
+  try {
+    for (const key of keys) localStorage.removeItem(key);
+    localStorage.setItem(flagKey, "1");
+  } catch {
+    /* storage unavailable — rows are uploaded; flag retries are harmless */
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -284,48 +613,126 @@ function getAllStoredSessions(): SessionLog[] {
 /* ------------------------------------------------------------------ */
 
 /**
- * Returns the current account's personal sessions, newest first.
- * Returns `[]` when nothing is stored or the stored value is unreadable —
- * never throws.
+ * Returns the current account's personal sessions, newest first, from the
+ * in-memory cache. Returns `[]` while signed out; may return `[]` while
+ * the first cloud fetch is in flight — reactive consumers should use
+ * useMySessions() for its loading flag.
  */
 export function getMySessions(): SessionLog[] {
-  return readSessionsAt(currentSessionsKey());
+  return mySessionsCache;
 }
 
 /**
- * Prepends a session to the current account's personal list and returns
- * the stored copy. If `log.id` is empty a UUID is generated; if
- * `log.createdAt` is empty the current time is used; if `log.author` is
- * empty the current account's username is stamped (or "anonymous" when
- * nobody is signed in).
+ * Saves a session to the cloud and returns the stored copy. If `log.id`
+ * is empty a UUID is generated; if `log.createdAt` is empty the current
+ * time is used; if `log.author` is empty the current account's username
+ * is stamped. The cache is updated OPTIMISTICALLY (upsert semantics: an
+ * existing id is replaced, a new one prepended); on a failed cloud write
+ * the cache is rolled back and the error rethrown. Rejects when signed
+ * out — sessions require an account.
  */
-export function saveSession(log: SessionLog): SessionLog {
+export async function saveSession(log: SessionLog): Promise<SessionLog> {
+  const account = getCurrentAccount();
+  if (!account) {
+    throw new Error("Sign in to save sessions.");
+  }
   const stored: SessionLog = {
     ...log,
     id: log.id || crypto.randomUUID(),
     createdAt: log.createdAt || new Date().toISOString(),
-    author: log.author || getCurrentAccount()?.username || "anonymous",
+    author: log.author || account.username,
   };
-  const sessions = [stored, ...getMySessions()];
-  localStorage.setItem(currentSessionsKey(), JSON.stringify(sessions));
+  const snapshot = snapshotCaches();
+  setMyCache(
+    [stored, ...mySessionsCache.filter((s) => s.id !== stored.id)].sort(
+      newestFirst,
+    ),
+    myState.loading,
+  );
+  if (stored.isPublic) upsertPublicCache(stored);
+  try {
+    const { error } = await supabase
+      .from("sessions")
+      .upsert(sessionToRow(stored, account.id));
+    if (error) throw error;
+  } catch (error) {
+    restoreCaches(snapshot);
+    throw error;
+  }
   return stored;
 }
 
 /**
- * Flips `isPublic` on one of the current account's own sessions and
- * persists the change. Returns the updated session, or `undefined` when
- * the id does not belong to a personal session.
+ * Deletes one of the current account's own sessions (optimistic, with
+ * rollback + rethrow on failure). Rejects when signed out.
  */
-export function toggleSessionPublic(id: string): SessionLog | undefined {
-  const sessions = getMySessions();
-  const index = sessions.findIndex((s) => s.id === id);
-  if (index === -1) return undefined;
-  const updated: SessionLog = {
-    ...sessions[index],
-    isPublic: !sessions[index].isPublic,
-  };
-  sessions[index] = updated;
-  localStorage.setItem(currentSessionsKey(), JSON.stringify(sessions));
+export async function deleteSession(id: string): Promise<void> {
+  const account = getCurrentAccount();
+  if (!account) {
+    throw new Error("Sign in to delete sessions.");
+  }
+  const snapshot = snapshotCaches();
+  setMyCache(
+    mySessionsCache.filter((s) => s.id !== id),
+    myState.loading,
+  );
+  setPublicCloudCache(
+    publicCloudCache.filter((s) => s.id !== id),
+    publicReady,
+  );
+  try {
+    const { error } = await supabase
+      .from("sessions")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", account.id);
+    if (error) throw error;
+  } catch (error) {
+    restoreCaches(snapshot);
+    throw error;
+  }
+}
+
+/**
+ * Flips `isPublic` on one of the current account's own sessions
+ * (optimistic, with rollback + rethrow on failure). Returns the updated
+ * session, or `undefined` when the id does not belong to a personal
+ * session. Rejects when signed out.
+ */
+export async function toggleSessionPublic(
+  id: string,
+): Promise<SessionLog | undefined> {
+  const account = getCurrentAccount();
+  if (!account) {
+    throw new Error("Sign in to publish sessions.");
+  }
+  const existing = mySessionsCache.find((s) => s.id === id);
+  if (!existing) return undefined;
+  const updated: SessionLog = { ...existing, isPublic: !existing.isPublic };
+  const snapshot = snapshotCaches();
+  setMyCache(
+    mySessionsCache.map((s) => (s.id === id ? updated : s)),
+    myState.loading,
+  );
+  if (updated.isPublic) {
+    upsertPublicCache(updated);
+  } else {
+    setPublicCloudCache(
+      publicCloudCache.filter((s) => s.id !== id),
+      publicReady,
+    );
+  }
+  try {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ is_public: updated.isPublic })
+      .eq("id", id)
+      .eq("user_id", account.id);
+    if (error) throw error;
+  } catch (error) {
+    restoreCaches(snapshot);
+    throw error;
+  }
   return updated;
 }
 
@@ -334,29 +741,81 @@ export function toggleSessionPublic(id: string): SessionLog | undefined {
 /* ------------------------------------------------------------------ */
 
 /**
- * Every public session on the device: the demo community sessions
- * (dev-only, empty in production) plus the public sessions of EVERY
- * account, newest first (createdAt desc).
+ * Every public session: the demo community sessions (dev-only, empty in
+ * production) plus every cloud session published by any user, newest
+ * first (createdAt desc), from the in-memory cache. May be just the demo
+ * sessions while the first cloud fetch is in flight — reactive consumers
+ * should use usePublicSessions() for its loading flag.
  * This is the source for the community feed (/feed).
  */
 export function getAllPublicSessions(): SessionLog[] {
-  const published = getAllStoredSessions().filter((s) => s.isPublic);
-  return [...COMMUNITY_SESSIONS, ...published].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+  return publicMergedCache;
 }
 
 /**
- * Resolves a public session by id: community sessions first, then every
- * account's sessions that were explicitly made public. Returns
- * `undefined` for private or unknown ids — use this for the public
- * session card page (/s/:id) so private entries are never exposed.
+ * Resolves a public session by id: community sessions first, then the
+ * cached public cloud sessions. Returns `undefined` for private or
+ * unknown ids — use this for the public session card page (/s/:id) so
+ * private entries are never exposed. NOTE: the cloud cache hydrates
+ * asynchronously after module boot, so a direct navigation may briefly
+ * resolve nothing; usePublicSessions() exposes the loading state.
  */
 export function getPublicSession(id: string): SessionLog | undefined {
   const community = COMMUNITY_SESSIONS.find((s) => s.id === id);
   if (community) return community;
-  return getAllStoredSessions().find((s) => s.id === id && s.isPublic);
+  return publicCloudCache.find((s) => s.id === id && s.isPublic);
 }
+
+/* ------------------------------------------------------------------ */
+/* Reactive hooks (useSyncExternalStore over the caches)               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The current account's sessions straight from the cloud-backed cache:
+ * `{ sessions, loading }`. `loading` is true while the first fetch for
+ * the signed-in user (including the legacy migration) is in flight, and
+ * false while signed out (sessions is then empty).
+ */
+export function useMySessions(): {
+  sessions: SessionLog[];
+  loading: boolean;
+} {
+  return useSyncExternalStore(subscribeSessions, () => myState);
+}
+
+/**
+ * The public feed straight from the cloud-backed cache (dev-only demo
+ * sessions merged in): `{ sessions, loading }`. `loading` is true until
+ * the first public fetch settles.
+ */
+export function usePublicSessions(): {
+  sessions: SessionLog[];
+  loading: boolean;
+} {
+  return useSyncExternalStore(subscribeSessions, () => publicState);
+}
+
+/* ------------------------------------------------------------------ */
+/* Hydration triggers (module boot + auth change)                      */
+/* ------------------------------------------------------------------ */
+
+// Public sessions hydrate at boot, signed in or not.
+void refreshPublicSessions();
+
+// Own sessions follow the auth state: hydrate on sign-in, clear on
+// sign-out. The boot check covers a synchronously restored session; the
+// listener covers everything after (including async session restore).
+onAuthChange(() => {
+  const account = getCurrentAccount();
+  if (account) {
+    void hydrateMySessions(account);
+  } else {
+    myHydrateToken += 1; // discard any in-flight fetch
+    setMyCache([], false);
+  }
+});
+const bootAccount = getCurrentAccount();
+if (bootAccount) void hydrateMySessions(bootAccount);
 
 /* ------------------------------------------------------------------ */
 /* Profile (legacy, account-derived)                                   */

@@ -26,11 +26,11 @@ import {
 type Mode = "signup" | "signin";
 
 /**
- * Step 2 — account creation (or sign-in). Local accounts, shaped like the
- * future Supabase auth: handle + password (min 6, show/hide toggle, no
- * confirmation field in this MVP), hashed with a per-user salt and never
- * stored in plaintext. A quiet link flips between the two modes; errors
- * from the auth layer (taken username, bad credentials) surface inline.
+ * Step 2 — account creation (or sign-in). Cloud accounts (Supabase Auth):
+ * handle + password (min 6, show/hide toggle, no confirmation field in
+ * this MVP). A quiet link flips between the two modes; errors from the
+ * auth layer surface inline — a taken handle gets its own spot under the
+ * handle field, with a one-tap switch to sign-in.
  */
 export default function AccountStep({
   birthdate,
@@ -57,6 +57,9 @@ export default function AccountStep({
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A taken handle is not a generic form error — it pins to the handle
+  // field and offers a one-tap switch to sign-in.
+  const [handleTaken, setHandleTaken] = useState(false);
 
   const validation = validateUsername(username);
   const passwordOk = password.length >= PASSWORD_MIN_LENGTH;
@@ -69,6 +72,7 @@ export default function AccountStep({
   function updateUsername(value: string) {
     setUsername(value);
     setError(null);
+    setHandleTaken(false);
     onUsernameChange(value);
   }
 
@@ -84,6 +88,7 @@ export default function AccountStep({
     setPassword("");
     setShowPassword(false);
     setError(null);
+    setHandleTaken(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -91,6 +96,7 @@ export default function AccountStep({
     if (!canSubmit) return;
     setPending(true);
     setError(null);
+    setHandleTaken(false);
     try {
       const account =
         mode === "signup"
@@ -102,14 +108,18 @@ export default function AccountStep({
           : await signIn(username, password);
       onSuccess(account);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Something went wrong — try again.",
-      );
+      const message =
+        err instanceof Error ? err.message : "Something went wrong — try again.";
+      if (mode === "signup" && /taken/i.test(message)) {
+        setHandleTaken(true);
+      } else {
+        setError(message);
+      }
       setPending(false);
     }
   }
 
-  const showValid = mode === "signup" && validation.valid;
+  const showValid = mode === "signup" && validation.valid && !handleTaken;
 
   return (
     <WelcomeStep
@@ -137,7 +147,7 @@ export default function AccountStep({
                 autoCapitalize="off"
                 spellCheck={false}
                 disabled={pending}
-                aria-invalid={validation.error !== null}
+                aria-invalid={validation.error !== null || handleTaken}
                 aria-describedby="account-username-hint account-error"
                 className="h-11 pr-9 text-base"
               />
@@ -170,6 +180,18 @@ export default function AccountStep({
           {mode === "signup" && validation.error !== null ? (
             <p role="alert" className="text-sm text-destructive">
               {validation.error}
+            </p>
+          ) : null}
+          {mode === "signup" && handleTaken ? (
+            <p role="alert" className="text-sm text-destructive">
+              That handle is taken.{" "}
+              <button
+                type="button"
+                onClick={() => switchMode("signin")}
+                className="pressable font-medium underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+              >
+                Sign in with it instead
+              </button>
             </p>
           ) : null}
         </div>
@@ -213,8 +235,8 @@ export default function AccountStep({
           </div>
           <p id="account-password-hint" className="text-xs text-muted-foreground">
             {mode === "signup"
-              ? `${PASSWORD_MIN_LENGTH} characters minimum. It's hashed on this device — we never store it in plain text.`
-              : "Same device, same browser as when you signed up."}
+              ? `${PASSWORD_MIN_LENGTH} characters minimum. It's stored only as a hash — never in plain text.`
+              : "The password you chose when you signed up."}
           </p>
         </div>
 
@@ -266,7 +288,8 @@ export default function AccountStep({
             : "New to vaporlog? Create an account"}
         </button>
         <p className="text-xs text-muted-foreground">
-          your account lives on this device for now — nothing leaves it
+          your account syncs across your devices — sessions stay private by
+          default
         </p>
       </div>
     </WelcomeStep>

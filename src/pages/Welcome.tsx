@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Leaf } from "lucide-react";
-import { getCurrentAccount, type Account } from "@/lib/auth";
+import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
 import { getProfile } from "@/lib/data";
 import StepDots from "@/components/welcome/StepDots";
 import AgeGateStep from "@/components/welcome/AgeGateStep";
@@ -17,9 +17,7 @@ import AgeBlocked from "@/components/welcome/AgeBlocked";
  *      so the first logged session is the activation moment.
  *
  * A legacy pre-auth profile (`vaporlog.profile`) prefills the birthdate
- * and handle; the first signUp migrates that device's legacy sessions and
- * personal strains/devices into the new account (see lib/auth.ts).
- * Signed-in users skip straight to /diary.
+ * and handle when one exists. Signed-in users skip straight to /diary.
  * Step transitions are transform/opacity only (spring-ish ease), and the
  * global prefers-reduced-motion rule collapses them to gentle fades.
  */
@@ -88,8 +86,19 @@ export default function Welcome() {
     };
   }, []);
 
-  // Already signed in — never show onboarding again.
-  if (getCurrentAccount()) {
+  // Already signed in — never show onboarding again. The account cache
+  // hydrates asynchronously from the cloud session, so subscribe to auth
+  // changes instead of checking only once: when the session lands (or a
+  // sign-in completes elsewhere) this page steps aside for /diary.
+  const [account, setAccount] = useState<Account | null>(() =>
+    getCurrentAccount(),
+  );
+  useEffect(
+    () => onAuthChange(() => setAccount(getCurrentAccount())),
+    [],
+  );
+
+  if (account) {
     return <Navigate to="/diary" replace />;
   }
 
