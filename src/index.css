@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * vaporlog design tokens — foundation
+ * ---------------------------------------------------------------------------
+ * Viral-product principle: three colors max.
+ *   1. White      #FFFFFF  — background
+ *   2. Near-black #0A0A0A  — text
+ *   3. Herb green #2D6A4F  — the ONE accent (primary CTA / actions / rating
+ *                            highlights only), darker hover #1B4332
+ * All other surfaces are neutral grays derived from the same scale.
+ * Motion: transform/opacity only, custom ease curves, <300ms for UI,
+ * honors prefers-reduced-motion (keeps opacity/color fades, drops movement).
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 0 0% 4%; /* #0A0A0A */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+
+    /* The ONE accent — herb green. Use `primary` / `herb` for CTAs only. */
+    --herb: 153 40% 30%; /* #2D6A4F */
+    --herb-hover: 154 43% 18%; /* #1B4332 */
+    --primary: var(--herb);
+    --primary-foreground: 0 0% 100%;
+
+    /* Neutral grays — never a second brand color. */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 4%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 96%; /* neutral hover surface for shadcn components */
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: var(--herb);
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 26%;
+    --sidebar-primary: var(--herb);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 4%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: var(--herb);
+
+    /* Motion tokens (emil-design-eng: strong custom curves beat CSS defaults) */
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Apple typography: large display text wants tight leading + negative tracking */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: hsl(var(--herb) / 0.18);
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Interaction primitives — deliberately UNLAYERED.
+ * Tailwind's `transition-colors`/`transition-shadow` utilities live in
+ * @layer utilities, which beats @layer components — so a layered .pressable
+ * loses its transform transition wherever a transition utility coexists
+ * (i.e. nearly everywhere), and the press scale snapped with no release
+ * tween. Unlayered author CSS wins over every layer, so the press feedback
+ * below is guaranteed to reach the compositor. The full property list also
+ * keeps color/border changes animated on the same element.
+ */
+
+/*
+ * .pressable — instant pointer-down feedback for anything tappable.
+ * Apple: respond on press, not release. Emil: subtle scale (0.95–0.98),
+ * 100–160ms, ease-out. Asymmetric by construction: the :active state itself
+ * is instant on pointer-down, the 160ms tween is the release.
+ */
+.pressable {
+  transition:
+    transform 160ms var(--ease-out-strong),
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    outline-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* .herb-hover — the accent's darker hover state, gated to real pointers */
+.herb-hover {
+  transition:
+    background-color 160ms ease,
+    transform 160ms var(--ease-out-strong);
+}
+
+/*
+ * .vl-card-hover — pointer-only card affordance (border deepens + soft lift).
+ * Touch never sees the sticky post-tap hover state; its feedback is .pressable.
+ */
+.vl-card-hover {
+  transition:
+    transform 160ms var(--ease-out-strong),
+    border-color 200ms var(--ease-out-strong),
+    box-shadow 200ms var(--ease-out-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .herb-hover:hover {
+    background-color: hsl(var(--herb-hover));
+  }
+  .vl-card-hover:hover {
+    border-color: hsl(var(--foreground) / 0.25);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.05),
+      0 4px 6px -4px rgb(0 0 0 / 0.05);
+  }
+}
+
+/*
+ * prefers-reduced-motion: gentler, non-vestibular equivalents — keep short
+ * opacity/color fades that aid comprehension, remove movement/position motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0ms !important;
+    transition-duration: 150ms !important;
+    transition-property:
+      opacity, color, background-color, border-color, outline-color !important;
+  }
+}

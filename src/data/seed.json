@@ -1,0 +1,37 @@
+{
+  "strains": [],
+  "devices": [
+    {
+      "slug": "anvil",
+      "name": "Anvil"
+    },
+    {
+      "slug": "dynavap-m-plus",
+      "name": "DynaVap M Plus"
+    },
+    {
+      "slug": "dynavap-woodwynd",
+      "name": "DynaVap WoodWynd"
+    },
+    {
+      "slug": "mighty-plus",
+      "name": "Mighty+"
+    },
+    {
+      "slug": "solo-iii",
+      "name": "Solo III"
+    },
+    {
+      "slug": "tinymight-2",
+      "name": "TinyMight 2"
+    },
+    {
+      "slug": "venty",
+      "name": "Venty"
+    },
+    {
+      "slug": "volcano-hybrid",
+      "name": "Volcano Hybrid"
+    }
+  ]
+}

@@ -1,0 +1,606 @@
+{
+  "communitySessions": [
+    {
+      "id": "2026-05-02-acdc-professionalvaper",
+      "strainSlug": "acdc",
+      "deviceSlug": "venty",
+      "temperatureC": 172,
+      "durationMin": 10,
+      "amountG": null,
+      "rating": 8,
+      "aromas": [
+        "Woody",
+        "Cherry"
+      ],
+      "flavors": [
+        "Herbal",
+        "Pine"
+      ],
+      "moods": [
+        "Focused",
+        "Calm",
+        "Functional"
+      ],
+      "activities": [
+        "Coding",
+        "Emailing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "ProfessionalVaper",
+      "createdAt": "2026-05-02T09:30:00-06:00"
+    },
+    {
+      "id": "2026-05-02-ak-47-gamervape",
+      "strainSlug": "ak-47",
+      "deviceSlug": "solo-iii",
+      "temperatureC": 188,
+      "durationMin": 15,
+      "amountG": null,
+      "rating": 8,
+      "aromas": [
+        "Skunky",
+        "Woody"
+      ],
+      "flavors": [
+        "Floral",
+        "Earthy"
+      ],
+      "moods": [
+        "Focused",
+        "Mellow",
+        "Happy"
+      ],
+      "activities": [
+        "Gaming",
+        "Streaming"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "GamerVape",
+      "createdAt": "2026-05-02T16:30:00-06:00"
+    },
+    {
+      "id": "2026-05-02-blue-dream-vaporenthusiast",
+      "strainSlug": "blue-dream",
+      "deviceSlug": "venty",
+      "temperatureC": 175,
+      "durationMin": 12,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Sweet Berry"
+      ],
+      "flavors": [
+        "Blueberry",
+        "Haze"
+      ],
+      "moods": [
+        "Focused",
+        "Creative",
+        "Energized"
+      ],
+      "activities": [
+        "Coding",
+        "Project Planning"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "VaporEnthusiast",
+      "createdAt": "2026-05-02T09:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-bruce-banner-strongvape",
+      "strainSlug": "bruce-banner",
+      "deviceSlug": "tinymight-2",
+      "temperatureC": 192,
+      "durationMin": 8,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Diesel",
+        "Strawberry"
+      ],
+      "flavors": [
+        "Gassy",
+        "Sweet Fruit"
+      ],
+      "moods": [
+        "Euphoric",
+        "Energized",
+        "Happy"
+      ],
+      "activities": [
+        "Working Out",
+        "Creative Writing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "StrongVape",
+      "createdAt": "2026-05-02T16:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-gelato-designervape",
+      "strainSlug": "gelato",
+      "deviceSlug": "venty",
+      "temperatureC": 182,
+      "durationMin": 10,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Sweet Cream",
+        "Berry"
+      ],
+      "flavors": [
+        "Lavender",
+        "Citrus"
+      ],
+      "moods": [
+        "Creative",
+        "Happy",
+        "Social"
+      ],
+      "activities": [
+        "Graphic Design",
+        "Writing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "DesignerVape",
+      "createdAt": "2026-05-02T14:30:00-06:00"
+    },
+    {
+      "id": "2026-05-02-girl-scout-cookies-donenrique",
+      "strainSlug": "girl-scout-cookies",
+      "deviceSlug": "solo-iii",
+      "temperatureC": 190,
+      "durationMin": 10,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Sweet",
+        "Doughy"
+      ],
+      "flavors": [
+        "Cookie",
+        "Mint",
+        "Spice"
+      ],
+      "moods": [
+        "Happy",
+        "Relaxed",
+        "Euphoric"
+      ],
+      "activities": [
+        "Gaming",
+        "Socializing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "DonEnrique",
+      "createdAt": "2026-05-02T20:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-granddaddy-purple-insomniac",
+      "strainSlug": "granddaddy-purple",
+      "deviceSlug": "volcano-hybrid",
+      "temperatureC": 205,
+      "durationMin": 20,
+      "amountG": null,
+      "rating": 10,
+      "aromas": [
+        "Grape",
+        "Berry"
+      ],
+      "flavors": [
+        "Grape Candy",
+        "Earthy"
+      ],
+      "moods": [
+        "Sleepy",
+        "Calm",
+        "Relaxed"
+      ],
+      "activities": [
+        "Sleeping",
+        "Meditation"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "Insomniac",
+      "createdAt": "2026-05-02T23:45:00-06:00"
+    },
+    {
+      "id": "2026-05-02-green-crack-mountainvaper",
+      "strainSlug": "green-crack",
+      "deviceSlug": "dynavap-woodwynd",
+      "temperatureC": 175,
+      "durationMin": 6,
+      "amountG": null,
+      "rating": 10,
+      "aromas": [
+        "Mango",
+        "Citrus"
+      ],
+      "flavors": [
+        "Tropical Fruit",
+        "Tart"
+      ],
+      "moods": [
+        "Energized",
+        "Awake",
+        "Focused"
+      ],
+      "activities": [
+        "Hiking",
+        "Nature Photography"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "MountainVaper",
+      "createdAt": "2026-05-02T10:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-harlequin-healthvape",
+      "strainSlug": "harlequin",
+      "deviceSlug": "mighty-plus",
+      "temperatureC": 188,
+      "durationMin": 12,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Musky",
+        "Mango"
+      ],
+      "flavors": [
+        "Earthy",
+        "Sweet"
+      ],
+      "moods": [
+        "Clear-headed",
+        "Relaxed",
+        "Functional"
+      ],
+      "activities": [
+        "Light Yoga",
+        "Reading"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "HealthVape",
+      "createdAt": "2026-05-02T13:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-jack-herer-artistvape",
+      "strainSlug": "jack-herer",
+      "deviceSlug": "dynavap-m-plus",
+      "temperatureC": 180,
+      "durationMin": 5,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Pine",
+        "Spicy"
+      ],
+      "flavors": [
+        "Woody",
+        "Peppery"
+      ],
+      "moods": [
+        "Creative",
+        "Focused",
+        "Happy"
+      ],
+      "activities": [
+        "Painting",
+        "Drawing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "ArtistVape",
+      "createdAt": "2026-05-02T15:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-la-confidential-nightvaper",
+      "strainSlug": "la-confidential",
+      "deviceSlug": "solo-iii",
+      "temperatureC": 202,
+      "durationMin": 18,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Pine",
+        "Spicy"
+      ],
+      "flavors": [
+        "Woody",
+        "Earth"
+      ],
+      "moods": [
+        "Sleepy",
+        "Relaxed",
+        "Peaceful"
+      ],
+      "activities": [
+        "Meditation",
+        "Watching Documentaries"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "NightVaper",
+      "createdAt": "2026-05-02T22:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-northern-lights-relaxdude",
+      "strainSlug": "northern-lights",
+      "deviceSlug": "solo-iii",
+      "temperatureC": 200,
+      "durationMin": 15,
+      "amountG": null,
+      "rating": 8,
+      "aromas": [
+        "Pungent",
+        "Sweet"
+      ],
+      "flavors": [
+        "Earth",
+        "Pine"
+      ],
+      "moods": [
+        "Relaxed",
+        "Heavy",
+        "Peaceful"
+      ],
+      "activities": [
+        "Listening To Podcasts",
+        "Couch Sitting"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "RelaxDude",
+      "createdAt": "2026-05-02T21:15:00-06:00"
+    },
+    {
+      "id": "2026-05-02-og-kush-terphunter",
+      "strainSlug": "og-kush",
+      "deviceSlug": "mighty-plus",
+      "temperatureC": 195,
+      "durationMin": 15,
+      "amountG": null,
+      "rating": 10,
+      "aromas": [
+        "Dank",
+        "Fuel"
+      ],
+      "flavors": [
+        "Pine",
+        "Earth",
+        "Lemon"
+      ],
+      "moods": [
+        "Relaxed",
+        "Euphoric",
+        "Sleepy"
+      ],
+      "activities": [
+        "Watching Movies",
+        "Relaxing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "TerpHunter",
+      "createdAt": "2026-05-02T22:30:00-06:00"
+    },
+    {
+      "id": "2026-05-02-pineapple-express-cinephile",
+      "strainSlug": "pineapple-express",
+      "deviceSlug": "tinymight-2",
+      "temperatureC": 180,
+      "durationMin": 10,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Tropical",
+        "Pineapple"
+      ],
+      "flavors": [
+        "Sweet Fruit",
+        "Cedar"
+      ],
+      "moods": [
+        "Euphoric",
+        "Happy",
+        "Laughing"
+      ],
+      "activities": [
+        "Watching Sci-Fi",
+        "Eating Snacks"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "Cinephile",
+      "createdAt": "2026-05-02T18:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-sour-diesel-sativalover",
+      "strainSlug": "sour-diesel",
+      "deviceSlug": "tinymight-2",
+      "temperatureC": 185,
+      "durationMin": 8,
+      "amountG": null,
+      "rating": 8,
+      "aromas": [
+        "Diesel",
+        "Skunk"
+      ],
+      "flavors": [
+        "Gassy",
+        "Citrus"
+      ],
+      "moods": [
+        "Energized",
+        "Happy",
+        "Talkative"
+      ],
+      "activities": [
+        "House Cleaning",
+        "Music"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "SativaLover",
+      "createdAt": "2026-05-02T11:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-strawberry-banana-vaporwitch",
+      "strainSlug": "strawberry-banana",
+      "deviceSlug": "solo-iii",
+      "temperatureC": 178,
+      "durationMin": 14,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Sweet Banana",
+        "Strawberry"
+      ],
+      "flavors": [
+        "Creamy Fruit",
+        "Tropical"
+      ],
+      "moods": [
+        "Peaceful",
+        "Happy",
+        "Creative"
+      ],
+      "activities": [
+        "Yoga",
+        "Watching Sunset"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "VaporWitch",
+      "createdAt": "2026-05-02T17:45:00-06:00"
+    },
+    {
+      "id": "2026-05-02-super-lemon-haze-citrusfan",
+      "strainSlug": "super-lemon-haze",
+      "deviceSlug": "mighty-plus",
+      "temperatureC": 180,
+      "durationMin": 12,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Lemon Zest",
+        "Tart"
+      ],
+      "flavors": [
+        "Candy Lemon",
+        "Earth"
+      ],
+      "moods": [
+        "Energized",
+        "Uplifted",
+        "Focused"
+      ],
+      "activities": [
+        "Studying",
+        "Exercising"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "CitrusFan",
+      "createdAt": "2026-05-02T12:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-wedding-cake-terpconnoisseur",
+      "strainSlug": "wedding-cake",
+      "deviceSlug": "anvil",
+      "temperatureC": 205,
+      "durationMin": 5,
+      "amountG": null,
+      "rating": 10,
+      "aromas": [
+        "Vanilla",
+        "Dough"
+      ],
+      "flavors": [
+        "Sweet Cake",
+        "Cream"
+      ],
+      "moods": [
+        "Euphoric",
+        "Deeply Relaxed",
+        "Happy"
+      ],
+      "activities": [
+        "Reading Philosophy",
+        "Relaxing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "TerpConnoisseur",
+      "createdAt": "2026-05-02T21:00:00-06:00"
+    },
+    {
+      "id": "2026-05-02-white-widow-partyvaper",
+      "strainSlug": "white-widow",
+      "deviceSlug": "mighty-plus",
+      "temperatureC": 185,
+      "durationMin": 12,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Floral",
+        "Earth"
+      ],
+      "flavors": [
+        "Woody",
+        "Spicy"
+      ],
+      "moods": [
+        "Talkative",
+        "Happy",
+        "Relaxed"
+      ],
+      "activities": [
+        "Dinner With Friends",
+        "Talking"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "PartyVaper",
+      "createdAt": "2026-05-02T19:30:00-06:00"
+    },
+    {
+      "id": "2026-05-02-zkittlez-candyvape",
+      "strainSlug": "zkittlez",
+      "deviceSlug": "solo-iii",
+      "temperatureC": 185,
+      "durationMin": 15,
+      "amountG": null,
+      "rating": 9,
+      "aromas": [
+        "Fruit Candy",
+        "Sweet"
+      ],
+      "flavors": [
+        "Grapefruit",
+        "Berry",
+        "Sugar"
+      ],
+      "moods": [
+        "Happy",
+        "Relaxed",
+        "Content"
+      ],
+      "activities": [
+        "Social Media",
+        "Relaxing"
+      ],
+      "notes": "",
+      "isPublic": true,
+      "author": "CandyVape",
+      "createdAt": "2026-05-02T18:45:00-06:00"
+    }
+  ]
+}

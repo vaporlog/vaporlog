@@ -1,0 +1,104 @@
+import { Link } from "react-router-dom";
+import { Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { getStrain } from "@/lib/data";
+import type { SessionLog } from "@/lib/types";
+import {
+  displayDeviceName,
+  displayStrainName,
+  formatFeedDate,
+  formatRating,
+  tempZone,
+  tempZoneLabel,
+} from "./feed-utils";
+
+interface FeedSessionCardProps {
+  session: SessionLog;
+}
+
+/**
+ * One public session in the community feed — a compact preview that links
+ * to the full shareable card at /s/:id. The whole surface is the link, so
+ * no nested tappables: catalog strains get a type badge instead of a
+ * second link, and personal (my-*) strains render their humanized name.
+ *
+ * Herb is spent exactly once here: the rating. Everything else stays on
+ * the neutral scale. No entrance animation — this is a high-frequency
+ * surface and the press/hover feedback primitives carry the feel.
+ */
+export default function FeedSessionCard({ session }: FeedSessionCardProps) {
+  const strain = getStrain(session.strainSlug);
+  const strainName = displayStrainName(session.strainSlug);
+  const deviceName = displayDeviceName(session.deviceSlug);
+  const zone =
+    session.temperatureC !== null ? tempZone(session.temperatureC) : null;
+  const dateLabel = formatFeedDate(session.createdAt);
+
+  return (
+    <Link
+      to={`/s/${encodeURIComponent(session.id)}`}
+      aria-label={`${strainName} session by ${session.author}, rated ${formatRating(
+        session.rating,
+      )} out of 10`}
+      className="pressable vl-card-hover block rounded-xl border border-border/60 bg-card p-4 sm:p-5"
+    >
+      {/* Strain + author · rating */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h2 className="text-base font-semibold text-foreground">
+              {strainName}
+            </h2>
+            {strain !== undefined && (
+              <Badge
+                variant="outline"
+                className="font-normal text-muted-foreground"
+              >
+                {strain.type}
+              </Badge>
+            )}
+          </div>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            by{" "}
+            <span className="font-medium text-foreground/80">
+              @{session.author}
+            </span>
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 text-sm">
+          <Star className="size-3.5 fill-herb text-herb" aria-hidden="true" />
+          <span className="font-semibold tabular-nums text-herb">
+            {formatRating(session.rating)}
+          </span>
+          <span className="text-muted-foreground">/10</span>
+        </span>
+      </div>
+
+      {/* Device · temperature with zone · date */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        <span>{deviceName}</span>
+        {session.temperatureC !== null && zone !== null && (
+          <span className="tabular-nums">
+            {session.temperatureC}°C · {tempZoneLabel(zone)}
+          </span>
+        )}
+        {dateLabel !== "" && <span className="text-xs">{dateLabel}</span>}
+      </div>
+
+      {/* Moods */}
+      {session.moods.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {session.moods.map((mood) => (
+            <Badge
+              key={mood}
+              variant="secondary"
+              className="font-normal text-muted-foreground"
+            >
+              {mood}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </Link>
+  );
+}

@@ -1,0 +1,141 @@
+import { Link, useParams } from "react-router-dom";
+import { ArrowRight, Compass } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
+import { getPublicSession, useStrains } from "@/lib/data";
+import { displayStrainName } from "@/components/session-card/display";
+import LearnBlock from "@/components/session-card/LearnBlock";
+import PublicSessionCard from "@/components/session-card/PublicSessionCard";
+import ShareRow from "@/components/session-card/ShareRow";
+
+/*
+ * /s/:id — the public session card (spec decision 8, the virality engine).
+ *
+ * This is what a BEGINNER sees when an expert shares a session. It must
+ * teach (learn block), convert (one CTA → /welcome), and spread (share
+ * row). One accent, one CTA, under two mobile screens.
+ */
+
+/* Entrance stagger (emil-design-eng: ease-out, transform/opacity only,
+ * short delays). Reduced motion: global index.css already collapses
+ * animations; the media query below removes it entirely for this page. */
+const entranceCss = `
+@keyframes vl-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.vl-enter {
+  opacity: 0;
+  animation: vl-fade-up 480ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vl-enter { animation: none; opacity: 1; transform: none; }
+}
+`;
+
+/** Friendly 404 for unknown or private session ids. */
+function SessionNotFound() {
+  return (
+    <section className="flex flex-col items-center gap-5 py-16 text-center">
+      <span className="flex size-12 items-center justify-center rounded-full bg-secondary">
+        <Compass className="size-5 text-muted-foreground" aria-hidden />
+      </span>
+      <h1 className="text-3xl font-semibold tracking-tight">
+        This session went up in vapor
+      </h1>
+      <p className="max-w-md text-muted-foreground">
+        The link may be old, or the author made this session private. The
+        catalog, though, is always open.
+      </p>
+      <Button
+        asChild
+        className="pressable herb-hover mt-2 bg-herb text-herb-foreground"
+      >
+        <Link to="/strains">
+          Explore the strain catalog
+          <ArrowRight className="size-4" aria-hidden />
+        </Link>
+      </Button>
+    </section>
+  );
+}
+
+export default function SessionCard() {
+  const { id } = useParams<{ id: string }>();
+  // Await the lazy catalog so the card's strain name/type resolve to the
+  // real catalog entry (display.ts falls back to a humanized slug in the
+  // meantime; this hook re-renders the page once the catalog lands).
+  // Must run unconditionally, before the not-found early return.
+  useStrains();
+  const session = id !== undefined ? getPublicSession(id) : undefined;
+
+  if (session === undefined) {
+    return <SessionNotFound />;
+  }
+
+  const strainName = displayStrainName(session.strainSlug);
+
+  return (
+    <section className="flex flex-col items-center gap-10 pb-6 pt-2 sm:gap-12">
+      <style>{entranceCss}</style>
+
+      {/* 1 · THE CARD — hero, centered, generous whitespace */}
+      <div className="vl-enter w-full max-w-xl" style={{ animationDelay: "0ms" }}>
+        <PublicSessionCard session={session} />
+      </div>
+
+      {/* 2 · LEARN BLOCK — what this temperature means, for beginners */}
+      {session.temperatureC !== null && (
+        <div className="vl-enter w-full" style={{ animationDelay: "70ms" }}>
+          <LearnBlock temperatureC={session.temperatureC} />
+        </div>
+      )}
+
+      {/* 3 · ONE CTA — says exactly what happens next */}
+      <div
+        className="vl-enter flex flex-col items-center gap-3 text-center"
+        style={{ animationDelay: "140ms" }}
+      >
+        <Button
+          asChild
+          size="lg"
+          className="pressable herb-hover bg-herb px-8 text-base text-herb-foreground"
+        >
+          <Link to="/welcome">
+            Start Your Journal
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          Free during early access — log your first session in under a minute.
+        </p>
+      </div>
+
+      {/* 4 · SHARE ROW — copy link, X, Reddit */}
+      <div className="vl-enter" style={{ animationDelay: "210ms" }}>
+        <ShareRow session={session} strainName={strainName} />
+      </div>
+
+      {/* 5 · Legal line (spec decision 5) */}
+      <p
+        className="vl-enter max-w-md text-center text-xs leading-relaxed text-muted-foreground"
+        style={{ animationDelay: "280ms" }}
+      >
+        21+ only, where legal. Ratings and effects are one person&apos;s
+        experience, not medical advice.
+      </p>
+
+      {/* 6 · End strong — the line worth remembering */}
+      <p
+        className="vl-enter text-center text-lg font-medium tracking-tight text-foreground"
+        style={{ animationDelay: "350ms" }}
+      >
+        Every great session deserves a witness.
+      </p>
+
+      {/* Toaster lives in THIS page (cross-slice contract b). */}
+      <Toaster position="bottom-center" />
+    </section>
+  );
+}
