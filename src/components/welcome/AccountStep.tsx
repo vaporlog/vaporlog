@@ -26,7 +26,7 @@ import {
 type Mode = "signup" | "signin";
 
 /**
- * Step 2 — account creation (or sign-in). Cloud accounts (Supabase Auth):
+ * Step 2 — account creation (or sign-in). Cloud accounts (self-hosted API):
  * handle + password (min 6, show/hide toggle, no confirmation field in
  * this MVP). A quiet link flips between the two modes; errors from the
  * auth layer surface inline — a taken handle gets its own spot under the

@@ -11,7 +11,7 @@ import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
  * landing, strain catalog, community feed, public session cards — must
  * NOT be wrapped by this guard.
  *
- * The account cache hydrates asynchronously (Supabase session restore) and
+ * The account cache hydrates asynchronously (cloud session restore) and
  * changes on sign-in/sign-out, so the guard subscribes to auth events and
  * re-evaluates instead of reading once.
  */

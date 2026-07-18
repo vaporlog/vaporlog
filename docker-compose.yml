@@ -1,0 +1,46 @@
+# vaporlog — full self-hosted stack:
+#   web  → nginx serving the React SPA + proxying /api
+#   api  → Node (fastify) REST API on port 4000 (internal)
+#   db   → PostgreSQL 17 (internal only, data persists in the pgdata volume)
+#
+# Usage: cp .env.example .env   (set POSTGRES_PASSWORD), then
+#        docker compose up -d --build
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vaporlog
+      POSTGRES_DB: vaporlog
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Schema init — runs automatically on first boot of a fresh volume
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaporlog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: ./server
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://vaporlog:${POSTGRES_PASSWORD}@db:5432/vaporlog
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:

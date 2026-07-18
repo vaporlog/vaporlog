@@ -70,7 +70,7 @@ const router = createBrowserRouter(
 );
 
 export default function App() {
-  // Hold first render until the persisted Supabase session restores —
+  // Hold first render until the persisted cloud session restores —
   // otherwise a signed-in user deep-linking into /log or /diary would
   // briefly bounce through /welcome before the session lands.
   const [authReady, setAuthReady] = useState(false);

@@ -1,27 +1,22 @@
 /**
- * vaporlog — auth core (Supabase Auth).
+ * vaporlog — auth core (self-hosted API + opaque bearer tokens).
  *
- * Accounts live in Supabase: one `auth.users` row per account plus a
- * `public.profiles` row (handle + birthdate) created by the
- * `on_auth_user_created` database trigger (see supabase/schema.sql).
+ * Accounts live on the self-hosted Node/Postgres backend (see server/):
+ * one row per account (handle + password hash + birthdate) and one
+ * `auth_tokens` row per session token. Handles are unique
+ * case-insensitively and stored lowercase.
  *
- * Handle-based sign-in over Supabase email auth: the app never collects a
- * real email — the handle is mapped to a synthetic address
- * (`<handle>@vaporlog.app`) and that is what Supabase authenticates.
- * Handles are unique case-insensitively (unique index on lower(handle)).
+ * The client holds an opaque token (localStorage["vaporlog.token"], see
+ * lib/api.ts) and sends it as `Authorization: Bearer <token>`.
  *
  * Synchronous reads: `getCurrentAccount()` stays sync, backed by an
- * in-memory cache that is hydrated at module init via
- * `supabase.auth.getSession()` and kept fresh via
- * `supabase.auth.onAuthStateChange`. Identity fields come from
- * `user_metadata` immediately and are then corrected from the `profiles`
- * table in the background (the table is the source of truth).
+ * in-memory cache hydrated at module init from GET /api/auth/me (when a
+ * persisted token exists) and maintained by signUp/signIn/signOut.
  *
  * The public API of this module is a contract — other layers (data.ts,
  * AppLayout, the welcome flow) code against it and must not need changes.
  */
-import type { AuthError, Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { apiFetch, clearToken, getToken, setToken } from "@/lib/api";
 import { validateUsername } from "@/lib/profile-flow";
 
 /* ------------------------------------------------------------------ */
@@ -30,11 +25,11 @@ import { validateUsername } from "@/lib/profile-flow";
 
 /**
  * The public account shape — what every consumer is allowed to see.
- * `id` is the Supabase auth user uuid.
+ * `id` is the server-side user uuid.
  */
 export interface Account {
   id: string;
-  /** The user's handle (pseudonym) — stored lowercase in `profiles`. */
+  /** The user's handle (pseudonym) — stored lowercase on the server. */
   username: string;
   /** ISO date (YYYY-MM-DD) — collected at the 21+ age gate. */
   birthdate: string;
@@ -56,29 +51,10 @@ export interface SignUpInput {
 /** Minimum password length (local MVP — no confirmation field). */
 export const PASSWORD_MIN_LENGTH = 6;
 
-/**
- * Single error for unknown handle AND wrong password — never reveal which
- * one failed. (Supabase likewise returns one "invalid credentials" error
- * for both, so this stays enforceable.)
- */
-const GENERIC_CREDENTIAL_ERROR = "Incorrect username or password.";
-const HANDLE_TAKEN_ERROR = "That handle is taken.";
-
-/** Domain used to turn handles into synthetic Supabase auth emails. */
-const SYNTHETIC_EMAIL_DOMAIN = "vaporlog.app";
-
-/* ------------------------------------------------------------------ */
-/* Handle ↔ synthetic email                                            */
-/* ------------------------------------------------------------------ */
-
-/**
- * Maps a handle to the synthetic email Supabase actually authenticates.
- * Handles are validated as `[A-Za-z0-9-]+` (see profile-flow.ts), so the
- * result is always a RFC-safe mailbox. Always lowercase — handle
- * uniqueness is case-insensitive end to end.
- */
-function syntheticEmail(handle: string): string {
-  return `${handle.toLowerCase().trim()}@${SYNTHETIC_EMAIL_DOMAIN}`;
+/** Response shape of POST /api/auth/signup and /api/auth/signin. */
+interface AuthResponse {
+  token: string;
+  account: Account;
 }
 
 /* ------------------------------------------------------------------ */
@@ -87,26 +63,9 @@ function syntheticEmail(handle: string): string {
 
 let accountCache: Account | null = null;
 
-/** Builds the public Account from a Supabase auth user (metadata first). */
-function accountFromUser(user: User): Account {
-  const metadata = user.user_metadata as Record<string, unknown>;
-  const metaHandle =
-    typeof metadata.handle === "string" ? metadata.handle : undefined;
-  const metaBirthdate =
-    typeof metadata.birthdate === "string" ? metadata.birthdate : undefined;
-  return {
-    id: user.id,
-    // Fallback: the local part of the synthetic email IS the handle.
-    username: metaHandle ?? user.email?.split("@")[0] ?? "",
-    birthdate: metaBirthdate ?? "",
-    createdAt: user.created_at,
-  };
-}
-
 /**
  * Replaces the cache and notifies listeners only when something actually
- * changed (onAuthStateChange also fires on token refreshes — those should
- * not re-render the app).
+ * changed (a no-op write must not re-render the app).
  */
 function setCache(next: Account | null): void {
   const prev = accountCache;
@@ -122,44 +81,8 @@ function setCache(next: Account | null): void {
   if (changed) notifyAuthChanged();
 }
 
-/**
- * Corrects the cache from the `profiles` table (the source of truth for
- * handle/birthdate) in the background. Runs after every cache write; the
- * sync getter never waits for it.
- */
-async function hydrateFromProfile(userId: string): Promise<void> {
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("handle, birthdate, created_at")
-      .eq("id", userId)
-      .maybeSingle();
-    if (error || !data) return;
-    // The user may have signed out / switched accounts while we waited.
-    if (accountCache?.id !== userId) return;
-    setCache({
-      id: userId,
-      username: data.handle ?? accountCache.username,
-      birthdate: data.birthdate ?? accountCache.birthdate,
-      createdAt: data.created_at ?? accountCache.createdAt,
-    });
-  } catch {
-    /* offline / RLS hiccup — metadata-derived cache stays, never fatal */
-  }
-}
-
-function applySession(session: Session | null): void {
-  const user = session?.user ?? null;
-  if (!user) {
-    setCache(null);
-    return;
-  }
-  setCache(accountFromUser(user));
-  void hydrateFromProfile(user.id);
-}
-
 /*
- * Auth-readiness gate. The initial getSession() restore is async, so a
+ * Auth-readiness gate. The initial /api/auth/me restore is async, so a
  * signed-in user's first synchronous getCurrentAccount() read is null —
  * without a gate, route guards briefly bounce them to /welcome before the
  * session lands. whenAuthReady() lets the app shell hold first render
@@ -175,23 +98,31 @@ export function whenAuthReady(): Promise<void> {
   return authReady;
 }
 
-/* Hydrate the cache once at module load (restores a persisted session). */
-void supabase.auth
-  .getSession()
-  .then(({ data }) => {
-    applySession(data.session);
-  })
-  .catch(() => {
-    /* offline — stay signed out locally; never block first render */
-  })
-  .finally(() => {
-    resolveAuthReady();
-  });
-
-/* Keep the cache fresh for the lifetime of the page. */
-supabase.auth.onAuthStateChange((_event, session) => {
-  applySession(session);
-});
+/*
+ * Hydrate the cache once at module load (restores a persisted session).
+ * Every path resolves the readiness gate:
+ *   - no token:            signed out, resolve immediately;
+ *   - 401:                 token is dead — clear it, stay signed out;
+ *   - network/other error: keep the token (next reload retries), stay
+ *                          signed out locally, still resolve.
+ */
+const bootToken = getToken();
+if (bootToken === null) {
+  resolveAuthReady();
+} else {
+  void apiFetch<{ account: Account }>("/auth/me", { auth: true })
+    .then((data) => {
+      if (data?.account) setCache(data.account);
+    })
+    .catch((error: unknown) => {
+      if ((error as { status?: number }).status === 401) {
+        clearToken();
+      }
+    })
+    .finally(() => {
+      resolveAuthReady();
+    });
+}
 
 /* ------------------------------------------------------------------ */
 /* Auth-change notification (lets the app shell react to sign-in/out)  */
@@ -213,47 +144,12 @@ export function onAuthChange(listener: () => void): () => void {
 }
 
 /* ------------------------------------------------------------------ */
-/* Error mapping                                                       */
-/* ------------------------------------------------------------------ */
-
-/**
- * Maps a signUp failure to a user-facing message.
- *
- * Handle collisions surface two ways:
- *   1. The deterministic pre-check in `signUp` (SELECT on profiles).
- *   2. A race against the case-insensitive unique index — the trigger
- *      raises and Supabase reports a database/unique error (GoTrue
- *      sanitizes trigger exceptions to "Database error saving new user",
- *      so matching is deliberately broad). The pre-check makes this path
- *      vanishingly rare; the mapping keeps it user-friendly.
- * Everything else passes Supabase's message through (those are written
- * for end users: weak password, rate limit, …) with a neutral fallback.
- */
-function mapSignUpError(error: AuthError): Error {
-  const text = `${error.code ?? ""} ${error.message}`.toLowerCase();
-  if (
-    text.includes("already") ||
-    text.includes("duplicate") ||
-    text.includes("unique") ||
-    text.includes("database error")
-  ) {
-    return new Error(HANDLE_TAKEN_ERROR);
-  }
-  if (text.includes("password")) {
-    return new Error(
-      `Passwords are at least ${PASSWORD_MIN_LENGTH} characters.`,
-    );
-  }
-  return new Error(error.message || "Sign-up failed — please try again.");
-}
-
-/* ------------------------------------------------------------------ */
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
 /**
  * The signed-in account, or `null`. SYNCHRONOUS — reads the in-memory
- * cache hydrated at module init and maintained via onAuthStateChange.
+ * cache hydrated at module init and maintained by signUp/signIn/signOut.
  * Never throws.
  */
 export function getCurrentAccount(): Account | null {
@@ -263,14 +159,11 @@ export function getCurrentAccount(): Account | null {
 /**
  * Creates an account and signs in. Rejects (throws Error) with a
  * human-readable message when:
- *   - the username fails validation or is taken (case-insensitive),
- *   - the password is shorter than PASSWORD_MIN_LENGTH,
- *   - the birthdate is not an ISO date (21+ gate ran upstream).
- *
- * The DB trigger on auth.users creates the matching `profiles` row from
- * the metadata passed here. When the Supabase project has email
- * confirmation enabled, signUp returns no session — in that case we fall
- * back to one direct password sign-in.
+ *   - the username fails validation (client-side),
+ *   - the password is shorter than PASSWORD_MIN_LENGTH (client-side),
+ *   - the birthdate is not an ISO date (21+ gate ran upstream),
+ *   - the handle is taken — the server's "That handle is taken." passes
+ *     through verbatim.
  */
 export async function signUp(input: SignUpInput): Promise<Account> {
   const username = input.username.trim();
@@ -287,89 +180,62 @@ export async function signUp(input: SignUpInput): Promise<Account> {
     throw new Error("A valid birthdate is required.");
   }
 
-  const handle = username.toLowerCase();
-  const email = syntheticEmail(handle);
-
-  // Deterministic taken-handle check (profiles are world-readable per
-  // RLS). The unique index on lower(handle) remains the real guard.
-  const { data: existing } = await supabase
-    .from("profiles")
-    .select("id")
-    .ilike("handle", handle)
-    .maybeSingle();
-  if (existing) {
-    throw new Error(HANDLE_TAKEN_ERROR);
-  }
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password: input.password,
-    options: { data: { handle, birthdate: input.birthdate } },
+  const data = await apiFetch<AuthResponse>("/auth/signup", {
+    method: "POST",
+    body: {
+      handle: username.toLowerCase(),
+      password: input.password,
+      birthdate: input.birthdate,
+    },
   });
-  if (error) {
-    throw mapSignUpError(error);
-  }
-
-  let session = data.session;
-  let user = data.user;
-
-  // Email-confirmation configs return no session — try signing in once.
-  if (!session) {
-    const { data: fallback, error: fallbackError } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password: input.password,
-      });
-    if (fallbackError || !fallback.session) {
-      throw new Error(
-        "Account created — please confirm it, then sign in.",
-      );
-    }
-    session = fallback.session;
-    user = fallback.user;
-  }
-
-  if (!user) {
+  if (!data?.token || !data.account) {
     throw new Error("Sign-up failed — please try again.");
   }
-
-  const account = accountFromUser(user);
-  setCache(account);
-  void hydrateFromProfile(user.id);
-  return account;
+  // Token first: the auth-change notification triggered by setCache makes
+  // data.ts hydrate the account's sessions, and that fetch needs the
+  // token to already be in storage.
+  setToken(data.token);
+  setCache(data.account);
+  return data.account;
 }
 
 /**
- * Signs in with handle + password. Rejects with a single generic message
- * for both unknown handles and wrong passwords — never reveal which one
- * failed.
+ * Signs in with handle + password. The server answers unknown handles and
+ * wrong passwords with one generic 401 ("Incorrect handle or password.")
+ * — it passes through verbatim so we never reveal which one failed.
  */
 export async function signIn(
   username: string,
   password: string,
 ): Promise<Account> {
-  const email = syntheticEmail(username);
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  const data = await apiFetch<AuthResponse>("/auth/signin", {
+    method: "POST",
+    body: { handle: username.toLowerCase().trim(), password },
   });
-  if (error || !data.session || !data.user) {
-    throw new Error(GENERIC_CREDENTIAL_ERROR);
+  if (!data?.token || !data.account) {
+    throw new Error("Sign-in failed — please try again.");
   }
-  const account = accountFromUser(data.user);
-  setCache(account);
-  void hydrateFromProfile(data.user.id);
-  return account;
+  setToken(data.token);
+  setCache(data.account);
+  return data.account;
 }
 
 /**
  * Signs out the current account (no-op when already signed out). Clears
- * the local cache synchronously so the UI reacts immediately; the remote
- * Supabase sign-out (which also fires onAuthStateChange) is best-effort.
+ * the local cache + token synchronously so the UI reacts immediately; the
+ * server-side token revocation is fire-and-forget (a stranded token
+ * simply expires).
  */
 export function signOut(): void {
+  if (getToken() !== null) {
+    // apiFetch reads the token synchronously at call time, so the request
+    // still carries it even though local state is cleared right after.
+    void apiFetch("/auth/signout", { method: "POST", auth: true }).catch(
+      () => {
+        /* network hiccup — local sign-out already happened, never fatal */
+      },
+    );
+  }
+  clearToken();
   setCache(null);
-  void supabase.auth.signOut().catch(() => {
-    /* network hiccup — local sign-out already happened, never fatal */
-  });
 }

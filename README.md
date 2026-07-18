@@ -1,73 +1,35 @@
-# React + TypeScript + Vite
+# vaporlog
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Session journal for vaporization lovers: log every session with strain,
+device, temperature, duration, flavors, effects and rating; keep a private
+diary; publish sessions to a public community feed; get strain
+recommendations from your own taste.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend** — React 19 + Vite + TypeScript + Tailwind (`src/`)
+- **Backend** — Fastify + PostgreSQL (`server/`)
+- **Deploy** — Docker Compose (nginx + api + db). See **[DEPLOY.md](DEPLOY.md)**
+  (en español) for the full VPS guide.
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# 1. Database (any local Postgres works; easiest is Docker):
+docker run -d --name vaporlog-db -p 5432:5432 \
+  -e POSTGRES_USER=vaporlog -e POSTGRES_DB=vaporlog \
+  -e POSTGRES_PASSWORD=dev postgres:17-alpine
 
-## Expanding the ESLint configuration
+# 2. API
+cd server && npm install
+DATABASE_URL=postgres://vaporlog:dev@localhost:5432/vaporlog npm start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 3. Frontend (proxies /api → localhost:4000 automatically)
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Production
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Everything runs in Docker Compose on your own VPS — no third-party
+services. Follow **[DEPLOY.md](DEPLOY.md)** step by step.

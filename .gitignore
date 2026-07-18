@@ -3,5 +3,6 @@ dist/
 dist-verify*/
 *.tsbuildinfo
 .DS_Store
+.env
 .env.local
 .env.*.local

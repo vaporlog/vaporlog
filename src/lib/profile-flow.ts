@@ -11,12 +11,12 @@
 /** Minimum age required by the age gate (spec decision 5). */
 export const MIN_AGE = 21;
 
-/** Pseudonym constraints: 3–20 chars, letters / numbers / dashes only. */
+/** Pseudonym constraints: 3–20 chars, letters / numbers / dashes / underscores. */
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 20;
 
 const BIRTHDATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const USERNAME_PATTERN = /^[A-Za-z0-9-]+$/;
+const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export interface BirthdateParts {
   year: number;
@@ -114,7 +114,7 @@ export function validateUsername(username: string): UsernameValidation {
     return { valid: false, error: `${USERNAME_MAX_LENGTH} characters is the max.` };
   }
   if (!USERNAME_PATTERN.test(value)) {
-    return { valid: false, error: "Letters, numbers and dashes only." };
+    return { valid: false, error: "Letters, numbers, dashes and underscores only." };
   }
   return { valid: true, error: null };
 }

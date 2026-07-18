@@ -1,0 +1,21 @@
+# Dependencies are installed inside the image with npm ci
+node_modules
+server/node_modules
+
+# Local build output — the image builds its own dist/
+dist
+dist-verify*
+*.tsbuildinfo
+
+# Secrets and local env files must never enter an image
+.env
+.env.*
+
+# VCS metadata
+.git
+.gitignore
+
+# Local docs / editor cruft
+Dockerfile
+docker-compose.yml
+.dockerignore

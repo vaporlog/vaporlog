@@ -17,7 +17,8 @@
  *                               Rollup tree-shakes the whole JSON module out
  *                               of production builds; see COMMUNITY_SESSIONS)
  *   - Controlled vocabularies:  src/data/vocab.json (static import)
- *   - Personal diary entries:   Supabase `sessions` table (cloud), mirrored
+ *   - Personal diary entries:   the self-hosted API (GET/POST/PATCH/DELETE
+ *                               /api/sessions*, Node + Postgres), mirrored
  *                               into in-memory caches so the sync getters
  *                               below keep working; reactive access via
  *                               useMySessions() / usePublicSessions().
@@ -26,12 +27,13 @@
  *                               exactly once per user and uploaded to the
  *                               cloud on first sign-in — see
  *                               migrateLegacySessions().
- *   - Accounts/session:         lib/auth.ts (Supabase Auth)
+ *   - Accounts/session:         lib/auth.ts (token auth via lib/api.ts)
  *   - Legacy local profile:     localStorage["vaporlog.profile"]
  *
  * Privacy rule (spec decision 5): personal sessions are private by
- * default; only `is_public` rows are visible to other users, enforced
- * server-side by row-level security (see supabase/schema.sql).
+ * default; only sessions flagged isPublic are visible to other users,
+ * enforced server-side by the API (ownership checks + public-only
+ * queries).
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import seed from "@/data/seed.json";
@@ -39,7 +41,7 @@ import demoSessions from "@/data/demo-sessions.json";
 import vocab from "@/data/vocab.json";
 import { getCurrentAccount, onAuthChange } from "@/lib/auth";
 import type { Account } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api";
 import type {
   DemoSessionsData,
   Device,
@@ -249,91 +251,14 @@ export function getCommunitySessions(): SessionLog[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Cloud session rows (snake_case ↔ SessionLog mapping)                */
+/* Session ordering                                                    */
 /* ------------------------------------------------------------------ */
 
 /**
- * Shape of one row in the Supabase `sessions` table (see
- * supabase/schema.sql). The column set mirrors SessionLog one-to-one in
- * snake_case — including amount_g / moods / activities — plus user_id
- * (ownership) and a denormalized `author` handle maintained by a DB
- * trigger. created_at doubles as SessionLog.createdAt (sent explicitly
- * on write so migrated legacy sessions keep their original dates).
+ * The API speaks the SessionLog shape directly (camelCase both ways), so
+ * no row mapping lives here anymore — the only client-side transform is
+ * ordering: newest first, by createdAt.
  */
-interface SessionRow {
-  id: string;
-  user_id: string;
-  strain_slug: string;
-  device_slug: string;
-  temperature_c: number | null;
-  duration_min: number | null;
-  amount_g: number | null;
-  rating: number;
-  aromas: string[] | null;
-  flavors: string[] | null;
-  moods: string[] | null;
-  activities: string[] | null;
-  notes: string | null;
-  is_public: boolean;
-  author: string | null;
-  created_at: string;
-}
-
-/** PostgREST embed of the author profile: object (many-to-one) or array. */
-type ProfileEmbed = { handle: string } | { handle: string }[] | null;
-
-type PublicSessionRow = SessionRow & { profiles: ProfileEmbed };
-
-function embeddedHandle(embed: ProfileEmbed): string | null {
-  if (!embed) return null;
-  if (Array.isArray(embed)) return embed[0]?.handle ?? null;
-  return typeof embed.handle === "string" ? embed.handle : null;
-}
-
-/** Maps a cloud row to the app shape; `authorFallback` is the handle. */
-function rowToSession(row: SessionRow, authorFallback: string): SessionLog {
-  return {
-    id: row.id,
-    strainSlug: row.strain_slug,
-    deviceSlug: row.device_slug,
-    temperatureC: row.temperature_c,
-    durationMin: row.duration_min,
-    amountG: row.amount_g,
-    rating: row.rating,
-    aromas: row.aromas ?? [],
-    flavors: row.flavors ?? [],
-    moods: row.moods ?? [],
-    activities: row.activities ?? [],
-    notes: row.notes ?? "",
-    isPublic: row.is_public,
-    author: authorFallback,
-    createdAt: row.created_at,
-  };
-}
-
-/** Maps a session to a cloud row for insert/upsert. */
-function sessionToRow(
-  session: SessionLog,
-  userId: string,
-): Record<string, unknown> {
-  return {
-    id: session.id,
-    user_id: userId,
-    strain_slug: session.strainSlug,
-    device_slug: session.deviceSlug,
-    temperature_c: session.temperatureC,
-    duration_min: session.durationMin,
-    amount_g: session.amountG,
-    rating: session.rating,
-    aromas: session.aromas,
-    flavors: session.flavors,
-    moods: session.moods,
-    activities: session.activities,
-    notes: session.notes,
-    is_public: session.isPublic,
-    created_at: session.createdAt,
-  };
-}
 
 /** Newest-first comparator (createdAt desc) used for both caches. */
 function newestFirst(a: SessionLog, b: SessionLog): number {
@@ -345,7 +270,7 @@ function newestFirst(a: SessionLog, b: SessionLog): number {
 /* ------------------------------------------------------------------ */
 
 /**
- * Sessions live in Supabase; these module-level caches mirror them so the
+ * Sessions live on the API; these module-level caches mirror them so the
  * synchronous getters (getMySessions / getAllPublicSessions /
  * getPublicSession) keep their pre-cloud signatures. Hydration triggers:
  *   - module boot:      public sessions are fetched (always, signed in
@@ -459,10 +384,11 @@ let myHydrateToken = 0;
 let publicFetchToken = 0;
 
 /**
- * Fetches every cloud session owned by `account` into the personal cache.
- * Runs the legacy localStorage → cloud migration first so freshly
- * uploaded rows are included. Safe to call repeatedly; a stale response
- * (sign-out or newer hydration while in flight) is discarded.
+ * Fetches every session owned by the signed-in account (GET
+ * /api/sessions/mine) into the personal cache. Runs the legacy
+ * localStorage → cloud migration first so freshly uploaded rows are
+ * included. Safe to call repeatedly; a stale response (sign-out or newer
+ * hydration while in flight) is discarded.
  */
 async function hydrateMySessions(account: Account): Promise<void> {
   const token = ++myHydrateToken;
@@ -473,42 +399,35 @@ async function hydrateMySessions(account: Account): Promise<void> {
     // Not fatal: the flag stays unset and the next sign-in retries.
     console.warn("vaporlog: legacy session migration failed; will retry on next sign-in.", error);
   }
-  const { data, error } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("user_id", account.id)
-    .order("created_at", { ascending: false });
-  if (token !== myHydrateToken) return; // signed out / re-hydrated in flight
-  if (error) {
+  try {
+    const data = await apiFetch<{ sessions: SessionLog[] }>(
+      "/sessions/mine",
+      { auth: true },
+    );
+    if (token !== myHydrateToken) return; // signed out / re-hydrated in flight
+    setMyCache((data?.sessions ?? []).slice().sort(newestFirst), false);
+  } catch (error) {
+    if (token !== myHydrateToken) return;
     console.warn("vaporlog: could not load your sessions.", error);
     setMyCache([], false);
     return;
   }
-  const rows = (data ?? []) as SessionRow[];
-  setMyCache(rows.map((row) => rowToSession(row, account.username)), false);
   // The migration may have published rows — refresh the public feed.
   void refreshPublicSessions();
 }
 
-/** Fetches all public cloud sessions (plus author handles) into the cache. */
+/** Fetches all public sessions (GET /api/sessions/public) into the cache. */
 async function refreshPublicSessions(): Promise<void> {
   const token = ++publicFetchToken;
-  const { data, error } = await supabase
-    .from("sessions")
-    .select("*, profiles(handle)")
-    .eq("is_public", true)
-    .order("created_at", { ascending: false });
-  if (token !== publicFetchToken) return;
-  if (error) {
+  try {
+    const data = await apiFetch<{ sessions: SessionLog[] }>("/sessions/public");
+    if (token !== publicFetchToken) return;
+    setPublicCloudCache((data?.sessions ?? []).slice().sort(newestFirst), true);
+  } catch (error) {
+    if (token !== publicFetchToken) return;
     console.warn("vaporlog: could not load public sessions.", error);
     if (!publicReady) setPublicCloudCache(publicCloudCache, true);
-    return;
   }
-  const rows = (data ?? []) as PublicSessionRow[];
-  setPublicCloudCache(
-    rows.map((row) => rowToSession(row, embeddedHandle(row.profiles) ?? "anonymous")),
-    true,
-  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -587,17 +506,21 @@ async function migrateLegacySessions(account: Account): Promise<void> {
   }
 
   if (byId.size > 0) {
-    const rows = Array.from(byId.values()).map((session) =>
-      sessionToRow(
-        // The sessions PK is a uuid — regenerate ids that are not.
-        UUID_RE.test(session.id)
-          ? session
-          : { ...session, id: crypto.randomUUID() },
-        account.id,
-      ),
-    );
-    const { error } = await supabase.from("sessions").upsert(rows);
-    if (error) throw error;
+    // Upload through the same POST /api/sessions upsert path as regular
+    // saves, preserving ids + createdAt (the server PK is a uuid —
+    // regenerate ids that are not). Sequential on purpose: any failure
+    // throws, the completion flag stays unset, and the next sign-in
+    // retries (upserts on preserved ids keep retries idempotent).
+    for (const session of byId.values()) {
+      const upload = UUID_RE.test(session.id)
+        ? session
+        : { ...session, id: crypto.randomUUID() };
+      await apiFetch("/sessions", {
+        method: "POST",
+        body: upload,
+        auth: true,
+      });
+    }
   }
 
   try {
@@ -651,10 +574,11 @@ export async function saveSession(log: SessionLog): Promise<SessionLog> {
   );
   if (stored.isPublic) upsertPublicCache(stored);
   try {
-    const { error } = await supabase
-      .from("sessions")
-      .upsert(sessionToRow(stored, account.id));
-    if (error) throw error;
+    await apiFetch<{ session: SessionLog }>("/sessions", {
+      method: "POST",
+      body: stored,
+      auth: true,
+    });
   } catch (error) {
     restoreCaches(snapshot);
     throw error;
@@ -681,12 +605,10 @@ export async function deleteSession(id: string): Promise<void> {
     publicReady,
   );
   try {
-    const { error } = await supabase
-      .from("sessions")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", account.id);
-    if (error) throw error;
+    await apiFetch(`/sessions/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      auth: true,
+    });
   } catch (error) {
     restoreCaches(snapshot);
     throw error;
@@ -723,12 +645,14 @@ export async function toggleSessionPublic(
     );
   }
   try {
-    const { error } = await supabase
-      .from("sessions")
-      .update({ is_public: updated.isPublic })
-      .eq("id", id)
-      .eq("user_id", account.id);
-    if (error) throw error;
+    await apiFetch<{ session: SessionLog }>(
+      `/sessions/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        body: { isPublic: updated.isPublic },
+        auth: true,
+      },
+    );
   } catch (error) {
     restoreCaches(snapshot);
     throw error;
