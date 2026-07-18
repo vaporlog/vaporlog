@@ -100,9 +100,9 @@ export default function AppLayout() {
                 <Menu aria-hidden="true" className="size-5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => navigate("/diary")}>
-                  Diary
-                </DropdownMenuItem>
+                {/* Diary lives behind the wordmark for signed-in users
+                    ("/" → /diary), so the mobile menu only carries the
+                    two destinations the logo doesn't cover. */}
                 <DropdownMenuItem onSelect={() => navigate("/strains")}>
                   Strains
                 </DropdownMenuItem>
