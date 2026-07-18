@@ -51,5 +51,17 @@
     "error": "Couldn't update that session",
     "errorDescription": "Check your connection and try again."
   },
+  "delete": {
+    "button": "Delete session",
+    "ariaLabel": "Delete the “{{strain}}” session",
+    "confirmTitle": "Delete this session?",
+    "confirmBody": "This can't be undone. The session will be permanently removed from your journal.",
+    "confirmAction": "Yes, delete it",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "success": "Session deleted.",
+    "error": "Couldn't delete that session",
+    "errorDescription": "Check your connection and try again."
+  },
   "unknownDate": "Unknown date"
 }

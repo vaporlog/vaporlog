@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Compass } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { useMySessions, usePublicSessions, useStrains } from "@/lib/data";
 import { displayStrainName } from "@/components/session-card/display";
+import DeleteSessionButton from "@/components/DeleteSessionButton";
 import LearnBlock from "@/components/session-card/LearnBlock";
 import PublicSessionCard from "@/components/session-card/PublicSessionCard";
 import ShareRow from "@/components/session-card/ShareRow";
@@ -63,6 +64,7 @@ function SessionNotFound() {
 export default function SessionCard() {
   const { t } = useTranslation("sessionCard");
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   // Await the lazy catalog so the card's strain name/type resolve to the
   // real catalog entry (display.ts falls back to a humanized slug in the
   // meantime; this hook re-renders the page once the catalog lands).
@@ -101,6 +103,11 @@ export default function SessionCard() {
 
   // Found via the owner's own list → private card, visible only to them.
   const isPrivateView = !session.isPublic;
+  // Owner check for destructive actions: the session resolves through the
+  // signed-in user's own list (private or public). Everyone else — and
+  // signed-out visitors — never sees the delete affordance; the API
+  // enforces the same ownership rule server-side.
+  const isOwner = mySessions.some((s) => s.id === session.id);
   const strainName = displayStrainName(session.strainSlug);
 
   return (
@@ -121,6 +128,18 @@ export default function SessionCard() {
         >
           {t("privateNote")}
         </p>
+      ) : null}
+
+      {/* Owner only: delete the session (with confirmation), then head
+          back to the diary. */}
+      {isOwner ? (
+        <div className="vl-enter" style={{ animationDelay: "70ms" }}>
+          <DeleteSessionButton
+            sessionId={session.id}
+            strainName={strainName}
+            onDeleted={() => navigate("/diary")}
+          />
+        </div>
       ) : null}
 
       {/* 2 · LEARN BLOCK — what this temperature means, for beginners */}

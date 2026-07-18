@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import DeleteSessionButton from "@/components/DeleteSessionButton";
 import type { SessionLog } from "@/lib/types";
 import {
   displayDeviceName,
@@ -116,14 +117,24 @@ export function DiarySessionCard({
               {session.isPublic ? t("card.viewPublicCard") : t("card.viewCard")}
             </Link>
           </div>
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="pressable -mr-2 text-muted-foreground"
-          >
-            <Link to={logAgainTo}>{t("card.logAgain")}</Link>
-          </Button>
+          <div className="flex items-center">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="pressable -mr-2 text-muted-foreground"
+            >
+              <Link to={logAgainTo}>{t("card.logAgain")}</Link>
+            </Button>
+            {/* Destructive, quiet: trash icon with a confirm dialog; the
+                data layer drops the session from the cache, so the list
+                updates in place without a reload. */}
+            <DeleteSessionButton
+              sessionId={session.id}
+              strainName={strainName}
+              variant="icon"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

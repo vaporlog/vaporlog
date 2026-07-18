@@ -51,5 +51,17 @@
     "error": "No se pudo actualizar esa sesión",
     "errorDescription": "Revisa tu conexión e inténtalo de nuevo."
   },
+  "delete": {
+    "button": "Eliminar sesión",
+    "ariaLabel": "Eliminar la sesión de “{{strain}}”",
+    "confirmTitle": "¿Eliminar esta sesión?",
+    "confirmBody": "No se puede deshacer. La sesión desaparecerá de tu diario para siempre.",
+    "confirmAction": "Sí, eliminar",
+    "cancel": "Cancelar",
+    "deleting": "Eliminando…",
+    "success": "Sesión eliminada.",
+    "error": "No se pudo eliminar esa sesión",
+    "errorDescription": "Revisa tu conexión e inténtalo de nuevo."
+  },
   "unknownDate": "Fecha desconocida"
 }
