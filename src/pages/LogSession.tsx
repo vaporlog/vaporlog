@@ -16,17 +16,49 @@ import TemperatureSlider from "@/components/log/TemperatureSlider";
 import ChipGroup from "@/components/log/ChipGroup";
 import RatingScale from "@/components/log/RatingScale";
 import {
+  addPersonalVocab,
   clearDraft,
   EMPTY_DRAFT,
   getPersonalDevices,
   getPersonalStrains,
+  getPersonalVocab,
   loadDraft,
   saveDraft,
   type LogDraft,
+  type VocabCategory,
 } from "@/components/log/personal";
 
 function toggleInList(list: string[], tag: string): string[] {
   return list.includes(tag) ? list.filter((t) => t !== tag) : [...list, tag];
+}
+
+/**
+ * Controlled vocab + personal tags as one option list. Personal entries
+ * that collide case-insensitively with a controlled tag are dropped so a
+ * chip never renders twice.
+ */
+function mergeVocabOptions(
+  vocabList: string[],
+  personalList: string[],
+): string[] {
+  const vocabLower = new Set(vocabList.map((t) => t.toLowerCase()));
+  return [
+    ...vocabList,
+    ...personalList.filter((t) => !vocabLower.has(t.toLowerCase())),
+  ];
+}
+
+/**
+ * Drops draft custom tags already covered by the merged options — an old
+ * restored draft can carry a custom tag that has since landed in the
+ * personal vocabulary, and it must not render twice.
+ */
+function visibleCustomTags(
+  custom: string[],
+  mergedOptions: string[],
+): string[] {
+  const optionLower = new Set(mergedOptions.map((t) => t.toLowerCase()));
+  return custom.filter((t) => !optionLower.has(t.toLowerCase()));
 }
 
 /**
@@ -92,6 +124,18 @@ export default function LogSession() {
     initial.pendingDevice,
   );
 
+  // Per-account personal Experience tags, mirrored in state so adding one
+  // refreshes the chip options in this render — addPersonalVocab persists
+  // them for future sessions.
+  const [personalVocab, setPersonalVocab] = useState<
+    Record<VocabCategory, string[]>
+  >(() => ({
+    aromas: getPersonalVocab("aromas"),
+    flavors: getPersonalVocab("flavors"),
+    moods: getPersonalVocab("moods"),
+    activities: getPersonalVocab("activities"),
+  }));
+
   // Resolve a ?strain= prefill that the sync cache could not verify yet.
   // Never clobbers a strain the user picked (or typed a draft for) meanwhile.
   useEffect(() => {
@@ -149,6 +193,20 @@ export default function LogSession() {
     setDraft((d) => ({ ...d, [key]: value }));
   }
 
+  /**
+   * Persists a custom Experience tag into the per-account personal
+   * vocabulary and refreshes the local mirror so the chip options pick it
+   * up in this render — and in every future session.
+   */
+  function rememberCustomTag(category: VocabCategory, tag: string) {
+    addPersonalVocab(category, tag);
+    setPersonalVocab((prev) =>
+      prev[category].some((t) => t.toLowerCase() === tag.toLowerCase())
+        ? prev
+        : { ...prev, [category]: [...prev[category], tag] },
+    );
+  }
+
   const missingStrain = triedSave && !draft.strainSlug;
   const missingDevice = triedSave && !draft.deviceSlug;
   const missingRating = triedSave && draft.rating === null;
@@ -171,6 +229,16 @@ export default function LogSession() {
       null
     );
   }, [draft.deviceSlug, devices]);
+
+  // Chip options: controlled vocab first, personal tags after (deduped
+  // case-insensitively against the controlled vocab).
+  const aromaOptions = mergeVocabOptions(vocab.aromas, personalVocab.aromas);
+  const flavorOptions = mergeVocabOptions(vocab.flavors, personalVocab.flavors);
+  const moodOptions = mergeVocabOptions(vocab.moods, personalVocab.moods);
+  const activityOptions = mergeVocabOptions(
+    vocab.activities,
+    personalVocab.activities,
+  );
 
   async function handleSave() {
     if (saving) return;
@@ -329,70 +397,77 @@ export default function LogSession() {
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-medium">Aromas</h3>
               <ChipGroup
-                options={vocab.aromas}
+                options={aromaOptions}
                 selected={draft.aromas}
-                custom={draft.customAromas}
+                custom={visibleCustomTags(draft.customAromas, aromaOptions)}
                 onToggle={(t) => update("aromas", toggleInList(draft.aromas, t))}
-                onAddCustom={(t) =>
+                onAddCustom={(t) => {
+                  rememberCustomTag("aromas", t);
                   setDraft((d) => ({
                     ...d,
                     customAromas: [...d.customAromas, t],
                     aromas: [...d.aromas, t],
-                  }))
-                }
+                  }));
+                }}
                 addLabel="Add your own aroma"
               />
             </div>
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-medium">Flavors</h3>
               <ChipGroup
-                options={vocab.flavors}
+                options={flavorOptions}
                 selected={draft.flavors}
-                custom={draft.customFlavors}
+                custom={visibleCustomTags(draft.customFlavors, flavorOptions)}
                 onToggle={(t) => update("flavors", toggleInList(draft.flavors, t))}
-                onAddCustom={(t) =>
+                onAddCustom={(t) => {
+                  rememberCustomTag("flavors", t);
                   setDraft((d) => ({
                     ...d,
                     customFlavors: [...d.customFlavors, t],
                     flavors: [...d.flavors, t],
-                  }))
-                }
+                  }));
+                }}
                 addLabel="Add your own flavor"
               />
             </div>
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-medium">Mood</h3>
               <ChipGroup
-                options={vocab.moods}
+                options={moodOptions}
                 selected={draft.moods}
-                custom={draft.customMoods}
+                custom={visibleCustomTags(draft.customMoods, moodOptions)}
                 onToggle={(t) => update("moods", toggleInList(draft.moods, t))}
-                onAddCustom={(t) =>
+                onAddCustom={(t) => {
+                  rememberCustomTag("moods", t);
                   setDraft((d) => ({
                     ...d,
                     customMoods: [...d.customMoods, t],
                     moods: [...d.moods, t],
-                  }))
-                }
+                  }));
+                }}
                 addLabel="Add your own mood"
               />
             </div>
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-medium">Activities</h3>
               <ChipGroup
-                options={vocab.activities}
+                options={activityOptions}
                 selected={draft.activities}
-                custom={draft.customActivities}
+                custom={visibleCustomTags(
+                  draft.customActivities,
+                  activityOptions,
+                )}
                 onToggle={(t) =>
                   update("activities", toggleInList(draft.activities, t))
                 }
-                onAddCustom={(t) =>
+                onAddCustom={(t) => {
+                  rememberCustomTag("activities", t);
                   setDraft((d) => ({
                     ...d,
                     customActivities: [...d.customActivities, t],
                     activities: [...d.activities, t],
-                  }))
-                }
+                  }));
+                }}
                 addLabel="Add your own activity"
               />
             </div>

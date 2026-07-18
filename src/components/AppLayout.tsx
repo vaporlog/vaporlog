@@ -45,6 +45,13 @@ export default function AppLayout() {
     setAccount(getCurrentAccount());
   }, [location.pathname]);
 
+  // Scroll back to the top on every route change — react-router does not
+  // restore scroll position by itself. 'instant' avoids a visible scroll
+  // animation when swapping pages.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [location.pathname]);
+
   // And immediately on explicit sign-in / sign-out events.
   useEffect(() => onAuthChange(() => setAccount(getCurrentAccount())), []);
 

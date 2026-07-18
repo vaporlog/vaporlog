@@ -18,6 +18,13 @@
  */
 import { apiFetch, clearToken, getToken, setToken } from "@/lib/api";
 import { validateUsername } from "@/lib/profile-flow";
+// personal.ts imports getCurrentAccount from this module; this import only
+// reads top-level string constants (inside signUp), so the cycle is inert.
+import {
+  MY_DEVICES_KEY,
+  MY_STRAINS_KEY,
+  MY_VOCAB_KEY,
+} from "@/components/log/personal";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -144,6 +151,34 @@ export function onAuthChange(listener: () => void): () => void {
 }
 
 /* ------------------------------------------------------------------ */
+/* Legacy localStorage migration (anonymous personal data → account)   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Moves the anonymous (pre-auth) personal keys — "vaporlog.mystrains",
+ * "vaporlog.mydevices", "vaporlog.myvocab" — under the freshly created
+ * account's id, so anything logged before sign-up follows the user into
+ * their account. Best-effort: a storage failure must never break sign-up.
+ */
+function migrateAnonymousPersonalKeys(accountId: string): void {
+  try {
+    for (const baseKey of [MY_STRAINS_KEY, MY_DEVICES_KEY, MY_VOCAB_KEY]) {
+      const legacy = localStorage.getItem(baseKey);
+      if (legacy === null) continue;
+      const accountKey = `${baseKey}.${accountId}`;
+      // Never clobber data already stored under the account (impossible for
+      // a brand-new uuid, but cheap to guarantee).
+      if (localStorage.getItem(accountKey) === null) {
+        localStorage.setItem(accountKey, legacy);
+      }
+      localStorage.removeItem(baseKey);
+    }
+  } catch {
+    /* storage unavailable — the anonymous data stays put, sign-up proceeds */
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -193,7 +228,10 @@ export async function signUp(input: SignUpInput): Promise<Account> {
   }
   // Token first: the auth-change notification triggered by setCache makes
   // data.ts hydrate the account's sessions, and that fetch needs the
-  // token to already be in storage.
+  // token to already be in storage. The legacy-key migration runs before
+  // both: after setCache, personal.ts reads the per-account keys, so the
+  // anonymous data must already be there.
+  migrateAnonymousPersonalKeys(data.account.id);
   setToken(data.token);
   setCache(data.account);
   return data.account;

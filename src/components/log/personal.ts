@@ -10,6 +10,7 @@
  * see lib/auth.ts):
  *   - vaporlog.mystrains[.<accountId>]  PersonalStrain[]
  *   - vaporlog.mydevices[.<accountId>]  PersonalDevice[]
+ *   - vaporlog.myvocab[.<accountId>]    Record<VocabCategory, string[]>
  *   - vaporlog.draft                    LogDraft (autosaved on every change)
  */
 import { getCurrentAccount } from "@/lib/auth";
@@ -18,6 +19,7 @@ import type { Device, Strain } from "@/lib/types";
 /** Legacy (pre-auth) base keys — anonymous fallback + migration source. */
 export const MY_STRAINS_KEY = "vaporlog.mystrains";
 export const MY_DEVICES_KEY = "vaporlog.mydevices";
+export const MY_VOCAB_KEY = "vaporlog.myvocab";
 export const DRAFT_KEY = "vaporlog.draft";
 
 /** Storage key for the CURRENT account's personal strains. */
@@ -30,6 +32,12 @@ function myStrainsKey(): string {
 function myDevicesKey(): string {
   const account = getCurrentAccount();
   return account ? `${MY_DEVICES_KEY}.${account.id}` : MY_DEVICES_KEY;
+}
+
+/** Storage key for the CURRENT account's personal vocabulary. */
+function myVocabKey(): string {
+  const account = getCurrentAccount();
+  return account ? `${MY_VOCAB_KEY}.${account.id}` : MY_VOCAB_KEY;
 }
 
 /** Personal strains only collect a name + optional type (spec: "Can't find it? Add yours"). */
@@ -159,6 +167,82 @@ export function addPersonalDevice(name: string): PersonalDevice {
   if (existing) return existing;
   writeList(myDevicesKey(), [...list, entry]);
   return entry;
+}
+
+/* ------------------------------------------------------------------ */
+/* Personal vocabulary (custom Experience tags, per account)           */
+/* ------------------------------------------------------------------ */
+
+/** The four Experience tag lists that accept personal entries. */
+export type VocabCategory = "aromas" | "flavors" | "moods" | "activities";
+
+const VOCAB_CATEGORIES: VocabCategory[] = [
+  "aromas",
+  "flavors",
+  "moods",
+  "activities",
+];
+
+/** Persisted shape of the personal vocabulary store. */
+type PersonalVocabStore = Record<VocabCategory, string[]>;
+
+const EMPTY_PERSONAL_VOCAB: PersonalVocabStore = {
+  aromas: [],
+  flavors: [],
+  moods: [],
+  activities: [],
+};
+
+/** Reads the whole personal vocabulary store. Never throws. */
+function readVocabStore(): PersonalVocabStore {
+  try {
+    const raw = localStorage.getItem(myVocabKey());
+    if (!raw) return { ...EMPTY_PERSONAL_VOCAB };
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) {
+      return { ...EMPTY_PERSONAL_VOCAB };
+    }
+    // Normalize per category so a partially corrupt store stays usable.
+    const store = { ...EMPTY_PERSONAL_VOCAB };
+    for (const category of VOCAB_CATEGORIES) {
+      const list = (parsed as Record<string, unknown>)[category];
+      store[category] = Array.isArray(list)
+        ? list.filter((t): t is string => typeof t === "string")
+        : [];
+    }
+    return store;
+  } catch {
+    return { ...EMPTY_PERSONAL_VOCAB };
+  }
+}
+
+function writeVocabStore(store: PersonalVocabStore): void {
+  try {
+    localStorage.setItem(myVocabKey(), JSON.stringify(store));
+  } catch {
+    /* storage full / private mode — the picker still works in-memory */
+  }
+}
+
+/** Personal tags of one Experience category. Never throws. */
+export function getPersonalVocab(category: VocabCategory): string[] {
+  return readVocabStore()[category];
+}
+
+/**
+ * Adds a personal tag to one Experience category, deduped
+ * case-insensitively against the stored tags. Never throws.
+ */
+export function addPersonalVocab(category: VocabCategory, tag: string): void {
+  const trimmed = tag.trim();
+  if (!trimmed) return;
+  const store = readVocabStore();
+  if (
+    store[category].some((t) => t.toLowerCase() === trimmed.toLowerCase())
+  ) {
+    return;
+  }
+  writeVocabStore({ ...store, [category]: [...store[category], trimmed] });
 }
 
 /**

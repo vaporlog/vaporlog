@@ -36,12 +36,17 @@ const Feed = lazy(() => import("@/pages/Feed"));
  */
 /**
  * Router basename: on GitHub Pages the app is served from the /vaporlog/
- * repo subpath (build:pages passes --base=/vaporlog/). The default build
- * uses the relative base './', which means "served from root" — no
- * basename — so local dev and preview stay rootless.
+ * repo subpath (build:pages passes --base=/vaporlog/), so that subpath
+ * becomes the router basename. The default build now uses the absolute
+ * base '/' (served from the domain root): BASE_URL is '/', which must NOT
+ * become basename '' — the router gets no basename at all, keeping local
+ * dev, preview and production rootless.
  */
 const base = import.meta.env.BASE_URL;
-const basename = base.startsWith("/") ? base.replace(/\/$/, "") : undefined;
+const basename =
+  base !== "/" && base !== "./" && base.startsWith("/")
+    ? base.replace(/\/$/, "")
+    : undefined;
 
 const router = createBrowserRouter(
   [

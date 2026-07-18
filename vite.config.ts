@@ -5,7 +5,11 @@ import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  // Absolute asset base: with './', deep-link reloads (e.g. /strains/og-kush)
+  // resolve ./assets/... relative to the route path, so the SPA fallback serves
+  // index.html instead of JS and the page goes blank. The GitHub Pages build
+  // overrides this via `vite build --base=/vaporlog/` (see build:pages).
+  base: '/',
   plugins: [inspectAttr(), react()],
   server: {
     port: 3000,
