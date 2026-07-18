@@ -33,6 +33,7 @@ const WIDTH = 1200;
 const HEIGHT = 630;
 const ACCENT = "#74C69D";
 const GRAY = "#9BA3A0";
+const PANEL = "#0E2418";
 
 const serverRoot = path.dirname(
   path.dirname(path.dirname(fileURLToPath(import.meta.url))),
@@ -62,8 +63,10 @@ function esc(value) {
     .replaceAll('"', "&quot;");
 }
 
-/** "195.0" → "195", "195.5" → "195.5" (pg returns numerics as strings). */
+/** "195.0" → "195", "195.5" → "195.5" (pg returns numerics as strings).
+ *  Missing values stay missing — null never becomes "0°C". */
 function fmtNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
@@ -101,29 +104,30 @@ function wrapTwoLines(text, fontSize, maxWidth) {
 }
 
 /**
- * Picks the largest bold size that renders the strain within MAX_WIDTH in
- * at most two lines; the last resort truncates with an ellipsis.
+ * Picks the largest bold size that renders the strain within the left
+ * panel's TEXT_WIDTH in at most two lines; the last resort truncates
+ * with an ellipsis.
  */
 function layoutStrain(name) {
-  const MAX_WIDTH = 1040;
-  for (const size of [92, 78, 66, 56]) {
-    if (fitsOneLine(name, size, MAX_WIDTH)) {
+  const TEXT_WIDTH = 620;
+  for (const size of [84, 72, 62, 52]) {
+    if (fitsOneLine(name, size, TEXT_WIDTH)) {
       return { lines: [name], size };
     }
-    const lines = wrapTwoLines(name, size, MAX_WIDTH);
+    const lines = wrapTwoLines(name, size, TEXT_WIDTH);
     if (
       lines.length <= 2 &&
-      lines.every((line) => fitsOneLine(line, size, MAX_WIDTH))
+      lines.every((line) => fitsOneLine(line, size, TEXT_WIDTH))
     ) {
       return { lines, size };
     }
   }
-  // Extremely long name: hard-truncate to something that fits at 48px.
+  // Extremely long name: hard-truncate to something that fits at 46px.
   let clipped = name;
-  while (clipped.length > 1 && !fitsOneLine(`${clipped}…`, 48, MAX_WIDTH)) {
+  while (clipped.length > 1 && !fitsOneLine(`${clipped}…`, 46, TEXT_WIDTH)) {
     clipped = clipped.slice(0, -1);
   }
-  return { lines: [`${clipped.trimEnd()}…`], size: 48 };
+  return { lines: [`${clipped.trimEnd()}` + "…"], size: 46 };
 }
 
 function buildCardSvg(session) {
@@ -144,20 +148,48 @@ function buildCardSvg(session) {
     .filter(Boolean)
     .join("  ·  ");
 
+  // Keep the author handle inside the 460px brand panel.
+  let authorLabel = `@${author}`;
+  while (
+    authorLabel.length > 2 &&
+    !fitsOneLine(authorLabel, 34, 420)
+  ) {
+    authorLabel = `${authorLabel.slice(0, -2)}`;
+  }
+  if (authorLabel !== `@${author}`) authorLabel = `${authorLabel}…`;
+
   const { lines, size } = layoutStrain(strain);
   const lineHeight = size * 1.12;
-  // Vertically center the strain block between the header and the footer.
-  const blockTop = lines.length === 1 ? 250 : 205;
+  // Left panel vertical rhythm: wordmark → strain → rating → ritual → chips.
+  const strainY0 = lines.length === 1 ? 235 : 198;
   const strainTspans = lines
     .map(
       (line, i) =>
-        `<text x="80" y="${blockTop + i * lineHeight}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}" fill="#FFFFFF">${esc(line)}</text>`,
+        `<text x="80" y="${strainY0 + i * lineHeight}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}" fill="#FFFFFF">${esc(line)}</text>`,
     )
     .join("");
-  const ratingY = blockTop + (lines.length - 1) * lineHeight + 86;
+  const ratingY = strainY0 + (lines.length - 1) * lineHeight + 95;
+  const ritualY = ratingY + 68;
+
+  // Mood chips: outlined pills under the ritual line; any chip that would
+  // cross into the brand panel (x > 700) is simply not drawn.
+  const moods = Array.isArray(session.moods) ? session.moods : [];
+  const chipsTop = (ritual ? ritualY : ratingY) + 42;
+  let chipX = 80;
+  const chipSvgs = [];
+  for (const mood of moods.slice(0, 4)) {
+    const label = String(mood);
+    const chipW = Math.ceil(label.length * 26 * 0.58) + 44;
+    if (chipX + chipW > 700) break;
+    chipSvgs.push(
+      `<rect x="${chipX}" y="${chipsTop}" width="${chipW}" height="52" rx="26" fill="none" stroke="${ACCENT}" stroke-width="2" />`,
+      `<text x="${chipX + 22}" y="${chipsTop + 33}" font-family="DejaVu Sans" font-size="26" fill="${ACCENT}">${esc(label)}</text>`,
+    );
+    chipX += chipW + 18;
+  }
 
   const mascot = mascotDataUri
-    ? `<image href="${mascotDataUri}" x="930" y="368" width="210" height="210" />`
+    ? `<image href="${mascotDataUri}" x="805" y="100" width="330" height="330" />`
     : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
@@ -170,13 +202,18 @@ function buildCardSvg(session) {
   </defs>
   <rect width="${WIDTH}" height="${HEIGHT}" fill="#000000" />
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow)" />
+  <rect x="740" y="0" width="${WIDTH - 740}" height="${HEIGHT}" fill="${PANEL}" />
   <rect x="0" y="0" width="10" height="${HEIGHT}" fill="${ACCENT}" />
-  <text x="80" y="106" font-family="DejaVu Sans" font-weight="bold" font-size="42"><tspan fill="#FFFFFF">vapor</tspan><tspan fill="${ACCENT}">log</tspan></text>
-  <text x="1120" y="100" text-anchor="end" font-family="DejaVu Sans" font-size="32" fill="${GRAY}">@${esc(author)}</text>
+  <rect x="740" y="0" width="3" height="${HEIGHT}" fill="${ACCENT}" />
+  <text x="80" y="100" font-family="DejaVu Sans" font-weight="bold" font-size="42"><tspan fill="#FFFFFF">vapor</tspan><tspan fill="${ACCENT}">log</tspan></text>
   ${strainTspans}
-  <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="58" fill="${ACCENT}">${rating.toFixed(1)}/10</text>
-  ${ritual ? `<text x="80" y="548" font-family="DejaVu Sans" font-size="36" fill="${GRAY}">${esc(ritual)}</text>` : ""}
+  <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="60" fill="${ACCENT}">${rating.toFixed(1)}/10</text>
+  ${ritual ? `<text x="80" y="${ritualY}" font-family="DejaVu Sans" font-size="32" fill="${GRAY}">${esc(ritual)}</text>` : ""}
+  ${chipSvgs.join("\n  ")}
+  <text x="80" y="578" font-family="DejaVu Sans" font-size="22" fill="${GRAY}">vaporlog — the journal of the art of vaporizing</text>
   ${mascot}
+  <text x="970" y="480" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="34" fill="#FFFFFF">${esc(authorLabel)}</text>
+  <text x="970" y="530" text-anchor="middle" font-family="DejaVu Sans" font-size="26" fill="${GRAY}">vaporized this</text>
 </svg>`;
 }
 
@@ -193,7 +230,7 @@ export default async function ogImageRoutes(app) {
 
     const { rows } = await pool.query(
       `select s.strain_slug, s.device_slug, s.temperature_c,
-              s.duration_min, s.rating, s.author,
+              s.duration_min, s.rating, s.author, s.moods,
               p.handle as owner_handle,
               d.name   as device_name
          from sessions s
@@ -236,3 +273,7 @@ export default async function ogImageRoutes(app) {
     }
   });
 }
+
+// Named export for offline render tests (scripts, previews) — the Fastify
+// plugin above stays the default export and the only thing the app registers.
+export { buildCardSvg };
