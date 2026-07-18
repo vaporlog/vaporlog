@@ -14,6 +14,7 @@
  * default http://web/) and cached in memory; in local dev it falls back to
  * the vite server on localhost:3000.
  */
+import http from "node:http";
 import { pool } from "../db.js";
 
 const UUID_RE =
@@ -39,17 +40,38 @@ const BASE_HTML_CANDIDATES = [
  *  refetch keeps serving the last good copy. */
 let cachedBaseHtml = null;
 
+/**
+ * Plain-HTTP GET that returns the body as text. node:http — not fetch —
+ * because undici silently strips the Host header, and Caddy only serves
+ * the SPA shell when the request carries the real domain as Host.
+ */
+function httpGetText(url, host) {
+  return new Promise((resolve, reject) => {
+    const request = http.get(
+      url,
+      { headers: host ? { Host: host } : {}, timeout: 3000 },
+      (response) => {
+        if (response.statusCode !== 200) {
+          response.resume();
+          reject(new Error(`${url} answered ${response.statusCode}`));
+          return;
+        }
+        let body = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => (body += chunk));
+        response.on("end", () => resolve(body));
+      },
+    );
+    request.on("timeout", () => request.destroy(new Error("timeout")));
+    request.on("error", reject);
+  });
+}
+
 async function getBaseHtml() {
   for (const candidate of BASE_HTML_CANDIDATES) {
     try {
-      const response = await fetch(candidate.url, {
-        signal: AbortSignal.timeout(3000),
-        headers: candidate.host ? { host: candidate.host } : {},
-      });
-      if (response.ok) {
-        cachedBaseHtml = await response.text();
-        return cachedBaseHtml;
-      }
+      cachedBaseHtml = await httpGetText(candidate.url, candidate.host);
+      return cachedBaseHtml;
     } catch {
       // try the next candidate
     }
