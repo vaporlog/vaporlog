@@ -32,3 +32,13 @@ vaporlog.online {
 	@html path /index.html
 	header @html Cache-Control "no-cache"
 }
+
+# Internal-only shell for the API's OG renderer: plain HTTP on 8080, any
+# Host, never published to the host machine (container-to-container only).
+# http://web/ would hit the HTTPS redirect above and undici refuses to
+# follow it cross-scheme without extra machinery.
+:8080 {
+	root * /usr/share/caddy
+	try_files {path} /index.html
+	file_server
+}
