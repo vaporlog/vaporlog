@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import CtaButton from "@/components/landing/CtaButton";
 import Reveal from "@/components/landing/Reveal";
-import { getDevices, usePublicSessions, useStrains } from "@/lib/data";
+import { useDevices, usePublicSessions, useStrains } from "@/lib/data";
 
 /**
  * Hero — sells alone (viral-product #20): a headline a fifth-grader gets
@@ -14,7 +14,9 @@ import { getDevices, usePublicSessions, useStrains } from "@/lib/data";
 export default function Hero() {
   const { strains } = useStrains();
   const { sessions, loading: sessionsLoading } = usePublicSessions();
-  const devicesCount = getDevices().length;
+  // Bundled count first (8), grows to the full API catalog on hydrate.
+  const { devices } = useDevices();
+  const devicesCount = devices.length;
   const sessionsCount = sessions.length;
   const strainLabel =
     strains.length > 0

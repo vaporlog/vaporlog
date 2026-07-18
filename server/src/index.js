@@ -12,12 +12,14 @@
  *   src/mappers.js       — snake_case rows ↔ camelCase API shapes
  *   src/routes/auth.js   — /api/auth/*
  *   src/routes/sessions.js — /api/sessions/*
+ *   src/routes/devices.js  — /api/devices (public catalog)
  */
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { pool } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
+import deviceRoutes from "./routes/devices.js";
 
 const app = Fastify({ logger: true });
 
@@ -86,6 +88,7 @@ app.get("/api/health", async () => {
 
 await app.register(authRoutes);
 await app.register(sessionRoutes);
+await app.register(deviceRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 try {

@@ -11,7 +11,12 @@
  *                               ~8.6k records, several MB; Vite splits it into
  *                               its own chunk so it never lands in entry JS.
  *                               See the "Lazy strain catalog" section below.)
- *   - Devices:                  src/data/seed.json (static import)
+ *   - Devices:                  the self-hosted API (GET /api/devices,
+ *                               ~100 devices grouped by category), mirrored
+ *                               into an in-memory cache at module boot.
+ *                               src/data/seed.json stays bundled as the
+ *                               offline/pre-hydration fallback — the sync
+ *                               getters always resolve, API or not.
  *   - Demo community sessions:  src/data/demo-sessions.json (static import,
  *                               DEV-ONLY — gated behind import.meta.env.DEV so
  *                               Rollup tree-shakes the whole JSON module out
@@ -226,14 +231,119 @@ export function getStrain(slug: string): Strain | undefined {
   return (catalogCache ?? seedData.strains).find((s) => s.slug === slug);
 }
 
-/** Returns the full device catalog. */
-export function getDevices(): Device[] {
-  return seedData.devices;
+/* ------------------------------------------------------------------ */
+/* Device catalog (API-backed, bundled fallback)                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The device catalog lives in Postgres and is served by GET /api/devices
+ * (~100 devices, grouped by `category`). devicesCache starts as the
+ * bundled seed 8 so every sync consumer resolves immediately — existing
+ * sessions all reference those 8 slugs — and hydrateDevices() (module
+ * boot) swaps in the full API list on success. A failed hydration is
+ * SILENT: the bundled fallback stays and the app keeps working without
+ * the API. seed.json must therefore keep shipping the original 8.
+ */
+let devicesCache: Device[] = seedData.devices;
+
+/** Snapshot returned by {@link useDevices}. */
+interface DevicesState {
+  /**
+   * The bundled seed 8 until the first hydration succeeds, then the full
+   * API catalog. Treat `loading` as the freshness signal, never length.
+   */
+  devices: Device[];
+  /** True until the first GET /api/devices settles (success or failure). */
+  loading: boolean;
 }
 
-/** Returns one device by slug, or `undefined` when not found. */
+let devicesState: DevicesState = { devices: devicesCache, loading: true };
+
+const deviceListeners = new Set<() => void>();
+
+function emitDevices(): void {
+  for (const listener of deviceListeners) listener();
+}
+
+function subscribeDevices(listener: () => void): () => void {
+  deviceListeners.add(listener);
+  return () => {
+    deviceListeners.delete(listener);
+  };
+}
+
+/**
+ * Validates and normalizes a GET /api/devices payload. Accepts the
+ * `{ devices: [...] }` envelope (the sessions-route convention) or a bare
+ * array; drops malformed entries and slug duplicates; passes through the
+ * optional category/sortOrder only when well-typed. Never throws.
+ */
+function normalizeDevices(payload: unknown): Device[] {
+  const list: unknown = Array.isArray(payload)
+    ? payload
+    : (payload as { devices?: unknown } | null)?.devices;
+  if (!Array.isArray(list)) return [];
+  const bySlug = new Map<string, Device>();
+  for (const entry of list) {
+    const d = entry as Partial<Device> | null;
+    if (typeof d?.slug !== "string" || d.slug === "") continue;
+    if (typeof d.name !== "string" || d.name === "") continue;
+    if (bySlug.has(d.slug)) continue;
+    const device: Device = { slug: d.slug, name: d.name };
+    if (typeof d.category === "string" && d.category.trim() !== "") {
+      device.category = d.category;
+    }
+    if (typeof d.sortOrder === "number" && Number.isFinite(d.sortOrder)) {
+      device.sortOrder = d.sortOrder;
+    }
+    bySlug.set(device.slug, device);
+  }
+  return Array.from(bySlug.values());
+}
+
+/**
+ * Boot-time hydration: GET /api/devices replaces the cache on success.
+ * Any failure — offline, API down, malformed or empty payload — keeps
+ * the bundled fallback, by design without surfacing an error.
+ */
+async function hydrateDevices(): Promise<void> {
+  try {
+    const payload = await apiFetch<unknown>("/devices");
+    const devices = normalizeDevices(payload);
+    if (devices.length > 0) devicesCache = devices;
+  } catch {
+    // API unreachable — the bundled seed stays; nothing to surface.
+  }
+  devicesState = { devices: devicesCache, loading: false };
+  emitDevices();
+}
+
+/**
+ * SYNC device access — returns only what is in memory: the bundled seed 8
+ * before hydration (or permanently when the API is unreachable), the full
+ * API catalog afterwards. Reactive consumers should use useDevices().
+ */
+export function getDevices(): Device[] {
+  return devicesCache;
+}
+
+/**
+ * SYNC single-device lookup over the in-memory cache. Returns `undefined`
+ * for unknown slugs and — before hydration — for API-only devices; every
+ * display helper already falls back to a humanized slug in that window.
+ */
 export function getDevice(slug: string): Device | undefined {
-  return seedData.devices.find((d) => d.slug === slug);
+  return devicesCache.find((d) => d.slug === slug);
+}
+
+/**
+ * React access to the device catalog: `{ devices, loading }`. `devices`
+ * holds the bundled seed 8 immediately and grows to the full API catalog
+ * when hydration lands; `loading` is true until the first fetch settles
+ * (on failure the bundled list stays and loading still clears).
+ */
+export function useDevices(): DevicesState {
+  return useSyncExternalStore(subscribeDevices, () => devicesState);
 }
 
 /** Returns the controlled vocabularies (sorted unique, Title Case). */
@@ -754,6 +864,10 @@ export function usePublicSessions(): {
 
 // Public sessions hydrate at boot, signed in or not.
 void refreshPublicSessions();
+
+// The device catalog hydrates at boot too — silent fallback to the
+// bundled seed when the API cannot be reached.
+void hydrateDevices();
 
 // Own sessions follow the auth state: hydrate on sign-in, clear on
 // sign-out. The boot check covers a synchronously restored session; the

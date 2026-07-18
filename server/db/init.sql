@@ -97,3 +97,22 @@ create table if not exists auth_tokens (
 -- Token lookups per account (sign-out-everywhere, cleanup).
 create index if not exists auth_tokens_user_id_idx
   on auth_tokens (user_id);
+
+-- ----------------------------------------------------------------------------
+-- 4. devices
+-- ----------------------------------------------------------------------------
+-- Dry-herb vaporizer catalog. Session records reference devices by slug
+-- (kebab-case, stable — never rename an existing slug); served to clients
+-- via GET /api/devices. `category` is a loose grouping (e.g. 'portable',
+-- 'butane', 'desktop'); `sort_order` drives catalog ordering (ties broken
+-- by name).
+create table if not exists devices (
+  slug       text primary key,
+  name       text not null,
+  category   text not null default 'portable',
+  sort_order int  not null default 0
+);
+
+-- Catalog listing order: explicit sort_order first, then alphabetical.
+create index if not exists devices_sort_order_name_idx
+  on devices (sort_order, name);

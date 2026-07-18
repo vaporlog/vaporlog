@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Leaf, Plus, X } from "lucide-react";
-import { getDevices } from "@/lib/data";
+import { useDevices } from "@/lib/data";
 import type { Device } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +32,61 @@ interface DevicePickerProps {
 }
 
 /**
- * Searchable device combobox over the curated catalog + personal devices.
- * Personal devices are name-only and stay on this device.
+ * Canonical catalog groups, in display order. Categories from the API are
+ * matched case-insensitively so "portable" and "Portable" land together;
+ * unknown non-empty categories keep their server label and sort after the
+ * canonical groups; uncategorized devices (the bundled fallback, personal
+ * imports) collect under "Other" at the very end.
+ */
+const CATEGORY_ORDER = ["Portable", "Desktop", "Butane/Torch", "Ball Vape"];
+const OTHER_GROUP = "Other";
+
+interface DeviceGroup {
+  label: string;
+  devices: Device[];
+}
+
+/** Groups the catalog by category; sorts in-group by sortOrder then name. */
+function groupDevices(devices: Device[]): DeviceGroup[] {
+  const byLabel = new Map<string, Device[]>();
+  for (const device of devices) {
+    const raw = device.category?.trim() ?? "";
+    const canonical =
+      raw === ""
+        ? undefined
+        : CATEGORY_ORDER.find((c) => c.toLowerCase() === raw.toLowerCase());
+    const label = raw === "" ? OTHER_GROUP : (canonical ?? raw);
+    const list = byLabel.get(label);
+    if (list) list.push(device);
+    else byLabel.set(label, [device]);
+  }
+  for (const list of byLabel.values()) {
+    list.sort(
+      (a, b) =>
+        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+          (b.sortOrder ?? Number.MAX_SAFE_INTEGER) ||
+        a.name.localeCompare(b.name),
+    );
+  }
+  const rank = (label: string): number => {
+    const i = CATEGORY_ORDER.indexOf(label);
+    if (i !== -1) return i;
+    return label === OTHER_GROUP
+      ? CATEGORY_ORDER.length + 1
+      : CATEGORY_ORDER.length; // custom groups before Other
+  };
+  return Array.from(byLabel, ([label, groupDevices]) => ({
+    label,
+    devices: groupDevices,
+  })).sort(
+    (a, b) => rank(a.label) - rank(b.label) || a.label.localeCompare(b.label),
+  );
+}
+
+/**
+ * Searchable device combobox over the curated catalog + personal devices,
+ * grouped by category (the catalog is ~100 devices — a flat list would be
+ * unusable). Personal devices are name-only and stay on this device.
  */
 export default function DevicePicker({
   value,
@@ -47,11 +100,14 @@ export default function DevicePicker({
   const [personal, setPersonal] = useState<Device[]>(() =>
     getPersonalDevices().map(personalDeviceAsDevice),
   );
+  // Bundled seed 8 until the API catalog hydrates, then the full list.
+  const { devices: catalog } = useDevices();
 
   const all = useMemo(() => {
-    const catalog = getDevices();
     return [...personal, ...catalog];
-  }, [personal]);
+  }, [personal, catalog]);
+
+  const groups = useMemo(() => groupDevices(catalog), [catalog]);
 
   const selected = useMemo(
     () => (value ? all.find((d) => d.slug === value) : undefined),
@@ -202,11 +258,13 @@ export default function DevicePicker({
                 </CommandGroup>
               ) : null}
 
-              <CommandGroup heading="Catalog">
-                {getDevices().map((d) => (
-                  <DeviceRow key={d.slug} device={d} onPick={pick} />
-                ))}
-              </CommandGroup>
+              {groups.map((group) => (
+                <CommandGroup key={group.label} heading={group.label}>
+                  {group.devices.map((d) => (
+                    <DeviceRow key={d.slug} device={d} onPick={pick} />
+                  ))}
+                </CommandGroup>
+              ))}
 
               <div className="border-t p-2">
                 <button

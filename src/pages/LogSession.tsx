@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { getDevices, getProfile, getStrains, getVocab, saveSession, useStrains } from "@/lib/data";
+import { getDevices, getProfile, getStrains, getVocab, saveSession, useDevices, useStrains } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,9 @@ export default function LogSession() {
   const vocab = getVocab();
   // Lazy catalog: prefill validation and the sticky-bar name resolve once it lands.
   const { strains: catalog, loading: catalogLoading } = useStrains();
+  // Same for devices: the bundled 8 resolve instantly, the full API
+  // catalog (~100) lands moments later and grows the picker.
+  const { devices, loading: devicesLoading } = useDevices();
 
   // Restore the draft first; only a fresh form takes query-param prefill
   // (an in-progress draft is the user's own work — never clobber it).
@@ -52,10 +55,17 @@ export default function LogSession() {
   // the effect below (personal strains and warm-cache hits apply at once).
   const [initial] = useState(() => {
     const restored = loadDraft();
-    if (restored) return { draft: restored, pendingStrain: null as string | null };
+    if (restored) {
+      return {
+        draft: restored,
+        pendingStrain: null as string | null,
+        pendingDevice: null as string | null,
+      };
+    }
 
     const next = { ...EMPTY_DRAFT };
     let pendingStrain: string | null = null;
+    let pendingDevice: string | null = null;
     const strainParam = searchParams.get("strain");
     const deviceParam = searchParams.get("device");
     if (strainParam) {
@@ -70,12 +80,16 @@ export default function LogSession() {
         getDevices().some((d) => d.slug === deviceParam) ||
         getPersonalDevices().some((d) => d.slug === deviceParam);
       if (known) next.deviceSlug = deviceParam;
+      else pendingDevice = deviceParam; // maybe an API-only device — recheck on hydrate
     }
-    return { draft: next, pendingStrain };
+    return { draft: next, pendingStrain, pendingDevice };
   });
   const [draft, setDraft] = useState<LogDraft>(initial.draft);
   const [pendingStrain, setPendingStrain] = useState<string | null>(
     initial.pendingStrain,
+  );
+  const [pendingDevice, setPendingDevice] = useState<string | null>(
+    initial.pendingDevice,
   );
 
   // Resolve a ?strain= prefill that the sync cache could not verify yet.
@@ -89,6 +103,18 @@ export default function LogSession() {
     }
     setPendingStrain(null);
   }, [pendingStrain, catalogLoading, catalog]);
+
+  // Resolve a ?device= prefill that the bundled fallback could not verify
+  // yet (API-only device). Same rules as the strain effect above.
+  useEffect(() => {
+    if (pendingDevice === null || devicesLoading) return;
+    if (devices.some((d) => d.slug === pendingDevice)) {
+      setDraft((d) =>
+        d.deviceSlug ? d : { ...d, deviceSlug: pendingDevice },
+      );
+    }
+    setPendingDevice(null);
+  }, [pendingDevice, devicesLoading, devices]);
 
   const [triedSave, setTriedSave] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -140,11 +166,11 @@ export default function LogSession() {
   const deviceName = useMemo(() => {
     if (!draft.deviceSlug) return null;
     return (
-      getDevices().find((d) => d.slug === draft.deviceSlug)?.name ??
+      devices.find((d) => d.slug === draft.deviceSlug)?.name ??
       getPersonalDevices().find((d) => d.slug === draft.deviceSlug)?.name ??
       null
     );
-  }, [draft.deviceSlug]);
+  }, [draft.deviceSlug, devices]);
 
   async function handleSave() {
     if (saving) return;

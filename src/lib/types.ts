@@ -28,6 +28,15 @@ export interface Strain {
 export interface Device {
   slug: string;
   name: string;
+  /**
+   * Catalog grouping (e.g. "Portable", "Desktop", "Butane/Torch",
+   * "Ball Vape"). Present on API-served entries (GET /api/devices);
+   * absent on the bundled offline fallback (seed.json) and on personal
+   * devices — treat it as optional everywhere.
+   */
+  category?: string;
+  /** Server-defined ordering within the catalog (ascending). */
+  sortOrder?: number;
 }
 
 /** A single vaporization session entry (yours or a public community one). */
