@@ -13,8 +13,8 @@ import AgeBlocked from "@/components/welcome/AgeBlocked";
  *   1. Age gate 21+ (birthdate, honest dead end when younger)
  *   2. Account creation — handle + password (hashed locally, per-user
  *      salt); a quiet link switches to sign-in mode for returning users.
- *      On success the account is signed in and routed straight to /log
- *      so the first logged session is the activation moment.
+ *      On success the account is signed in and routed to /diary — the
+ *      diary is the home screen for a signed-in account.
  *
  * A legacy pre-auth profile (`vaporlog.profile`) prefills the birthdate
  * and handle when one exists. Signed-in users skip straight to /diary.
@@ -128,9 +128,9 @@ export default function Welcome() {
   }
 
   function handleAccountSuccess(_account: Account) {
-    // signUp/signIn already persisted the session — straight to the core
-    // loop so the first logged session is the activation moment.
-    navigate("/log");
+    // signUp/signIn already persisted the session — the diary is the home
+    // screen once you're signed in, so land there.
+    navigate("/diary");
   }
 
   const viewKey = blocked ? "blocked" : `step-${step}`;

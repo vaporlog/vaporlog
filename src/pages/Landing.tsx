@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import Hero from "@/components/landing/Hero";
 import ProductShowcase from "@/components/landing/ProductShowcase";
 import Problem from "@/components/landing/Problem";
@@ -6,6 +8,7 @@ import Comparison from "@/components/landing/Comparison";
 import CommunityProof from "@/components/landing/CommunityProof";
 import Closing from "@/components/landing/Closing";
 import { useStrains } from "@/lib/data";
+import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
 
 /**
  * Landing — the viral-product showcase. One idea per screen (#6):
@@ -18,6 +21,10 @@ import { useStrains } from "@/lib/data";
  *   7. A footer people want to share (#4) + "free during early access"
  * Three colors only (#2): white, near-black, herb green for the CTA and
  * rating highlights. No pricing section — free during early access.
+ *
+ * Visitor surface only: a signed-in account's home is the diary, so "/"
+ * steps aside to /diary (first render is already gated on the restored
+ * session in App.tsx, so there's no flash of landing for members).
  */
 export default function Landing() {
   // Warm the lazy strain catalog in the background (it does not block first
@@ -25,6 +32,18 @@ export default function Landing() {
   // catalog names when it lands, and the catalog is cached by the time the
   // visitor reaches /log or /strains.
   useStrains();
+
+  const [account, setAccount] = useState<Account | null>(() =>
+    getCurrentAccount(),
+  );
+  useEffect(
+    () => onAuthChange(() => setAccount(getCurrentAccount())),
+    [],
+  );
+
+  if (account) {
+    return <Navigate to="/diary" replace />;
+  }
 
   return (
     <>
