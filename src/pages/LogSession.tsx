@@ -488,7 +488,7 @@ export default function LogSession() {
           <Textarea
             value={draft.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="How was it? Terps, effects, context, what you'd do differently…"
+            placeholder="How was it? Terps, effects, context — first of the day? — what you'd do differently…"
             rows={4}
             className="min-h-28 resize-none text-base leading-relaxed"
           />
