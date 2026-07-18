@@ -1,6 +1,8 @@
 node_modules/
 dist/
 server/.dev-data/
+server/.dev-data.corrupt-*/
+server/.dev-data.fresh-*/
 dist-verify*/
 *.tsbuildinfo
 .DS_Store

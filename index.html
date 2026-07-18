@@ -8,6 +8,22 @@
     <link rel="icon" type="image/png" sizes="16x16" href="%BASE_URL%brand/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="%BASE_URL%brand/apple-touch-icon.png" />
     <title>vaporlog</title>
+    <!-- Link previews (WhatsApp, X, iMessage…): crawlers read these static
+         tags. The API rewrites title/description/url per session for /s/:id
+         (see server/src/routes/og.js). -->
+    <meta name="description" content="vaporlog — the journal of the art of vaporizing. Log every session: strain, device, temperature, effects." />
+    <meta property="og:site_name" content="vaporlog" />
+    <meta property="og:title" content="vaporlog — the journal of the art of vaporizing" />
+    <meta property="og:description" content="Log every session — strain, vaporizer, temperature, effects — and see how the experts vaporize." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://vaporlog.online/" />
+    <meta property="og:image" content="https://vaporlog.online/brand/og-default.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="vaporlog — the journal of the art of vaporizing" />
+    <meta name="twitter:description" content="Log every session — strain, vaporizer, temperature, effects — and see how the experts vaporize." />
+    <meta name="twitter:image" content="https://vaporlog.online/brand/og-default.jpg" />
   </head>
   <body>
     <div id="root"></div>

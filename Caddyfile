@@ -12,6 +12,13 @@ vaporlog.online {
 		reverse_proxy api:4000
 	}
 
+	# Shared session cards → server-rendered OG meta (WhatsApp/X previews).
+	# The API answers with the SPA shell + per-session <meta> tags.
+	handle /s/* {
+		rewrite * /api/og{uri}
+		reverse_proxy api:4000
+	}
+
 	# SPA: static files with history-API fallback
 	handle {
 		root * /usr/share/caddy

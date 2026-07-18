@@ -20,6 +20,7 @@ import { pool } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
 import deviceRoutes from "./routes/devices.js";
+import ogRoutes from "./routes/og.js";
 
 const app = Fastify({ logger: true });
 
@@ -89,6 +90,7 @@ app.get("/api/health", async () => {
 await app.register(authRoutes);
 await app.register(sessionRoutes);
 await app.register(deviceRoutes);
+await app.register(ogRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 try {

@@ -9,6 +9,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -82,8 +84,8 @@ export default function AppLayout() {
           </Link>
 
           <nav className="flex items-center gap-1 sm:gap-2">
-            {/* Section links: inline from sm up, folded into a compact
-                menu below sm — at ~360px the full row would overflow. */}
+            {/* Full header row from sm up: section links, auth state,
+                "Log a Session" CTA and language toggle, all inline. */}
             <div className="hidden items-center gap-1 sm:flex sm:gap-2">
               <NavLink to="/diary" className={NAV_LINK_CLASS}>
                 {t("nav.diary")}
@@ -94,7 +96,37 @@ export default function AppLayout() {
               <NavLink to="/feed" className={NAV_LINK_CLASS}>
                 {t("nav.feed")}
               </NavLink>
+              {account ? (
+                <>
+                  <span className="ml-1 text-sm text-muted-foreground">
+                    @{account.username}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleLogOut}
+                    className="pressable rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+                  >
+                    {t("nav.logOut")}
+                  </button>
+                </>
+              ) : (
+                <NavLink to="/welcome?mode=signin" className={NAV_LINK_CLASS}>
+                  {t("nav.signIn")}
+                </NavLink>
+              )}
+              <Button
+                asChild
+                size="sm"
+                className="pressable herb-hover ml-1 bg-herb text-herb-foreground"
+              >
+                <Link to="/log" aria-label={t("nav.logSession")}>
+                  {t("nav.logSession")}
+                </Link>
+              </Button>
+              <LanguageToggle />
             </div>
+            {/* Below sm only the wordmark and this hamburger remain; the
+                whole menu folds in here so the ~360px row can't overflow. */}
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label={t("nav.openMenu")}
@@ -102,49 +134,55 @@ export default function AppLayout() {
               >
                 <Menu aria-hidden="true" className="size-5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {/* Diary lives behind the wordmark for signed-in users
-                    ("/" → /diary), so the mobile menu only carries the
-                    two destinations the logo doesn't cover. */}
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onSelect={() => navigate("/diary")}>
+                  {t("nav.diary")}
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => navigate("/strains")}>
                   {t("nav.strains")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => navigate("/feed")}>
                   {t("nav.feed")}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => navigate("/log")}
+                  className="font-medium text-herb"
+                >
+                  {t("nav.logSession")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {account ? (
+                  <>
+                    <DropdownMenuLabel className="font-normal text-muted-foreground">
+                      @{account.username}
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        void handleLogOut();
+                      }}
+                    >
+                      {t("nav.logOut")}
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onSelect={() => navigate("/welcome?mode=signin")}
+                  >
+                    {t("nav.signIn")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                {/* Plain row (not a menu item) so tapping EN|ES doesn't
+                    dismiss the menu before the change is visible. */}
+                <div className="flex items-center justify-between px-2 py-1.5">
+                  <span className="text-sm text-muted-foreground">
+                    {t("language.label")}
+                  </span>
+                  <LanguageToggle />
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            {account ? (
-              <>
-                <span className="ml-1 hidden text-sm text-muted-foreground sm:inline">
-                  @{account.username}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleLogOut}
-                  className="pressable rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
-                >
-                  {t("nav.logOut")}
-                </button>
-              </>
-            ) : (
-              <NavLink to="/welcome?mode=signin" className={NAV_LINK_CLASS}>
-                {t("nav.signIn")}
-              </NavLink>
-            )}
-            <Button
-              asChild
-              size="sm"
-              className="pressable herb-hover ml-1 bg-herb text-herb-foreground"
-            >
-              <Link to="/log" aria-label={t("nav.logSession")}>
-                <span className="hidden sm:inline">{t("nav.logSession")}</span>
-                <span aria-hidden="true" className="sm:hidden">
-                  {t("nav.logSessionShort")}
-                </span>
-              </Link>
-            </Button>
-            <LanguageToggle />
           </nav>
         </div>
       </header>

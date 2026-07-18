@@ -40,8 +40,41 @@ async function createEmbeddedPool() {
   const { PGlite } = await import("@electric-sql/pglite");
 
   const dataDir = path.join(serverRoot, ".dev-data");
-  const db = new PGlite(dataDir);
-  await db.waitReady;
+
+  // Boot the embedded database. A hard kill (taskkill /F, power loss) can
+  // leave the data dir unbootable — dev data is disposable, so instead of
+  // dying we set the corrupt copy aside and start fresh. On Windows the
+  // rename can hit EPERM while an indexer/watcher briefly holds a handle,
+  // so retry a few times before falling back to a fresh suffixed dir.
+  let db;
+  let effectiveDir = dataDir;
+  try {
+    db = new PGlite(dataDir);
+    await db.waitReady;
+  } catch (error) {
+    const aside = `${dataDir}.corrupt-${Date.now()}`;
+    console.warn(
+      `vaporlog-api: embedded database failed to boot (${error?.message ?? error}); moving it aside and starting fresh.`,
+    );
+    let moved = false;
+    for (let attempt = 0; attempt < 5 && !moved; attempt++) {
+      try {
+        await fs.rm(aside, { recursive: true, force: true });
+        await fs.rename(dataDir, aside);
+        moved = true;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+    if (!moved) {
+      effectiveDir = `${dataDir}.fresh-${Date.now()}`;
+      console.warn(
+        `vaporlog-api: could not move ${dataDir} aside (locked); using ${effectiveDir} instead.`,
+      );
+    }
+    db = new PGlite(effectiveDir);
+    await db.waitReady;
+  }
 
   // init.sql is fully idempotent (IF NOT EXISTS everywhere), so re-asserting
   // it on every boot is cheap and picks up fresh-checkout schema edits.
@@ -73,7 +106,7 @@ async function createEmbeddedPool() {
   }
 
   console.log(
-    `vaporlog-api: DATABASE_URL not set — embedded dev database (PGlite) at ${dataDir}`,
+    `vaporlog-api: DATABASE_URL not set — embedded dev database (PGlite) at ${effectiveDir}`,
   );
 
   // Adapter over the route-facing pg surface. PGlite reports affected rows
