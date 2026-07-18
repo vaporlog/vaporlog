@@ -514,7 +514,7 @@ async function migrateLegacySessions(account: Account): Promise<void> {
     for (const session of byId.values()) {
       const upload = UUID_RE.test(session.id)
         ? session
-        : { ...session, id: crypto.randomUUID() };
+        : { ...session, id: newId() };
       await apiFetch("/sessions", {
         method: "POST",
         body: upload,
@@ -546,6 +546,35 @@ export function getMySessions(): SessionLog[] {
 }
 
 /**
+ * RFC 4122 v4 UUID. `crypto.randomUUID()` exists ONLY in secure contexts
+ * (HTTPS or localhost) — on a plain-HTTP deploy (e.g. http://<vps-ip>) it
+ * is undefined and every session save would throw before hitting the
+ * network. Fall back to getRandomValues (available in insecure contexts)
+ * with a Math.random last resort.
+ */
+function newId(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.getRandomValues === "function"
+  ) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+  const h = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+/**
  * Saves a session to the cloud and returns the stored copy. If `log.id`
  * is empty a UUID is generated; if `log.createdAt` is empty the current
  * time is used; if `log.author` is empty the current account's username
@@ -561,7 +590,7 @@ export async function saveSession(log: SessionLog): Promise<SessionLog> {
   }
   const stored: SessionLog = {
     ...log,
-    id: log.id || crypto.randomUUID(),
+    id: log.id || newId(),
     createdAt: log.createdAt || new Date().toISOString(),
     author: log.author || account.username,
   };
