@@ -1,0 +1,81 @@
+{
+  "hero": {
+    "eyebrow": "El diario del arte de vaporizar",
+    "title": "Recuerda cada sesión.",
+    "subhead": "Registra el strain, la temperatura, el sabor y cómo te sentiste — y no vuelvas a perder una sesión perfecta. Empieza con <strong>{{strainLabel}}</strong>, <strong>{{devicesLabel}}</strong> y <strong>{{sessionsLabel}}</strong> de las que aprender.",
+    "subheadFirst": "Registra el strain, la temperatura, el sabor y cómo te sentiste — y no vuelvas a perder una sesión perfecta. Empieza con <strong>{{strainLabel}}</strong> y <strong>{{devicesLabel}}</strong> — y sé el primero en registrar una sesión pública de la que otros puedan aprender.",
+    "strainsCount": "{{count}} strains",
+    "strainsFallback": "miles de strains",
+    "devicesCount": "{{count}} vaporizadores",
+    "sessionsCount": "{{count}} sesiones de expertos",
+    "login": "¿Ya tienes cuenta? Inicia sesión"
+  },
+  "showcase": {
+    "eyebrow": "Esto es una sesión de vaporlog",
+    "caption": "Todo lo que la hizo perfecta — strain, temperatura, sabor, ánimo — guardado en 30 segundos. La próxima vez que te preguntes <strong>“¿cuál era esa de 195°C?”</strong>, lo sabrás."
+  },
+  "problem": {
+    "title": "Tu mejor sesión de la vida — ¿a qué temperatura fue?",
+    "punch": "¿Qué strain? ¿Qué vaporizador? Se fue.",
+    "body": "La memoria guarda la sensación y pierde los detalles — y los detalles eran la receta. Las apps de notas los entierran. Las hojas de cálculo nunca se abren desde el sofá. vaporlog guarda cada grado, cada sabor, cada calificación, justo donde vas a buscar la próxima vez."
+  },
+  "howItWorks": {
+    "title": "Registra. Descubre. Aprende.",
+    "stepLabel": "Paso {{number}}",
+    "steps": {
+      "log": {
+        "title": "Regístrala",
+        "body": "Strain, vaporizador, temperatura, cómo te sentiste. Treinta segundos, desde el sofá, en plena sesión."
+      },
+      "discover": {
+        "title": "Descubre tus patrones",
+        "body": "Tus calificaciones revelan las temperaturas y los strains que más te gustan — tus favoritos, encontrados para ti."
+      },
+      "experts": {
+        "title": "Aprende de los expertos",
+        "bodyWithCount": "{{count}} sesiones públicas de conocedores, con el grado exacto. Copia lo que funciona.",
+        "bodyNoCount": "Un feed público de sesiones de conocedores, con el grado exacto. Copia lo que funciona."
+      }
+    }
+  },
+  "comparison": {
+    "title": "Tu app de notas lo olvidó. Tu hoja de cálculo nunca lo supo.",
+    "columns": {
+      "notes": "App de notas",
+      "spreadsheet": "Hoja de cálculo"
+    },
+    "rows": {
+      "temps": "Recuerda temperaturas, sabores y terpenos",
+      "favorites": "Encuentra tus favoritos a partir de tus propias calificaciones",
+      "experts": "Sesiones de expertos con las temperaturas exactas para copiar",
+      "couch": "Del sofá al registro en 30 segundos"
+    },
+    "mark": {
+      "yes": "Sí",
+      "partial": "Más o menos",
+      "no": "No"
+    }
+  },
+  "community": {
+    "emptyTitle": "Sé el primero en compartir una sesión.",
+    "emptyBody": "El feed público se abre con sus primeros miembros. Registra una sesión, hazla pública y puede aparecer aquí — siempre con seudónimo, privada por defecto.",
+    "headline": "{{total}} sesiones de expertos. {{top}} con calificación de 9 o más.",
+    "body": "Conocedores documentando el arte — siempre con seudónimos, privado por defecto. Toca una sesión para ver exactamente cómo vaporizan."
+  },
+  "closing": {
+    "title": "La memoria se desvanece. Tu diario no.",
+    "subhead": "La mejor sesión de tu vida merece algo mejor que “¿creo que era la verde?”",
+    "notReady": "¿Aún no estás listo?",
+    "browse": "Explora primero el {{catalog}}",
+    "catalogWithCount": "catálogo de {{count}} strains",
+    "catalog": "catálogo de strains"
+  },
+  "cta": {
+    "button": "Empieza tu diario",
+    "sub": "Gratis durante el acceso anticipado · tu primera entrada toma menos de un minuto"
+  },
+  "sessionCard": {
+    "duration": "{{count}} min",
+    "amount": "{{count}} g"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "header": {
+    "title": "Recomendaciones",
+    "tagline": "Qué probar después.",
+    "subtitleCommunity": "Qué probar después — empezando por lo que le encanta a la comunidad.",
+    "subtitleCold": "Qué probar después — aprendido de las sesiones que te encantan.",
+    "learned_one": "Aprendido de {{count}} sesión que calificaste con 8 o más.",
+    "learned_other": "Aprendido de {{count}} sesiones que calificaste con 8 o más."
+  },
+  "loading": {
+    "title": "Cargando tu paladar…",
+    "subtitle": "Tus sesiones y el catálogo completo de strains están en camino — las sugerencias empiezan en cuanto lleguen."
+  },
+  "empty": {
+    "title": "Tu paladar, aprendido",
+    "description": "Registra algunas sesiones que te encanten y vaporlog aprende tu paladar — terpenos, efectos y sabores — para sugerirte qué probar después.",
+    "logCta": "Registrar sesión"
+  },
+  "community": {
+    "title": "Los favoritos de la comunidad"
+  }
+}

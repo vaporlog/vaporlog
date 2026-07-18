@@ -1,0 +1,74 @@
+{
+  "steps": {
+    "progress": "Step {{step}} of {{total}}"
+  },
+  "ageGate": {
+    "title": "First things first — how old are you?",
+    "lead": "vaporlog is a journal for adults who vaporize. Your birthday never leaves this device; it just keeps the door honest.",
+    "birthdayLabel": "Your birthday",
+    "monthPlaceholder": "Month",
+    "dayPlaceholder": "Day",
+    "yearPlaceholder": "Year",
+    "birthMonthAria": "Birth month",
+    "birthDayAria": "Birth day",
+    "birthYearAria": "Birth year",
+    "errors": {
+      "invalidDate": "That date doesn't look quite right — mind checking it?",
+      "futureDate": "That's in the future — nice try, time traveler."
+    },
+    "continue": "Continue",
+    "legalNote": "vaporlog is for adults 21+ in jurisdictions where vaporization is legal."
+  },
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  },
+  "blocked": {
+    "title": "This one's not for you — yet.",
+    "body": "vaporlog is strictly for adults 21 and over, in places where vaporization is legal. No judgment, no lecture — we'll be right here when the time is right.",
+    "resetHint": "Entered the wrong birthday by mistake? Clearing this site's data in your browser settings starts you over."
+  },
+  "account": {
+    "titleSignup": "Create your account",
+    "titleSignin": "Welcome back",
+    "leadSignup": "Pick a handle and a password. Your sessions stay private by default — if you ever publish one, only your handle shows.",
+    "leadSignin": "Sign in with your handle and password to open your diary.",
+    "handleLabel": "Your handle",
+    "handlePlaceholder": "e.g. TerpNomad",
+    "surpriseMe": "Surprise me",
+    "handleHintSignup": "3–20 characters — letters, numbers and dashes.",
+    "handleHintSignin": "The handle you signed up with.",
+    "handleTaken": "That handle is taken. <signin>Sign in with it instead</signin>",
+    "passwordLabel": "Password",
+    "passwordPlaceholderSignup": "At least {{min}} characters",
+    "passwordPlaceholderSignin": "Your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "passwordHintSignup": "{{min}} characters minimum. It's stored only as a hash — never in plain text.",
+    "passwordHintSignin": "The password you chose when you signed up.",
+    "genericError": "Something went wrong — try again.",
+    "back": "Back",
+    "creatingAccount": "Creating account…",
+    "signingIn": "Signing in…",
+    "createAccount": "Create account",
+    "signIn": "Sign in",
+    "switchToSignin": "Already have an account? Sign in",
+    "switchToSignup": "New to vaporlog? Create an account",
+    "syncNote": "your account syncs across your devices — sessions stay private by default"
+  },
+  "validation": {
+    "minLength": "At least {{min}} characters.",
+    "maxLength": "{{max}} characters is the max.",
+    "charset": "Letters, numbers, dashes and underscores only."
+  }
+}

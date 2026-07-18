@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DiaryStats } from "./diary-utils";
 
@@ -13,24 +14,25 @@ interface StatCell {
 
 /** Four quiet stat cards; the average rating is the only accent-colored one. */
 export function StatsStrip({ stats }: StatsStripProps) {
+  const { t } = useTranslation("diary");
   const cells: StatCell[] = [
     {
-      label: "Total sessions",
+      label: t("stats.total"),
       value: String(stats.totalSessions),
       highlight: false,
     },
     {
-      label: "This month",
+      label: t("stats.thisMonth"),
       value: String(stats.sessionsThisMonth),
       highlight: false,
     },
     {
-      label: "Avg rating",
+      label: t("stats.avgRating"),
       value: stats.avgRating === null ? "—" : stats.avgRating.toFixed(1),
       highlight: stats.avgRating !== null,
     },
     {
-      label: "Grams this month",
+      label: t("stats.gramsThisMonth"),
       value:
         stats.gramsThisMonth === null
           ? "—"

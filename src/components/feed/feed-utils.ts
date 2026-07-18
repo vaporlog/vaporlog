@@ -11,6 +11,7 @@
  * feed re-renders with real names once the catalog arrives.
  */
 import { getDevice, getStrain } from "@/lib/data";
+import i18n from "@/i18n";
 import type { SessionLog } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
@@ -38,25 +39,22 @@ export function tempZone(celsius: number): TempZone {
 
 /** Short label shown next to the temperature on a session card. */
 export function tempZoneLabel(zone: TempZone): string {
-  switch (zone) {
-    case "low":
-      return "Low";
-    case "medium":
-      return "Medium";
-    case "high":
-      return "High";
-  }
+  return i18n.t(`zones.${zone}`, { ns: "feed" });
 }
 
-/** Zone filter choices with their thresholds spelled out for beginners. */
+/**
+ * Zone filter choices with their thresholds spelled out for beginners.
+ * `labelKey` is a `feed` namespace key so the filter row can re-render the
+ * labels in the active language.
+ */
 export const ZONE_FILTER_OPTIONS: ReadonlyArray<{
   value: ZoneFilter;
-  label: string;
+  labelKey: string;
 }> = [
-  { value: "all", label: "All temps" },
-  { value: "low", label: "Low <170°C" },
-  { value: "medium", label: "Medium 170–190°C" },
-  { value: "high", label: "High >190°C" },
+  { value: "all", labelKey: "filters.zones.all" },
+  { value: "low", labelKey: "filters.zones.low" },
+  { value: "medium", labelKey: "filters.zones.medium" },
+  { value: "high", labelKey: "filters.zones.high" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -172,11 +170,11 @@ export function formatRating(value: number): string {
   return value.toFixed(1).replace(/\.0$/, "");
 }
 
-/** "May 2, 2026" — empty string for unparseable timestamps. */
+/** "May 2, 2026" — empty string for unparseable timestamps. Locale follows the active language. */
 export function formatFeedDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(i18n.language || "en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

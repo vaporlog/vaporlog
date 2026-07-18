@@ -1,0 +1,140 @@
+{
+  "title": "Log a session",
+  "subtitle": "Strain and device are all you need. Everything else is optional — and every keystroke is autosaved.",
+  "optional": "Optional",
+  "sections": {
+    "strain": "Strain",
+    "device": "Device",
+    "temperature": "Temperature",
+    "details": "Details",
+    "experience": "Experience",
+    "rating": "Rating",
+    "notes": "Notes",
+    "publish": "Publish"
+  },
+  "details": {
+    "duration": "Duration (min)",
+    "amount": "Amount (g)"
+  },
+  "experience": {
+    "aromas": "Aromas",
+    "flavors": "Flavors",
+    "mood": "Mood",
+    "activities": "Activities",
+    "addAroma": "Add your own aroma",
+    "addFlavor": "Add your own flavor",
+    "addMood": "Add your own mood",
+    "addActivity": "Add your own activity"
+  },
+  "validation": {
+    "pickStrain": "Pick a strain — or add your own.",
+    "pickDevice": "Which vaporizer did you use?"
+  },
+  "notes": {
+    "placeholder": "How was it? Terps, effects, context — first of the day? — what you'd do differently…"
+  },
+  "publish": {
+    "public": "Public",
+    "private": "Private",
+    "description": "Private by default. Public sessions appear as cards others can learn from — only your pseudonym shows.",
+    "switchLabel": "Make this session public"
+  },
+  "sticky": {
+    "autosave": "Your draft autosaves as you go.",
+    "pickStrain": "Pick a strain",
+    "pickDevice": "Pick a device",
+    "pickRating": "Pick a rating",
+    "save": "Save session",
+    "saving": "Saving…"
+  },
+  "toasts": {
+    "draftRestored": {
+      "title": "Draft restored",
+      "description": "You can pick up right where you left off."
+    },
+    "saveError": {
+      "title": "Couldn't save that session",
+      "description": "Check your connection and try again — your draft is still here."
+    },
+    "saved": {
+      "title": "Session saved",
+      "description": "{{name}} · {{rating}}/10 — added to your diary.",
+      "fallbackName": "Your session"
+    }
+  },
+  "strainPicker": {
+    "chooseAria": "Choose a strain",
+    "personal": "Personal strain",
+    "yours": "Yours",
+    "searchPlaceholder": "Search strains…",
+    "addTitle": "Add your strain",
+    "backAria": "Back to search",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Basement Kush",
+    "typeLabel": "Type",
+    "optionalParens": "(optional)",
+    "saveUse": "Save & use this strain",
+    "privacyNote": "Saved on this device only — your personal strains stay private.",
+    "loading": "Loading the catalog…",
+    "noMatch": "No strain matches “{{query}}”.",
+    "yourStrains": "Your strains",
+    "catalog": "Catalog",
+    "loadingFull": "Loading the full catalog…",
+    "showingCount": "Showing {{shown}} of {{total}} matches — keep typing to narrow it down.",
+    "addQuery": "Add “{{query}}” as your strain",
+    "addFallback": "Can't find it? Add yours"
+  },
+  "devicePicker": {
+    "chooseAria": "Choose a device",
+    "personal": "Personal device",
+    "catalogDevice": "Catalog device",
+    "yours": "Yours",
+    "searchPlaceholder": "Search devices…",
+    "addTitle": "Add your device",
+    "backAria": "Back to search",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Grandpa's Volcano",
+    "saveUse": "Save & use this device",
+    "privacyNote": "Saved on this device only — your gear stays private.",
+    "noMatch": "No device matches “{{query}}”.",
+    "yourDevices": "Your devices",
+    "addQuery": "Add “{{query}}” as your device",
+    "addFallback": "Can't find it? Add yours"
+  },
+  "temp": {
+    "dragToSet": "Drag to set",
+    "clear": "Clear",
+    "ariaLabel": "Temperature in Celsius",
+    "zones": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "status": {
+      "low": "Low temp",
+      "medium": "Medium temp",
+      "high": "High temp"
+    }
+  },
+  "chipGroup": {
+    "addAria": "Add custom tag"
+  },
+  "rating": {
+    "groupAria": "Rating from 1 to 10",
+    "outOf": "{{n}} out of 10",
+    "tapPrompt": "Tap a number — how was it?",
+    "scaleHint": "1 rough · 10 perfect",
+    "descriptors": {
+      "1": "Rough",
+      "2": "Weak",
+      "3": "Meh",
+      "4": "Below par",
+      "5": "Okay",
+      "6": "Decent",
+      "7": "Good",
+      "8": "Great",
+      "9": "Excellent",
+      "10": "Perfect"
+    }
+  }
+}

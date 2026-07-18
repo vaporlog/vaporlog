@@ -1,0 +1,19 @@
+{
+  "nav": {
+    "diary": "Diario",
+    "strains": "Strains",
+    "feed": "Comunidad",
+    "signIn": "Iniciar sesión",
+    "logOut": "Cerrar sesión",
+    "logSession": "Registrar sesión",
+    "logSessionShort": "Registrar",
+    "openMenu": "Abrir menú de navegación"
+  },
+  "footer": {
+    "tagline": "vaporlog — el diario del arte de vaporizar",
+    "legal": "Solo mayores de 21, donde sea legal"
+  },
+  "language": {
+    "label": "Idioma"
+  }
+}

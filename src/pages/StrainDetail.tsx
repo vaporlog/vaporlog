@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { ArrowLeft, ArrowUpRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
  * cache to hydrate so it never flashes early.
  */
 export default function StrainDetail() {
+  const { t } = useTranslation("strains");
   const { slug } = useParams<{ slug: string }>();
   const { strains, loading } = useStrains();
   const { sessions: communitySessions, loading: sessionsLoading } =
@@ -61,9 +63,9 @@ export default function StrainDetail() {
         className="flex flex-col items-center gap-4 py-16 text-center"
         role="status"
       >
-        <h1 className="text-2xl font-semibold">Loading strain…</h1>
+        <h1 className="text-2xl font-semibold">{t("detail.loadingTitle")}</h1>
         <p className="max-w-md text-muted-foreground">
-          Pulling the full profile from the catalog.
+          {t("detail.loadingBody")}
         </p>
       </section>
     );
@@ -72,12 +74,12 @@ export default function StrainDetail() {
   if (!strain) {
     return (
       <section className="flex flex-col items-center gap-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Strain not found</h1>
+        <h1 className="text-2xl font-semibold">{t("detail.notFoundTitle")}</h1>
         <p className="max-w-md text-muted-foreground">
-          This strain is not in the catalog.
+          {t("detail.notFoundBody")}
         </p>
         <Button asChild variant="outline" className="pressable">
-          <Link to="/strains">Browse all strains</Link>
+          <Link to="/strains">{t("detail.browseAll")}</Link>
         </Button>
       </section>
     );
@@ -94,7 +96,7 @@ export default function StrainDetail() {
           className="pressable inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
-          All strains
+          {t("detail.back")}
         </Link>
       </nav>
 
@@ -118,8 +120,7 @@ export default function StrainDetail() {
                 {formatRating(average.avg)}
               </span>
               <span className="text-muted-foreground">
-                community · {average.count}{" "}
-                {average.count === 1 ? "session" : "sessions"}
+                {t("detail.sessionCount", { count: average.count })}
               </span>
             </span>
           )}
@@ -131,7 +132,7 @@ export default function StrainDetail() {
             className="pressable herb-hover bg-herb text-herb-foreground"
           >
             <Link to={`/log?strain=${encodeURIComponent(strain.slug)}`}>
-              Log with this strain
+              {t("detail.logWith")}
             </Link>
           </Button>
         </div>
@@ -139,11 +140,11 @@ export default function StrainDetail() {
 
       <div className="flex flex-col gap-6">
         <section className="flex flex-col rounded-xl border border-border px-4 py-2">
-          <DetailRow label="Lineage">{strain.lineage}</DetailRow>
+          <DetailRow label={t("detail.lineage")}>{strain.lineage}</DetailRow>
           {strain.link && (
             <>
               <Separator />
-              <DetailRow label="Reference">
+              <DetailRow label={t("detail.reference")}>
                 <a
                   href={strain.link}
                   target="_blank"
@@ -158,14 +159,14 @@ export default function StrainDetail() {
           )}
         </section>
 
-        <ChipSection title="Terpenes" items={strain.terpenes} />
-        <ChipSection title="Aromas" items={strain.aromas} />
-        <ChipSection title="Effects" items={strain.effects} />
+        <ChipSection title={t("detail.terpenes")} items={strain.terpenes} />
+        <ChipSection title={t("detail.aromas")} items={strain.aromas} />
+        <ChipSection title={t("detail.effects")} items={strain.effects} />
       </div>
 
       <section className="flex flex-col">
         <h2 className="border-b border-border pb-2 text-lg font-semibold">
-          Sessions from the community
+          {t("detail.communityTitle")}
         </h2>
         {sessionsLoading ? (
           <div
@@ -173,7 +174,7 @@ export default function StrainDetail() {
             role="status"
           >
             <p className="text-sm font-medium text-foreground">
-              Loading community sessions…
+              {t("detail.communityLoading")}
             </p>
           </div>
         ) : strainSessions.length > 0 ? (
@@ -185,17 +186,22 @@ export default function StrainDetail() {
         ) : (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
             <p className="text-sm font-medium text-foreground">
-              No public sessions yet
+              {t("detail.noSessionsTitle")}
             </p>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Nobody has published a session with {strain.name} —{" "}
-              <Link
-                to={`/log?strain=${encodeURIComponent(strain.slug)}`}
-                className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
-              >
-                log yours
-              </Link>{" "}
-              and be the first.
+              <Trans
+                t={t}
+                i18nKey="detail.noSessionsBody"
+                values={{ strain: strain.name }}
+                components={{
+                  1: (
+                    <Link
+                      to={`/log?strain=${encodeURIComponent(strain.slug)}`}
+                      className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+                    />
+                  ),
+                }}
+              />
             </p>
           </div>
         )}

@@ -1,0 +1,53 @@
+{
+  "header": {
+    "title": "Community feed",
+    "subtitle": "Every public session from every member, newest first."
+  },
+  "loading": {
+    "title": "Loading the feed…",
+    "subtitle": "Public sessions from every member are on their way."
+  },
+  "filters": {
+    "byZone": "Filter by temperature zone",
+    "byDevice": "Filter by device",
+    "byMood": "Filter by mood",
+    "devicePlaceholder": "Device",
+    "moodPlaceholder": "Mood",
+    "allDevices": "All devices",
+    "allMoods": "All moods",
+    "clear": "Clear filters",
+    "zones": {
+      "all": "All temps",
+      "low": "Low <170°C",
+      "medium": "Medium 170–190°C",
+      "high": "High >190°C"
+    }
+  },
+  "zones": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "count": {
+    "filtered_one": "{{visible}} of {{count}} public session",
+    "filtered_other": "{{visible}} of {{count}} public sessions",
+    "all_one": "{{count}} public session",
+    "all_other": "{{count}} public sessions"
+  },
+  "noMatch": {
+    "title": "No sessions match these filters",
+    "body": "Try a different device, temperature zone, or mood — or clear the filters to see everything again."
+  },
+  "empty": {
+    "title": "The feed is just getting started",
+    "description": "This is the community feed — every public session from every member lands here, newest first. It fills up as people publish their sessions, and nobody has published yet.",
+    "logCta": "Log a session",
+    "loggedInHint": "Log a session, then publish it from your <diaryLink>diary</diaryLink> — the first one here could be yours.",
+    "createCta": "Create an account",
+    "loggedOutHint": "Be the first to publish a session. Already a member? <signinLink>Sign in</signinLink>"
+  },
+  "card": {
+    "by": "by",
+    "ariaLabel": "{{strain}} session by {{author}}, rated {{rating}} out of 10"
+  }
+}

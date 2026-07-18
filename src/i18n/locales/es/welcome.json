@@ -1,0 +1,74 @@
+{
+  "steps": {
+    "progress": "Paso {{step}} de {{total}}"
+  },
+  "ageGate": {
+    "title": "Primero lo primero — ¿cuántos años tienes?",
+    "lead": "vaporlog es un diario para adultos que vaporizan. Tu fecha de nacimiento nunca sale de este dispositivo; solo mantiene la puerta honesta.",
+    "birthdayLabel": "Tu fecha de nacimiento",
+    "monthPlaceholder": "Mes",
+    "dayPlaceholder": "Día",
+    "yearPlaceholder": "Año",
+    "birthMonthAria": "Mes de nacimiento",
+    "birthDayAria": "Día de nacimiento",
+    "birthYearAria": "Año de nacimiento",
+    "errors": {
+      "invalidDate": "Esa fecha no se ve del todo bien — ¿la revisas?",
+      "futureDate": "Esa fecha está en el futuro — buen intento, viajero del tiempo."
+    },
+    "continue": "Continuar",
+    "legalNote": "vaporlog es para adultos mayores de 21 años en jurisdicciones donde la vaporización es legal."
+  },
+  "months": {
+    "january": "enero",
+    "february": "febrero",
+    "march": "marzo",
+    "april": "abril",
+    "may": "mayo",
+    "june": "junio",
+    "july": "julio",
+    "august": "agosto",
+    "september": "septiembre",
+    "october": "octubre",
+    "november": "noviembre",
+    "december": "diciembre"
+  },
+  "blocked": {
+    "title": "Este lugar no es para ti — todavía.",
+    "body": "vaporlog es estrictamente para adultos mayores de 21 años, en lugares donde la vaporización es legal. Sin juicios ni sermones — aquí estaremos cuando sea el momento.",
+    "resetHint": "¿Ingresaste mal tu fecha de nacimiento? Borrar los datos de este sitio en la configuración de tu navegador te permite empezar de nuevo."
+  },
+  "account": {
+    "titleSignup": "Crea tu cuenta",
+    "titleSignin": "Hola de nuevo",
+    "leadSignup": "Elige un handle y una contraseña. Tus sesiones son privadas por defecto — si alguna vez publicas una, solo se muestra tu handle.",
+    "leadSignin": "Inicia sesión con tu handle y contraseña para abrir tu diario.",
+    "handleLabel": "Tu handle",
+    "handlePlaceholder": "p. ej. TerpNomad",
+    "surpriseMe": "Sorpréndeme",
+    "handleHintSignup": "3–20 caracteres — letras, números y guiones.",
+    "handleHintSignin": "El handle con el que te registraste.",
+    "handleTaken": "Ese handle está en uso. <signin>Inicia sesión con él</signin>",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholderSignup": "Al menos {{min}} caracteres",
+    "passwordPlaceholderSignin": "Tu contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "passwordHintSignup": "Mínimo {{min}} caracteres. Se guarda solo como hash — nunca en texto plano.",
+    "passwordHintSignin": "La contraseña que elegiste al registrarte.",
+    "genericError": "Algo salió mal — inténtalo de nuevo.",
+    "back": "Atrás",
+    "creatingAccount": "Creando cuenta…",
+    "signingIn": "Iniciando sesión…",
+    "createAccount": "Crear cuenta",
+    "signIn": "Iniciar sesión",
+    "switchToSignin": "¿Ya tienes una cuenta? Inicia sesión",
+    "switchToSignup": "¿Nuevo en vaporlog? Crea una cuenta",
+    "syncNote": "tu cuenta se sincroniza entre tus dispositivos — las sesiones son privadas por defecto"
+  },
+  "validation": {
+    "minLength": "Al menos {{min}} caracteres.",
+    "maxLength": "{{max}} caracteres es el máximo.",
+    "charset": "Solo letras, números, guiones y guiones bajos."
+  }
+}

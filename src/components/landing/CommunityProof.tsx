@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Reveal from "@/components/landing/Reveal";
 import SessionLogCard from "@/components/landing/SessionLogCard";
 import { usePublicSessions } from "@/lib/data";
@@ -27,6 +28,7 @@ function pickProofSessions(all: SessionLog[]): SessionLog[] {
  * zero-count variant only renders for a confirmed empty feed.
  */
 export default function CommunityProof() {
+  const { t } = useTranslation("landing");
   const { sessions: all, loading } = usePublicSessions();
 
   if (loading) return null;
@@ -40,12 +42,10 @@ export default function CommunityProof() {
       <section className="border-t border-border/60 py-20 sm:py-28">
         <Reveal>
           <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-            Be the first to share a session.
+            {t("community.emptyTitle")}
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-center text-base leading-relaxed text-muted-foreground">
-            The public feed opens with its first members. Log a session, make
-            it public, and it can appear here — pseudonym always, private by
-            default.
+            {t("community.emptyBody")}
           </p>
         </Reveal>
       </section>
@@ -58,11 +58,10 @@ export default function CommunityProof() {
     <section className="border-t border-border/60 py-20 sm:py-28">
       <Reveal>
         <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          {all.length} expert sessions. {nineOrHigher} rated 9 or higher.
+          {t("community.headline", { total: all.length, top: nineOrHigher })}
         </h2>
         <p className="mx-auto mt-4 max-w-lg text-center text-base leading-relaxed text-muted-foreground">
-          Connoisseurs documenting the craft — pseudonyms always, private by
-          default. Tap a session to see exactly how they vaporize.
+          {t("community.body")}
         </p>
       </Reveal>
       <div className="mt-10 grid gap-4 sm:grid-cols-3">

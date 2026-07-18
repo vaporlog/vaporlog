@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export function DiarySessionCard({
   onTogglePublic,
   pending = false,
 }: DiarySessionCardProps) {
+  const { t } = useTranslation("diary");
   const strainName = displayStrainName(session.strainSlug);
   const deviceName = displayDeviceName(session.deviceSlug);
   const details = sessionDetailParts(session);
@@ -97,20 +99,20 @@ export function DiarySessionCard({
               checked={session.isPublic}
               onCheckedChange={() => onTogglePublic(session.id)}
               disabled={pending}
-              aria-label={`Make “${strainName}” session public`}
+              aria-label={t("card.makePublicAria", { strain: strainName })}
             />
             <Label
               htmlFor={`public-${session.id}`}
               className="cursor-pointer text-sm text-muted-foreground"
             >
-              {session.isPublic ? "Public" : "Private"}
+              {session.isPublic ? t("card.public") : t("card.private")}
             </Label>
             {session.isPublic && (
               <Link
                 to={`/s/${encodeURIComponent(session.id)}`}
                 className="pressable text-sm font-medium text-herb underline-offset-4 transition-colors duration-150 hover:underline"
               >
-                View public card
+                {t("card.viewPublicCard")}
               </Link>
             )}
           </div>
@@ -120,7 +122,7 @@ export function DiarySessionCard({
             size="sm"
             className="pressable -mr-2 text-muted-foreground"
           >
-            <Link to={logAgainTo}>Log again</Link>
+            <Link to={logAgainTo}>{t("card.logAgain")}</Link>
           </Button>
         </div>
       </CardContent>

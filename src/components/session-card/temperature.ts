@@ -9,6 +9,8 @@
  *   High   > 190°C   (maximum extraction)
  */
 
+import i18n from "@/i18n";
+
 export type TempZone = "low" | "medium" | "high";
 
 /** Classifies a Celsius temperature into a vaporization zone. */
@@ -20,14 +22,7 @@ export function tempZone(celsius: number): TempZone {
 
 /** Short label shown next to the temperature in the ritual row. */
 export function tempZoneLabel(zone: TempZone): string {
-  switch (zone) {
-    case "low":
-      return "Low";
-    case "medium":
-      return "Medium";
-    case "high":
-      return "High";
-  }
+  return i18n.t(`sessionCard:zone.${zone}`);
 }
 
 /**
@@ -35,27 +30,5 @@ export function tempZoneLabel(zone: TempZone): string {
  * temperature zone means. Static copy, adapted to the actual temperature.
  */
 export function tempZoneLesson(celsius: number, zone: TempZone): string {
-  switch (zone) {
-    case "low":
-      return (
-        `${celsius}°C sits in the low zone — the flavor range. Gentle heat ` +
-        `vaporizes the most delicate terpenes first, so the vapor tastes ` +
-        `brighter and the effects tend to feel lighter and clearer. This is ` +
-        `how connoisseurs taste a strain before they chase potency.`
-      );
-    case "medium":
-      return (
-        `${celsius}°C sits in the middle zone — the balance point. Warm ` +
-        `enough to extract the heavier compounds, cool enough to keep most ` +
-        `of the terpene character intact. Flavor and strength meet here, ` +
-        `which is why most everyday sessions live in this range.`
-      );
-    case "high":
-      return (
-        `${celsius}°C sits in the high zone — maximum extraction. The vapor ` +
-        `comes out thicker and the body effects land harder, traded against ` +
-        `some of the finer flavor notes. Experienced users finish a bowl ` +
-        `here once the tasting is done.`
-      );
-  }
+  return i18n.t(`sessionCard:learn.lesson.${zone}`, { temp: celsius });
 }

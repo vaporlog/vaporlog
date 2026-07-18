@@ -1,0 +1,53 @@
+{
+  "loading": {
+    "title": "Cargando sesión…",
+    "body": "Trayendo esta sesión pública desde la nube."
+  },
+  "notFound": {
+    "title": "Esta sesión se evaporó",
+    "body": "Puede que el enlace sea viejo o que el autor haya hecho privada esta sesión. El catálogo, eso sí, siempre está abierto.",
+    "cta": "Explora el catálogo de strains"
+  },
+  "cta": {
+    "button": "Empieza tu diario",
+    "subtext": "Gratis durante el acceso anticipado — registra tu primera sesión en menos de un minuto."
+  },
+  "legal": "Solo mayores de 21 años, donde sea legal. Las calificaciones y los efectos son la experiencia de una persona, no un consejo médico.",
+  "tagline": "Toda gran sesión merece un testigo.",
+  "learn": {
+    "ariaLabel": "Qué significa esta temperatura",
+    "title": "Leyendo el ritual",
+    "lesson": {
+      "low": "{{temp}}°C está en la zona baja — el rango de sabor. Un calor suave vaporiza primero los terpenos más delicados, así que el vapor sabe más vivo y los efectos tienden a sentirse más ligeros y claros. Así es como los conocedores prueban un strain antes de buscar potencia.",
+      "medium": "{{temp}}°C está en la zona media — el punto de equilibrio. Lo suficientemente cálido para extraer los compuestos más pesados y lo suficientemente fresco para conservar la mayor parte del carácter de los terpenos. Aquí se encuentran el sabor y la fuerza, y por eso la mayoría de las sesiones cotidianas viven en este rango.",
+      "high": "{{temp}}°C está en la zona alta — extracción máxima. El vapor sale más denso y los efectos corporales se sienten más fuertes, a cambio de algunas de las notas de sabor más finas. Las personas con experiencia terminan una carga aquí cuando la cata ya terminó."
+    }
+  },
+  "zone": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "card": {
+    "ariaLabel": "Sesión de {{strain}} por {{author}}",
+    "overline": "Una sesión de vaporlog",
+    "by": "por",
+    "ratingAria": "Calificada con {{rating}} de 10",
+    "ritual": {
+      "device": "Vaporizador",
+      "temp": "Temp",
+      "duration": "Duración",
+      "amount": "Cantidad"
+    },
+    "mood": "Ánimo",
+    "aromaFlavor": "Aroma · Sabor"
+  },
+  "share": {
+    "text": "La sesión de {{strain}} de {{author}} en vaporlog — {{rating}}/10",
+    "copyLink": "Copiar enlace",
+    "toX": "Compartir en X",
+    "toReddit": "Compartir en Reddit",
+    "copySuccess": "Enlace copiado — pásalo.",
+    "copyError": "No se pudo copiar el enlace — mantén presionada la barra de direcciones."
+  }
+}

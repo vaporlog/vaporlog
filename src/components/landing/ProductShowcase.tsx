@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from "react-i18next";
 import Reveal from "@/components/landing/Reveal";
 import SessionLogCard from "@/components/landing/SessionLogCard";
 import { usePublicSessions } from "@/lib/data";
@@ -19,6 +20,7 @@ function findShowcaseSession(sessions: SessionLog[]): SessionLog | undefined {
  * community session, rendered as product UI — one idea on this screen (#6).
  */
 export default function ProductShowcase() {
+  const { t } = useTranslation("landing");
   const { sessions, loading } = usePublicSessions();
   // While the cloud cache hydrates — and whenever there are no public
   // sessions at all — there is nothing real to demo, so the section
@@ -32,16 +34,15 @@ export default function ProductShowcase() {
     <section className="border-t border-border/60 py-20 sm:py-28">
       <Reveal className="mx-auto max-w-xl">
         <p className="mb-6 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          This is a vaporlog session
+          {t("showcase.eyebrow")}
         </p>
         <SessionLogCard session={session} elevated />
         <p className="mt-6 text-center text-base leading-relaxed text-muted-foreground">
-          Everything that made it perfect — strain, temperature, flavor, mood —
-          saved in 30 seconds. Next time you ask yourself{" "}
-          <span className="text-foreground">
-            “what was that one at 195°C?”
-          </span>
-          , you’ll know.
+          <Trans
+            t={t}
+            i18nKey="showcase.caption"
+            components={{ strong: <span className="text-foreground" /> }}
+          />
         </p>
       </Reveal>
     </section>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import {
@@ -11,6 +12,7 @@ interface FavoriteStrainsProps {
 }
 
 function FavoriteRow({ favorite }: { favorite: FavoriteStrain }) {
+  const { t } = useTranslation("diary");
   const name = displayStrainName(favorite.strainSlug);
   const catalog = isCatalogStrain(favorite.strainSlug);
 
@@ -19,8 +21,7 @@ function FavoriteRow({ favorite }: { favorite: FavoriteStrain }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{name}</p>
         <p className="text-xs text-muted-foreground">
-          {favorite.sessions}{" "}
-          {favorite.sessions === 1 ? "session" : "sessions"}
+          {t("favorites.sessionCount", { count: favorite.sessions })}
         </p>
       </div>
       <div className="flex items-center gap-1">
@@ -63,6 +64,7 @@ function FavoriteRow({ favorite }: { favorite: FavoriteStrain }) {
 
 /** Top strains by the user's own average rating. */
 export function FavoriteStrains({ favorites }: FavoriteStrainsProps) {
+  const { t } = useTranslation("diary");
   if (favorites.length === 0) return null;
   return (
     <section aria-labelledby="diary-favorites-heading" className="space-y-3">
@@ -70,7 +72,7 @@ export function FavoriteStrains({ favorites }: FavoriteStrainsProps) {
         id="diary-favorites-heading"
         className="text-lg font-semibold tracking-tight"
       >
-        Favorites
+        {t("favorites.title")}
       </h2>
       <ul className="space-y-2">
         {favorites.map((favorite) => (

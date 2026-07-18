@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { tempZone, tempZoneLesson } from "./temperature";
 
 /**
@@ -10,14 +12,15 @@ export default function LearnBlock({
 }: {
   temperatureC: number;
 }) {
+  const { t } = useTranslation("sessionCard");
   const zone = tempZone(temperatureC);
   return (
     <section
-      aria-label="What this temperature means"
+      aria-label={t("learn.ariaLabel")}
       className="mx-auto w-full max-w-xl text-center"
     >
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-        Reading the ritual
+        {t("learn.title")}
       </h2>
       <p className="mt-3 text-pretty text-base leading-relaxed text-foreground">
         {tempZoneLesson(temperatureC, zone)}

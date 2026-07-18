@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ const COMMUNITY_FALLBACK_COUNT = 4;
  * not-yet-hydrated cache would masquerade as the cold-start state.
  */
 export default function Recommendations() {
+  const { t } = useTranslation("recommendations");
   const { sessions: mySessions, loading: myLoading } = useMySessions();
   const { sessions: communitySessions, loading: communityLoading } =
     usePublicSessions();
@@ -63,17 +65,16 @@ export default function Recommendations() {
     return (
       <section className="flex flex-col gap-6">
         <header className="flex flex-col gap-1">
-          <h1 className="text-3xl font-semibold">Recommendations</h1>
-          <p className="text-muted-foreground">What to try next.</p>
+          <h1 className="text-3xl font-semibold">{t("header.title")}</h1>
+          <p className="text-muted-foreground">{t("header.tagline")}</p>
         </header>
         <div
           className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"
           role="status"
         >
-          <p className="font-medium">Loading your palate…</p>
+          <p className="font-medium">{t("loading.title")}</p>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Your sessions and the full strain catalog are on their way —
-            matching starts as soon as they arrive.
+            {t("loading.subtitle")}
           </p>
         </div>
       </section>
@@ -83,15 +84,13 @@ export default function Recommendations() {
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold">Recommendations</h1>
+        <h1 className="text-3xl font-semibold">{t("header.title")}</h1>
         <p className="text-muted-foreground">
           {isColdStart
             ? hasCommunityPicks
-              ? "What to try next — starting with what the community loves."
-              : "What to try next — learned from the sessions you love."
-            : `Learned from ${lovedCount} ${
-                lovedCount === 1 ? "session" : "sessions"
-              } you rated 8 or higher.`}
+              ? t("header.subtitleCommunity")
+              : t("header.subtitleCold")
+            : t("header.learned", { count: lovedCount })}
         </p>
       </header>
 
@@ -102,25 +101,24 @@ export default function Recommendations() {
               <EmptyMedia variant="icon">
                 <Sparkles className="text-herb" aria-hidden="true" />
               </EmptyMedia>
-              <EmptyTitle>Your palate, learned</EmptyTitle>
-              <EmptyDescription>
-                Log a few sessions you love and vaporlog learns your palate —
-                terpenes, effects, and flavors — to suggest what to try next.
-              </EmptyDescription>
+              <EmptyTitle>{t("empty.title")}</EmptyTitle>
+              <EmptyDescription>{t("empty.description")}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
               <Button
                 asChild
                 className="pressable herb-hover bg-herb text-herb-foreground"
               >
-                <Link to="/log">Log a session</Link>
+                <Link to="/log">{t("empty.logCta")}</Link>
               </Button>
             </EmptyContent>
           </Empty>
 
           {hasCommunityPicks && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold">Loved by the community</h2>
+              <h2 className="text-lg font-semibold">
+                {t("community.title")}
+              </h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {communityPicks.map((pick) => (
                   <StrainCard

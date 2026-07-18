@@ -1,13 +1,14 @@
 import { Star, Thermometer, Timer, Weight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getDevice, getStrain } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
 
-function formatSessionDate(iso: string): string {
+function formatSessionDate(iso: string, locale: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -41,13 +42,14 @@ export default function SessionLogCard({
   /** Larger, shadowed presentation for the hero showcase. */
   elevated?: boolean;
 }) {
+  const { t, i18n } = useTranslation("landing");
   const strain = getStrain(session.strainSlug);
   const device = getDevice(session.deviceSlug);
   // getStrain reads the lazy catalog cache — until it lands (or for personal
   // strains) the humanized slug keeps the card readable.
   const strainName = strain ? strain.name : humanizeSlug(session.strainSlug);
   const deviceName = device ? device.name : humanizeSlug(session.deviceSlug);
-  const dateLabel = formatSessionDate(session.createdAt);
+  const dateLabel = formatSessionDate(session.createdAt, i18n.language);
 
   return (
     <article
@@ -94,13 +96,13 @@ export default function SessionLogCard({
         {session.durationMin !== null ? (
           <span className="inline-flex items-center gap-1.5">
             <Timer aria-hidden="true" className="size-4 text-muted-foreground" />
-            {session.durationMin} min
+            {t("sessionCard.duration", { count: session.durationMin })}
           </span>
         ) : null}
         {session.amountG !== null ? (
           <span className="inline-flex items-center gap-1.5">
             <Weight aria-hidden="true" className="size-4 text-muted-foreground" />
-            {session.amountG} g
+            {t("sessionCard.amount", { count: session.amountG })}
           </span>
         ) : null}
         <span className="text-muted-foreground">{deviceName}</span>

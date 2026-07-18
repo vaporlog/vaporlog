@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ const PAGE_SIZE = 60;
  * responsive while a several-thousand-row filter+sort runs.
  */
 export default function Strains() {
+  const { t } = useTranslation("strains");
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [effectFilter, setEffectFilter] = useState<string>(ALL_EFFECTS);
@@ -135,11 +137,11 @@ export default function Strains() {
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold">Strains</h1>
+        <h1 className="text-3xl font-semibold">{t("title")}</h1>
         <p className="text-muted-foreground">
           {loading
-            ? "Loading the catalog…"
-            : `The full catalog — ${strains.length.toLocaleString()} strains with terpenes, effects, and lineage.`}
+            ? t("subtitleLoading")
+            : t("subtitle", { count: strains.length.toLocaleString() })}
         </p>
       </header>
 
@@ -153,8 +155,8 @@ export default function Strains() {
             type="search"
             value={query}
             onChange={(event) => changeQuery(event.target.value)}
-            placeholder="Search name, terpene, or effect…"
-            aria-label="Search strains"
+            placeholder={t("search.placeholder")}
+            aria-label={t("search.ariaLabel")}
             className="pl-9"
           />
         </div>
@@ -168,10 +170,10 @@ export default function Strains() {
             }}
             variant="outline"
             size="sm"
-            aria-label="Filter by type"
+            aria-label={t("filters.typeAriaLabel")}
           >
             <ToggleGroupItem value="all" className="pressable px-3">
-              All
+              {t("filters.all")}
             </ToggleGroupItem>
             <ToggleGroupItem value="Indica" className="pressable px-3">
               Indica
@@ -185,11 +187,13 @@ export default function Strains() {
           </ToggleGroup>
 
           <Select value={effectFilter} onValueChange={changeEffectFilter}>
-            <SelectTrigger size="sm" aria-label="Filter by effect">
-              <SelectValue placeholder="Effect" />
+            <SelectTrigger size="sm" aria-label={t("filters.effectAriaLabel")}>
+              <SelectValue placeholder={t("filters.effect")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_EFFECTS}>All effects</SelectItem>
+              <SelectItem value={ALL_EFFECTS}>
+                {t("filters.allEffects")}
+              </SelectItem>
               {effects.map((effect) => (
                 <SelectItem key={effect} value={effect}>
                   {effect}
@@ -202,14 +206,14 @@ export default function Strains() {
             value={sortKey}
             onValueChange={(value) => changeSortKey(value as SortKey)}
           >
-            <SelectTrigger size="sm" aria-label="Sort strains">
-              <SelectValue placeholder="Sort" />
+            <SelectTrigger size="sm" aria-label={t("sort.ariaLabel")}>
+              <SelectValue placeholder={t("sort.placeholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="name">Name A–Z</SelectItem>
-              <SelectItem value="thc">THC, high to low</SelectItem>
+              <SelectItem value="name">{t("sort.name")}</SelectItem>
+              <SelectItem value="thc">{t("sort.thc")}</SelectItem>
               {hasCommunityRatings && (
-                <SelectItem value="rating">Community rating</SelectItem>
+                <SelectItem value="rating">{t("sort.rating")}</SelectItem>
               )}
             </SelectContent>
           </Select>
@@ -221,10 +225,9 @@ export default function Strains() {
           className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"
           role="status"
         >
-          <p className="font-medium">Loading the catalog…</p>
+          <p className="font-medium">{t("loading.title")}</p>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Thousands of strains are on their way — this takes a moment the
-            first time.
+            {t("loading.body")}
           </p>
         </div>
       ) : visible.length > 0 ? (
@@ -241,12 +244,15 @@ export default function Strains() {
 
           <nav
             className="flex flex-wrap items-center justify-between gap-3"
-            aria-label="Catalog pages"
+            aria-label={t("pagination.ariaLabel")}
           >
             <p className="text-sm text-muted-foreground tabular-nums">
-              {visible.length.toLocaleString()}{" "}
-              {visible.length === 1 ? "strain" : "strains"} · page{" "}
-              {currentPage} of {totalPages.toLocaleString()}
+              {t("pagination.summary", {
+                count: visible.length,
+                formattedCount: visible.length.toLocaleString(),
+                page: currentPage,
+                totalPages: totalPages.toLocaleString(),
+              })}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -258,7 +264,7 @@ export default function Strains() {
                 className="pressable"
               >
                 <ChevronLeft className="size-4" aria-hidden="true" />
-                Prev
+                {t("pagination.prev")}
               </Button>
               <Button
                 type="button"
@@ -268,7 +274,7 @@ export default function Strains() {
                 disabled={currentPage >= totalPages}
                 className="pressable"
               >
-                Next
+                {t("pagination.next")}
                 <ChevronRight className="size-4" aria-hidden="true" />
               </Button>
             </div>
@@ -276,9 +282,9 @@ export default function Strains() {
         </>
       ) : (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center">
-          <p className="font-medium">No strains match</p>
+          <p className="font-medium">{t("empty.title")}</p>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Try a different name, terpene, or effect — or clear a filter.
+            {t("empty.body")}
           </p>
         </div>
       )}

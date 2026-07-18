@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,19 +19,19 @@ import {
   parseBirthdate,
 } from "@/lib/profile-flow";
 
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+const MONTH_KEYS = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
 ] as const;
 
 /**
@@ -51,6 +52,7 @@ export default function AgeGateStep({
   /** Called when the entered birthdate is real but under 21. */
   onBlocked: () => void;
 }) {
+  const { t } = useTranslation("welcome");
   const initial = initialBirthdate ? parseBirthdate(initialBirthdate) : null;
   const [month, setMonth] = useState<string>(
     initial ? String(initial.month) : "",
@@ -86,11 +88,11 @@ export default function AgeGateStep({
       day: Number(day),
     });
     if (!isValidBirthdate(birthdate)) {
-      setError("That date doesn't look quite right — mind checking it?");
+      setError(t("ageGate.errors.invalidDate"));
       return;
     }
     if (isFutureBirthdate(birthdate)) {
-      setError("That's in the future — nice try, time traveler.");
+      setError(t("ageGate.errors.futureDate"));
       return;
     }
     setError(null);
@@ -103,12 +105,12 @@ export default function AgeGateStep({
 
   return (
     <WelcomeStep
-      title="First things first — how old are you?"
-      lead="vaporlog is a journal for adults who vaporize. Your birthday never leaves this device; it just keeps the door honest."
+      title={t("ageGate.title")}
+      lead={t("ageGate.lead")}
     >
       <div className="flex flex-col gap-2">
         <Label id="birthdate-label" className="text-muted-foreground">
-          Your birthday
+          {t("ageGate.birthdayLabel")}
         </Label>
         <div
           role="group"
@@ -122,13 +124,13 @@ export default function AgeGateStep({
               setError(null);
             }}
           >
-            <SelectTrigger aria-label="Birth month" className="w-full">
-              <SelectValue placeholder="Month" />
+            <SelectTrigger aria-label={t("ageGate.birthMonthAria")} className="w-full">
+              <SelectValue placeholder={t("ageGate.monthPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              {MONTHS.map((name, i) => (
-                <SelectItem key={name} value={String(i + 1)}>
-                  {name}
+              {MONTH_KEYS.map((key, i) => (
+                <SelectItem key={key} value={String(i + 1)}>
+                  {t(`months.${key}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -141,8 +143,8 @@ export default function AgeGateStep({
               setError(null);
             }}
           >
-            <SelectTrigger aria-label="Birth day" className="w-full">
-              <SelectValue placeholder="Day" />
+            <SelectTrigger aria-label={t("ageGate.birthDayAria")} className="w-full">
+              <SelectValue placeholder={t("ageGate.dayPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {days.map((d) => (
@@ -160,8 +162,8 @@ export default function AgeGateStep({
               setError(null);
             }}
           >
-            <SelectTrigger aria-label="Birth year" className="w-full">
-              <SelectValue placeholder="Year" />
+            <SelectTrigger aria-label={t("ageGate.birthYearAria")} className="w-full">
+              <SelectValue placeholder={t("ageGate.yearPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {years.map((y) => (
@@ -187,12 +189,11 @@ export default function AgeGateStep({
           onClick={handleContinue}
           className="pressable herb-hover w-full bg-herb text-herb-foreground sm:w-auto"
         >
-          Continue
+          {t("ageGate.continue")}
           <ArrowRight className="size-4" />
         </Button>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          vaporlog is for adults 21+ in jurisdictions where vaporization is
-          legal.
+          {t("ageGate.legalNote")}
         </p>
       </div>
     </WelcomeStep>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, Leaf, Plus, X } from "lucide-react";
 import { useStrains } from "@/lib/data";
 import type { Strain } from "@/lib/types";
@@ -69,6 +70,7 @@ export default function StrainPicker({
   onChange,
   invalid = false,
 }: StrainPickerProps) {
+  const { t } = useTranslation("log");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
@@ -141,7 +143,7 @@ export default function StrainPicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Choose a strain"
+          aria-label={t("strainPicker.chooseAria")}
           className={cn(
             "pressable flex min-h-14 w-full items-center gap-3 rounded-xl border bg-background px-4 text-left transition-colors duration-150",
             invalid
@@ -157,19 +159,19 @@ export default function StrainPicker({
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
                   {isPersonalSlug(selected.slug)
-                    ? "Personal strain"
+                    ? t("strainPicker.personal")
                     : `${selected.type} · THC ${selected.thc}%`}
                 </span>
               </span>
               {isPersonalSlug(selected.slug) ? (
                 <Badge variant="secondary" className="shrink-0">
-                  Yours
+                  {t("strainPicker.yours")}
                 </Badge>
               ) : null}
             </>
           ) : (
             <span className="flex-1 text-base text-muted-foreground">
-              Search strains…
+              {t("strainPicker.searchPlaceholder")}
             </span>
           )}
           <ChevronDown
@@ -188,10 +190,10 @@ export default function StrainPicker({
         {creating ? (
           <div className="flex flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Add your strain</p>
+              <p className="text-sm font-semibold">{t("strainPicker.addTitle")}</p>
               <button
                 type="button"
-                aria-label="Back to search"
+                aria-label={t("strainPicker.backAria")}
                 onClick={() => setCreating(false)}
                 className="pressable flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
               >
@@ -201,7 +203,7 @@ export default function StrainPicker({
 
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">
-                Name
+                {t("strainPicker.nameLabel")}
               </span>
               <input
                 autoFocus
@@ -213,29 +215,30 @@ export default function StrainPicker({
                     confirmCreate();
                   }
                 }}
-                placeholder="e.g. Basement Kush"
+                placeholder={t("strainPicker.namePlaceholder")}
                 className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-base outline-none transition-colors focus-visible:border-foreground/40"
               />
             </label>
 
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">
-                Type <span className="font-normal">(optional)</span>
+                {t("strainPicker.typeLabel")}{" "}
+                <span className="font-normal">{t("strainPicker.optionalParens")}</span>
               </span>
               <div className="flex gap-2">
-                {TYPE_OPTIONS.map((t) => (
+                {TYPE_OPTIONS.map((type) => (
                   <button
-                    key={t}
+                    key={type}
                     type="button"
-                    onClick={() => setNewType((cur) => (cur === t ? null : t))}
+                    onClick={() => setNewType((cur) => (cur === type ? null : type))}
                     className={cn(
                       "pressable min-h-10 flex-1 rounded-lg border text-sm font-medium transition-colors duration-150",
-                      newType === t
+                      newType === type
                         ? "border-foreground bg-foreground text-background"
                         : "border-border bg-background text-foreground",
                     )}
                   >
-                    {t}
+                    {type}
                   </button>
                 ))}
               </div>
@@ -248,28 +251,28 @@ export default function StrainPicker({
               className="pressable herb-hover min-h-11 bg-herb text-herb-foreground"
             >
               <Plus className="size-4" />
-              Save &amp; use this strain
+              {t("strainPicker.saveUse")}
             </Button>
             <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">
-              Saved on this device only — your personal strains stay private.
+              {t("strainPicker.privacyNote")}
             </p>
           </div>
         ) : (
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search strains…"
+              placeholder={t("strainPicker.searchPlaceholder")}
               value={query}
               onValueChange={setQuery}
             />
             <CommandList className="max-h-72">
               <CommandEmpty className="py-4 text-center text-sm text-muted-foreground">
                 {catalogLoading
-                  ? "Loading the catalog…"
-                  : `No strain matches “${query}”.`}
+                  ? t("strainPicker.loading")
+                  : t("strainPicker.noMatch", { query })}
               </CommandEmpty>
 
               {personalMatches.length > 0 ? (
-                <CommandGroup heading="Your strains">
+                <CommandGroup heading={t("strainPicker.yourStrains")}>
                   {personalMatches.map((s) => (
                     <StrainRow key={s.slug} strain={s} onPick={pick} />
                   ))}
@@ -277,7 +280,7 @@ export default function StrainPicker({
               ) : null}
 
               {visibleCatalog.length > 0 ? (
-                <CommandGroup heading="Catalog">
+                <CommandGroup heading={t("strainPicker.catalog")}>
                   {visibleCatalog.map((s) => (
                     <StrainRow key={s.slug} strain={s} onPick={pick} />
                   ))}
@@ -289,15 +292,16 @@ export default function StrainPicker({
                   className="px-3 py-2 text-center text-xs text-muted-foreground"
                   role="status"
                 >
-                  Loading the full catalog…
+                  {t("strainPicker.loadingFull")}
                 </p>
               ) : null}
 
               {!catalogLoading && hiddenCount > 0 ? (
                 <p className="border-t border-border/60 px-3 py-2 text-center text-xs text-muted-foreground">
-                  Showing {visibleCatalog.length} of{" "}
-                  {catalogMatches.length.toLocaleString()} matches — keep
-                  typing to narrow it down.
+                  {t("strainPicker.showingCount", {
+                    shown: visibleCatalog.length,
+                    total: catalogMatches.length,
+                  })}
                 </p>
               ) : null}
 
@@ -311,8 +315,8 @@ export default function StrainPicker({
                     <Plus className="size-3.5" />
                   </span>
                   {query.trim()
-                    ? `Add “${query.trim()}” as your strain`
-                    : "Can't find it? Add yours"}
+                    ? t("strainPicker.addQuery", { query: query.trim() })
+                    : t("strainPicker.addFallback")}
                 </button>
               </div>
             </CommandList>
@@ -330,6 +334,7 @@ function StrainRow({
   strain: Strain;
   onPick: (slug: string) => void;
 }) {
+  const { t } = useTranslation("log");
   const personalRow = isPersonalSlug(strain.slug);
   return (
     <CommandItem
@@ -347,7 +352,7 @@ function StrainRow({
         </span>
         <span className="block text-xs text-muted-foreground">
           {personalRow
-            ? "Personal strain"
+            ? t("strainPicker.personal")
             : `${strain.type} · THC ${strain.thc}%`}
         </span>
       </span>

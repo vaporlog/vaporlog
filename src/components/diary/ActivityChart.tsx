@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { WeekBucket } from "./diary-utils";
 
 interface ActivityChartProps {
@@ -38,6 +39,7 @@ function roundedTopBar(
  * baseline tick. Fully labeled for screen readers.
  */
 export function ActivityChart({ weeks }: ActivityChartProps) {
+  const { t } = useTranslation("diary");
   if (weeks.length === 0) return null;
 
   const max = Math.max(1, ...weeks.map((week) => week.count));
@@ -51,7 +53,7 @@ export function ActivityChart({ weeks }: ActivityChartProps) {
         id="diary-activity-heading"
         className="text-lg font-semibold tracking-tight"
       >
-        Activity
+        {t("activity.title")}
       </h2>
       <div className="rounded-lg border border-border bg-card p-4 shadow-xs">
         <svg
@@ -61,7 +63,7 @@ export function ActivityChart({ weeks }: ActivityChartProps) {
           aria-labelledby="diary-activity-chart-title"
         >
           <title id="diary-activity-chart-title">
-            Sessions per week for the last {weeks.length} weeks
+            {t("activity.chartTitle", { count: weeks.length })}
           </title>
 
           {/* Baseline */}
@@ -81,7 +83,10 @@ export function ActivityChart({ weeks }: ActivityChartProps) {
               ? ZERO_BAR_H
               : Math.max((week.count / max) * PLOT_H, 8);
             const y = baselineY - barH;
-            const label = `${week.count} ${week.count === 1 ? "session" : "sessions"}, week of ${week.label}`;
+            const label = t("activity.barLabel", {
+              count: week.count,
+              week: week.label,
+            });
 
             return (
               <g key={week.label}>

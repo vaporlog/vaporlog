@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export default function ChipGroup({
   onAddCustom,
   addLabel,
 }: ChipGroupProps) {
+  const { t } = useTranslation("log");
   const [draft, setDraft] = useState("");
 
   const selectedSet = new Set(selected);
@@ -100,7 +102,7 @@ export default function ChipGroup({
           type="button"
           onClick={submitCustom}
           disabled={!draft.trim()}
-          aria-label="Add custom tag"
+          aria-label={t("chipGroup.addAria")}
           className="pressable flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors duration-150 enabled:hover:bg-secondary disabled:opacity-40"
         >
           <Plus className="size-4" />

@@ -1,0 +1,62 @@
+{
+  "title": "Strains",
+  "subtitle": "El catálogo completo — {{count}} strains con terpenos, efectos y linaje.",
+  "subtitleLoading": "Cargando el catálogo…",
+  "search": {
+    "placeholder": "Busca por nombre, terpeno o efecto…",
+    "ariaLabel": "Buscar strains"
+  },
+  "filters": {
+    "typeAriaLabel": "Filtrar por tipo",
+    "all": "Todos",
+    "effectAriaLabel": "Filtrar por efecto",
+    "effect": "Efecto",
+    "allEffects": "Todos los efectos"
+  },
+  "sort": {
+    "ariaLabel": "Ordenar strains",
+    "placeholder": "Ordenar",
+    "name": "Nombre A–Z",
+    "thc": "THC, de mayor a menor",
+    "rating": "Calificación de la comunidad"
+  },
+  "loading": {
+    "title": "Cargando el catálogo…",
+    "body": "Miles de strains están en camino — la primera vez toma un momento."
+  },
+  "empty": {
+    "title": "Ningún strain coincide",
+    "body": "Prueba con otro nombre, terpeno o efecto — o quita un filtro."
+  },
+  "pagination": {
+    "ariaLabel": "Páginas del catálogo",
+    "summary_one": "{{formattedCount}} strain · página {{page}} de {{totalPages}}",
+    "summary_other": "{{formattedCount}} strains · página {{page}} de {{totalPages}}",
+    "prev": "Anterior",
+    "next": "Siguiente"
+  },
+  "card": {
+    "viewAriaLabel": "Ver {{name}}",
+    "community": "comunidad ({{count}})"
+  },
+  "detail": {
+    "loadingTitle": "Cargando strain…",
+    "loadingBody": "Obteniendo el perfil completo del catálogo.",
+    "notFoundTitle": "Strain no encontrado",
+    "notFoundBody": "Este strain no está en el catálogo.",
+    "browseAll": "Explorar todos los strains",
+    "back": "Todos los strains",
+    "sessionCount_one": "comunidad · {{count}} sesión",
+    "sessionCount_other": "comunidad · {{count}} sesiones",
+    "logWith": "Registrar sesión con este strain",
+    "lineage": "Linaje",
+    "reference": "Referencia",
+    "terpenes": "Terpenos",
+    "aromas": "Aromas",
+    "effects": "Efectos",
+    "communityTitle": "Sesiones de la comunidad",
+    "communityLoading": "Cargando sesiones de la comunidad…",
+    "noSessionsTitle": "Aún no hay sesiones públicas",
+    "noSessionsBody": "Nadie ha publicado una sesión con {{strain}} — <1>registra la tuya</1> y sé la primera persona."
+  }
+}

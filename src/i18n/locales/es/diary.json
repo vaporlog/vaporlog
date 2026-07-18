@@ -1,0 +1,54 @@
+{
+  "header": {
+    "greeting": {
+      "late": "De madrugada",
+      "morning": "Buenos días",
+      "afternoon": "Buenas tardes",
+      "evening": "Buenas noches"
+    },
+    "logSession": "Registrar sesión"
+  },
+  "loading": {
+    "title": "Cargando tu diario…",
+    "subtitle": "Tus sesiones se están sincronizando desde la nube."
+  },
+  "empty": {
+    "title": "Tu diario está vacío. Tu próxima sesión merece ser recordada.",
+    "subtitle": "Registra tu primera sesión — strain, vaporizador, temperatura, cómo se sintió — y empieza a construir tu archivo personal de vaporización.",
+    "cta": "Registra tu primera sesión"
+  },
+  "stats": {
+    "total": "Sesiones totales",
+    "thisMonth": "Este mes",
+    "avgRating": "Calificación promedio",
+    "gramsThisMonth": "Gramos este mes"
+  },
+  "favorites": {
+    "title": "Favoritos",
+    "sessionCount_one": "{{count}} sesión",
+    "sessionCount_other": "{{count}} sesiones"
+  },
+  "activity": {
+    "title": "Actividad",
+    "chartTitle": "Sesiones por semana durante las últimas {{count}} semanas",
+    "barLabel_one": "{{count}} sesión, semana del {{week}}",
+    "barLabel_other": "{{count}} sesiones, semana del {{week}}"
+  },
+  "sessions": {
+    "title": "Sesiones"
+  },
+  "card": {
+    "public": "Pública",
+    "private": "Privada",
+    "viewPublicCard": "Ver tarjeta pública",
+    "logAgain": "Registrar de nuevo",
+    "makePublicAria": "Hacer pública la sesión de “{{strain}}”"
+  },
+  "toggle": {
+    "nowPublic": "La sesión ahora es pública — cualquiera con el enlace puede ver su tarjeta.",
+    "nowPrivate": "La sesión vuelve a ser privada.",
+    "error": "No se pudo actualizar esa sesión",
+    "errorDescription": "Revisa tu conexión e inténtalo de nuevo."
+  },
+  "unknownDate": "Fecha desconocida"
+}

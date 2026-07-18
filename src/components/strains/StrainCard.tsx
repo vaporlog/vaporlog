@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sparkles, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,13 +19,14 @@ interface StrainCardProps {
  * recommendations list. Whole card is one link to the detail page.
  */
 export default function StrainCard({ strain, community, reason }: StrainCardProps) {
+  const { t } = useTranslation("strains");
   const topTerpenes = strain.terpenes.slice(0, 2);
 
   return (
     <Link
       to={`/strains/${strain.slug}`}
       className="pressable block rounded-xl"
-      aria-label={`View ${strain.name}`}
+      aria-label={t("card.viewAriaLabel", { name: strain.name })}
     >
       <Card className="vl-card-hover h-full gap-3 py-4">
         <CardHeader className="gap-1 px-4">
@@ -61,7 +63,7 @@ export default function StrainCard({ strain, community, reason }: StrainCardProp
                 {formatRating(community.avg)}
               </span>
               <span className="text-muted-foreground">
-                community ({community.count})
+                {t("card.community", { count: community.count })}
               </span>
             </p>
           )}

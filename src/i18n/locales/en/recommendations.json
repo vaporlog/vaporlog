@@ -1,0 +1,22 @@
+{
+  "header": {
+    "title": "Recommendations",
+    "tagline": "What to try next.",
+    "subtitleCommunity": "What to try next — starting with what the community loves.",
+    "subtitleCold": "What to try next — learned from the sessions you love.",
+    "learned_one": "Learned from {{count}} session you rated 8 or higher.",
+    "learned_other": "Learned from {{count}} sessions you rated 8 or higher."
+  },
+  "loading": {
+    "title": "Loading your palate…",
+    "subtitle": "Your sessions and the full strain catalog are on their way — matching starts as soon as they arrive."
+  },
+  "empty": {
+    "title": "Your palate, learned",
+    "description": "Log a few sessions you love and vaporlog learns your palate — terpenes, effects, and flavors — to suggest what to try next.",
+    "logCta": "Log a session"
+  },
+  "community": {
+    "title": "Loved by the community"
+  }
+}

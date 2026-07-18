@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, Leaf, Plus, X } from "lucide-react";
 import { useDevices } from "@/lib/data";
 import type { Device } from "@/lib/types";
@@ -93,6 +94,7 @@ export default function DevicePicker({
   onChange,
   invalid = false,
 }: DevicePickerProps) {
+  const { t } = useTranslation("log");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
@@ -148,7 +150,7 @@ export default function DevicePicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Choose a device"
+          aria-label={t("devicePicker.chooseAria")}
           className={cn(
             "pressable flex min-h-14 w-full items-center gap-3 rounded-xl border bg-background px-4 text-left transition-colors duration-150",
             invalid
@@ -164,19 +166,19 @@ export default function DevicePicker({
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
                   {isPersonalSlug(selected.slug)
-                    ? "Personal device"
-                    : "Catalog device"}
+                    ? t("devicePicker.personal")
+                    : t("devicePicker.catalogDevice")}
                 </span>
               </span>
               {isPersonalSlug(selected.slug) ? (
                 <Badge variant="secondary" className="shrink-0">
-                  Yours
+                  {t("devicePicker.yours")}
                 </Badge>
               ) : null}
             </>
           ) : (
             <span className="flex-1 text-base text-muted-foreground">
-              Search devices…
+              {t("devicePicker.searchPlaceholder")}
             </span>
           )}
           <ChevronDown
@@ -195,10 +197,10 @@ export default function DevicePicker({
         {creating ? (
           <div className="flex flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Add your device</p>
+              <p className="text-sm font-semibold">{t("devicePicker.addTitle")}</p>
               <button
                 type="button"
-                aria-label="Back to search"
+                aria-label={t("devicePicker.backAria")}
                 onClick={() => setCreating(false)}
                 className="pressable flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
               >
@@ -208,7 +210,7 @@ export default function DevicePicker({
 
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">
-                Name
+                {t("devicePicker.nameLabel")}
               </span>
               <input
                 autoFocus
@@ -220,7 +222,7 @@ export default function DevicePicker({
                     confirmCreate();
                   }
                 }}
-                placeholder="e.g. Grandpa's Volcano"
+                placeholder={t("devicePicker.namePlaceholder")}
                 className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-base outline-none transition-colors focus-visible:border-foreground/40"
               />
             </label>
@@ -232,26 +234,26 @@ export default function DevicePicker({
               className="pressable herb-hover min-h-11 bg-herb text-herb-foreground"
             >
               <Plus className="size-4" />
-              Save &amp; use this device
+              {t("devicePicker.saveUse")}
             </Button>
             <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">
-              Saved on this device only — your gear stays private.
+              {t("devicePicker.privacyNote")}
             </p>
           </div>
         ) : (
           <Command>
             <CommandInput
-              placeholder="Search devices…"
+              placeholder={t("devicePicker.searchPlaceholder")}
               value={query}
               onValueChange={setQuery}
             />
             <CommandList className="max-h-72">
               <CommandEmpty className="py-4 text-center text-sm text-muted-foreground">
-                No device matches “{query}”.
+                {t("devicePicker.noMatch", { query })}
               </CommandEmpty>
 
               {personal.length > 0 ? (
-                <CommandGroup heading="Your devices">
+                <CommandGroup heading={t("devicePicker.yourDevices")}>
                   {personal.map((d) => (
                     <DeviceRow key={d.slug} device={d} onPick={pick} />
                   ))}
@@ -276,8 +278,8 @@ export default function DevicePicker({
                     <Plus className="size-3.5" />
                   </span>
                   {query.trim()
-                    ? `Add “${query.trim()}” as your device`
-                    : "Can't find it? Add yours"}
+                    ? t("devicePicker.addQuery", { query: query.trim() })
+                    : t("devicePicker.addFallback")}
                 </button>
               </div>
             </CommandList>
@@ -295,6 +297,7 @@ function DeviceRow({
   device: Device;
   onPick: (slug: string) => void;
 }) {
+  const { t } = useTranslation("log");
   const personalRow = isPersonalSlug(device.slug);
   return (
     <CommandItem
@@ -311,7 +314,7 @@ function DeviceRow({
           {device.name}
         </span>
         <span className="block text-xs text-muted-foreground">
-          {personalRow ? "Personal device" : "Catalog device"}
+          {personalRow ? t("devicePicker.personal") : t("devicePicker.catalogDevice")}
         </span>
       </span>
     </CommandItem>

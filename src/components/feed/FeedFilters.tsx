@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -43,6 +44,7 @@ export default function FeedFilters({
   onZoneChange,
   onMoodChange,
 }: FeedFiltersProps) {
+  const { t } = useTranslation("feed");
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ToggleGroup
@@ -56,7 +58,7 @@ export default function FeedFilters({
         }}
         variant="outline"
         size="sm"
-        aria-label="Filter by temperature zone"
+        aria-label={t("filters.byZone")}
         className="flex-wrap justify-start"
       >
         {ZONE_FILTER_OPTIONS.map((option) => (
@@ -65,17 +67,17 @@ export default function FeedFilters({
             value={option.value}
             className="pressable px-3"
           >
-            {option.label}
+            {t(option.labelKey)}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
 
       <Select value={device} onValueChange={onDeviceChange}>
-        <SelectTrigger size="sm" aria-label="Filter by device">
-          <SelectValue placeholder="Device" />
+        <SelectTrigger size="sm" aria-label={t("filters.byDevice")}>
+          <SelectValue placeholder={t("filters.devicePlaceholder")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL_DEVICES}>All devices</SelectItem>
+          <SelectItem value={ALL_DEVICES}>{t("filters.allDevices")}</SelectItem>
           {devices.map((option) => (
             <SelectItem key={option.slug} value={option.slug}>
               {option.name}
@@ -85,11 +87,11 @@ export default function FeedFilters({
       </Select>
 
       <Select value={mood} onValueChange={onMoodChange}>
-        <SelectTrigger size="sm" aria-label="Filter by mood">
-          <SelectValue placeholder="Mood" />
+        <SelectTrigger size="sm" aria-label={t("filters.byMood")}>
+          <SelectValue placeholder={t("filters.moodPlaceholder")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL_MOODS}>All moods</SelectItem>
+          <SelectItem value={ALL_MOODS}>{t("filters.allMoods")}</SelectItem>
           {moods.map((option) => (
             <SelectItem key={option} value={option}>
               {option}

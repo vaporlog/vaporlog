@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { getDevices, getProfile, getStrains, getVocab, saveSession, useDevices, useStrains } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
@@ -71,6 +72,7 @@ function visibleCustomTags(
  * every keystroke, so an interrupted session loses nothing.
  */
 export default function LogSession() {
+  const { t } = useTranslation("log");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const vocab = getVocab();
@@ -182,8 +184,8 @@ export default function LogSession() {
       draft.notes ||
       draft.rating !== null
     ) {
-      toast("Draft restored", {
-        description: "You can pick up right where you left off.",
+      toast(t("toasts.draftRestored.title"), {
+        description: t("toasts.draftRestored.description"),
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,16 +279,18 @@ export default function LogSession() {
       await saveSession(session);
     } catch {
       // The draft is still autosaved locally — nothing is lost, so say so.
-      toast.error("Couldn't save that session", {
-        description:
-          "Check your connection and try again — your draft is still here.",
+      toast.error(t("toasts.saveError.title"), {
+        description: t("toasts.saveError.description"),
       });
       setSaving(false);
       return;
     }
     clearDraft();
-    toast.success("Session saved", {
-      description: `${strainName ?? "Your session"} · ${draft.rating}/10 — added to your diary.`,
+    toast.success(t("toasts.saved.title"), {
+      description: t("toasts.saved.description", {
+        name: strainName ?? t("toasts.saved.fallbackName"),
+        rating: draft.rating,
+      }),
     });
     navigate("/diary");
   }
@@ -297,17 +301,16 @@ export default function LogSession() {
 
       <header className="flex flex-col gap-1.5 py-6">
         <h1 className="text-3xl font-semibold tracking-tight">
-          Log a session
+          {t("title")}
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Strain and device are all you need. Everything else is optional —
-          and every keystroke is autosaved.
+          {t("subtitle")}
         </p>
       </header>
 
       <div className="flex flex-col gap-9">
         <div ref={strainRef}>
-          <Section step={1} title="Strain">
+          <Section step={1} title={t("sections.strain")}>
             <StrainPicker
               value={draft.strainSlug}
               onChange={(slug) => update("strainSlug", slug)}
@@ -315,14 +318,14 @@ export default function LogSession() {
             />
             {missingStrain ? (
               <p className="text-sm font-medium text-destructive">
-                Pick a strain — or add your own.
+                {t("validation.pickStrain")}
               </p>
             ) : null}
           </Section>
         </div>
 
         <div ref={deviceRef}>
-          <Section step={2} title="Device">
+          <Section step={2} title={t("sections.device")}>
             <DevicePicker
               value={draft.deviceSlug}
               onChange={(slug) => update("deviceSlug", slug)}
@@ -330,24 +333,24 @@ export default function LogSession() {
             />
             {missingDevice ? (
               <p className="text-sm font-medium text-destructive">
-                Which vaporizer did you use?
+                {t("validation.pickDevice")}
               </p>
             ) : null}
           </Section>
         </div>
 
-        <Section step={3} title="Temperature" hint="Optional">
+        <Section step={3} title={t("sections.temperature")} hint={t("optional")}>
           <TemperatureSlider
             value={draft.temperatureC}
             onChange={(c) => update("temperatureC", c)}
           />
         </Section>
 
-        <Section step={4} title="Details" hint="Optional">
+        <Section step={4} title={t("sections.details")} hint={t("optional")}>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="duration" className="text-xs text-muted-foreground">
-                Duration (min)
+                {t("details.duration")}
               </Label>
               <Input
                 id="duration"
@@ -369,7 +372,7 @@ export default function LogSession() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="amount" className="text-xs text-muted-foreground">
-                Amount (g)
+                {t("details.amount")}
               </Label>
               <Input
                 id="amount"
@@ -392,64 +395,64 @@ export default function LogSession() {
           </div>
         </Section>
 
-        <Section step={5} title="Experience" hint="Optional">
+        <Section step={5} title={t("sections.experience")} hint={t("optional")}>
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">Aromas</h3>
+              <h3 className="text-sm font-medium">{t("experience.aromas")}</h3>
               <ChipGroup
                 options={aromaOptions}
                 selected={draft.aromas}
                 custom={visibleCustomTags(draft.customAromas, aromaOptions)}
-                onToggle={(t) => update("aromas", toggleInList(draft.aromas, t))}
-                onAddCustom={(t) => {
-                  rememberCustomTag("aromas", t);
+                onToggle={(tag) => update("aromas", toggleInList(draft.aromas, tag))}
+                onAddCustom={(tag) => {
+                  rememberCustomTag("aromas", tag);
                   setDraft((d) => ({
                     ...d,
-                    customAromas: [...d.customAromas, t],
-                    aromas: [...d.aromas, t],
+                    customAromas: [...d.customAromas, tag],
+                    aromas: [...d.aromas, tag],
                   }));
                 }}
-                addLabel="Add your own aroma"
+                addLabel={t("experience.addAroma")}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">Flavors</h3>
+              <h3 className="text-sm font-medium">{t("experience.flavors")}</h3>
               <ChipGroup
                 options={flavorOptions}
                 selected={draft.flavors}
                 custom={visibleCustomTags(draft.customFlavors, flavorOptions)}
-                onToggle={(t) => update("flavors", toggleInList(draft.flavors, t))}
-                onAddCustom={(t) => {
-                  rememberCustomTag("flavors", t);
+                onToggle={(tag) => update("flavors", toggleInList(draft.flavors, tag))}
+                onAddCustom={(tag) => {
+                  rememberCustomTag("flavors", tag);
                   setDraft((d) => ({
                     ...d,
-                    customFlavors: [...d.customFlavors, t],
-                    flavors: [...d.flavors, t],
+                    customFlavors: [...d.customFlavors, tag],
+                    flavors: [...d.flavors, tag],
                   }));
                 }}
-                addLabel="Add your own flavor"
+                addLabel={t("experience.addFlavor")}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">Mood</h3>
+              <h3 className="text-sm font-medium">{t("experience.mood")}</h3>
               <ChipGroup
                 options={moodOptions}
                 selected={draft.moods}
                 custom={visibleCustomTags(draft.customMoods, moodOptions)}
-                onToggle={(t) => update("moods", toggleInList(draft.moods, t))}
-                onAddCustom={(t) => {
-                  rememberCustomTag("moods", t);
+                onToggle={(tag) => update("moods", toggleInList(draft.moods, tag))}
+                onAddCustom={(tag) => {
+                  rememberCustomTag("moods", tag);
                   setDraft((d) => ({
                     ...d,
-                    customMoods: [...d.customMoods, t],
-                    moods: [...d.moods, t],
+                    customMoods: [...d.customMoods, tag],
+                    moods: [...d.moods, tag],
                   }));
                 }}
-                addLabel="Add your own mood"
+                addLabel={t("experience.addMood")}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">Activities</h3>
+              <h3 className="text-sm font-medium">{t("experience.activities")}</h3>
               <ChipGroup
                 options={activityOptions}
                 selected={draft.activities}
@@ -457,25 +460,25 @@ export default function LogSession() {
                   draft.customActivities,
                   activityOptions,
                 )}
-                onToggle={(t) =>
-                  update("activities", toggleInList(draft.activities, t))
+                onToggle={(tag) =>
+                  update("activities", toggleInList(draft.activities, tag))
                 }
-                onAddCustom={(t) => {
-                  rememberCustomTag("activities", t);
+                onAddCustom={(tag) => {
+                  rememberCustomTag("activities", tag);
                   setDraft((d) => ({
                     ...d,
-                    customActivities: [...d.customActivities, t],
-                    activities: [...d.activities, t],
+                    customActivities: [...d.customActivities, tag],
+                    activities: [...d.activities, tag],
                   }));
                 }}
-                addLabel="Add your own activity"
+                addLabel={t("experience.addActivity")}
               />
             </div>
           </div>
         </Section>
 
         <div ref={ratingRef}>
-          <Section step={6} title="Rating">
+          <Section step={6} title={t("sections.rating")}>
             <RatingScale
               value={draft.rating}
               onChange={(r) => update("rating", r)}
@@ -484,31 +487,30 @@ export default function LogSession() {
           </Section>
         </div>
 
-        <Section step={7} title="Notes" hint="Optional">
+        <Section step={7} title={t("sections.notes")} hint={t("optional")}>
           <Textarea
             value={draft.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="How was it? Terps, effects, context — first of the day? — what you'd do differently…"
+            placeholder={t("notes.placeholder")}
             rows={4}
             className="min-h-28 resize-none text-base leading-relaxed"
           />
         </Section>
 
-        <Section step={8} title="Publish">
+        <Section step={8} title={t("sections.publish")}>
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
             <div className="flex min-w-0 flex-col gap-1">
               <span className="text-sm font-semibold">
-                {draft.isPublic ? "Public" : "Private"}
+                {draft.isPublic ? t("publish.public") : t("publish.private")}
               </span>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Private by default. Public sessions appear as cards others can
-                learn from — only your pseudonym shows.
+                {t("publish.description")}
               </p>
             </div>
             <Switch
               checked={draft.isPublic}
               onCheckedChange={(checked) => update("isPublic", checked)}
-              aria-label="Make this session public"
+              aria-label={t("publish.switchLabel")}
               className="shrink-0 scale-125"
             />
           </div>
@@ -523,15 +525,15 @@ export default function LogSession() {
               ? [strainName, deviceName, draft.temperatureC !== null ? `${draft.temperatureC}°C` : null]
                   .filter(Boolean)
                   .join(" · ")
-              : "Your draft autosaves as you go."}
+              : t("sticky.autosave")}
           </p>
           {triedSave && (!draft.strainSlug || !draft.deviceSlug || draft.rating === null) ? (
             <p className="min-w-0 flex-1 truncate text-sm font-medium text-destructive sm:hidden">
               {!draft.strainSlug
-                ? "Pick a strain"
+                ? t("sticky.pickStrain")
                 : !draft.deviceSlug
-                  ? "Pick a device"
-                  : "Pick a rating"}
+                  ? t("sticky.pickDevice")
+                  : t("sticky.pickRating")}
             </p>
           ) : null}
           <button
@@ -544,7 +546,7 @@ export default function LogSession() {
               saving && "cursor-wait opacity-70",
             )}
           >
-            {saving ? "Saving…" : "Save session"}
+            {saving ? t("sticky.saving") : t("sticky.save")}
           </button>
         </div>
       </div>

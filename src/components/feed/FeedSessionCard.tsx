@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getStrain } from "@/lib/data";
@@ -27,6 +28,7 @@ interface FeedSessionCardProps {
  * surface and the press/hover feedback primitives carry the feel.
  */
 export default function FeedSessionCard({ session }: FeedSessionCardProps) {
+  const { t } = useTranslation("feed");
   const strain = getStrain(session.strainSlug);
   const strainName = displayStrainName(session.strainSlug);
   const deviceName = displayDeviceName(session.deviceSlug);
@@ -37,9 +39,11 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
   return (
     <Link
       to={`/s/${encodeURIComponent(session.id)}`}
-      aria-label={`${strainName} session by ${session.author}, rated ${formatRating(
-        session.rating,
-      )} out of 10`}
+      aria-label={t("card.ariaLabel", {
+        strain: strainName,
+        author: session.author,
+        rating: formatRating(session.rating),
+      })}
       className="pressable vl-card-hover block rounded-xl border border-border/60 bg-card p-4 sm:p-5"
     >
       {/* Strain + author · rating */}
@@ -59,7 +63,7 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
             )}
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            by{" "}
+            {t("card.by")}{" "}
             <span className="font-medium text-foreground/80">
               @{session.author}
             </span>

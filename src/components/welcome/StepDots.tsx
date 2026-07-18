@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,6 +13,7 @@ export default function StepDots({
   step: number;
   total?: number;
 }) {
+  const { t } = useTranslation("welcome");
   return (
     <div
       className="flex items-center gap-2"
@@ -19,7 +21,7 @@ export default function StepDots({
       aria-valuenow={step}
       aria-valuemin={1}
       aria-valuemax={total}
-      aria-label={`Step ${step} of ${total}`}
+      aria-label={t("steps.progress", { step, total })}
     >
       {Array.from({ length: total }, (_, i) => {
         const n = i + 1;

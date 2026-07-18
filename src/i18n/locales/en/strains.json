@@ -1,0 +1,62 @@
+{
+  "title": "Strains",
+  "subtitle": "The full catalog — {{count}} strains with terpenes, effects, and lineage.",
+  "subtitleLoading": "Loading the catalog…",
+  "search": {
+    "placeholder": "Search name, terpene, or effect…",
+    "ariaLabel": "Search strains"
+  },
+  "filters": {
+    "typeAriaLabel": "Filter by type",
+    "all": "All",
+    "effectAriaLabel": "Filter by effect",
+    "effect": "Effect",
+    "allEffects": "All effects"
+  },
+  "sort": {
+    "ariaLabel": "Sort strains",
+    "placeholder": "Sort",
+    "name": "Name A–Z",
+    "thc": "THC, high to low",
+    "rating": "Community rating"
+  },
+  "loading": {
+    "title": "Loading the catalog…",
+    "body": "Thousands of strains are on their way — this takes a moment the first time."
+  },
+  "empty": {
+    "title": "No strains match",
+    "body": "Try a different name, terpene, or effect — or clear a filter."
+  },
+  "pagination": {
+    "ariaLabel": "Catalog pages",
+    "summary_one": "{{formattedCount}} strain · page {{page}} of {{totalPages}}",
+    "summary_other": "{{formattedCount}} strains · page {{page}} of {{totalPages}}",
+    "prev": "Prev",
+    "next": "Next"
+  },
+  "card": {
+    "viewAriaLabel": "View {{name}}",
+    "community": "community ({{count}})"
+  },
+  "detail": {
+    "loadingTitle": "Loading strain…",
+    "loadingBody": "Pulling the full profile from the catalog.",
+    "notFoundTitle": "Strain not found",
+    "notFoundBody": "This strain is not in the catalog.",
+    "browseAll": "Browse all strains",
+    "back": "All strains",
+    "sessionCount_one": "community · {{count}} session",
+    "sessionCount_other": "community · {{count}} sessions",
+    "logWith": "Log with this strain",
+    "lineage": "Lineage",
+    "reference": "Reference",
+    "terpenes": "Terpenes",
+    "aromas": "Aromas",
+    "effects": "Effects",
+    "communityTitle": "Sessions from the community",
+    "communityLoading": "Loading community sessions…",
+    "noSessionsTitle": "No public sessions yet",
+    "noSessionsBody": "Nobody has published a session with {{strain}} — <1>log yours</1> and be the first."
+  }
+}

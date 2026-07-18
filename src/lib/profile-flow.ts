@@ -8,6 +8,8 @@
  * check needed because profiles never leave this device).
  */
 
+import i18n from "@/i18n";
+
 /** Minimum age required by the age gate (spec decision 5). */
 export const MIN_AGE = 21;
 
@@ -108,13 +110,19 @@ export function validateUsername(username: string): UsernameValidation {
   const value = username.trim();
   if (value.length === 0) return { valid: false, error: null };
   if (value.length < USERNAME_MIN_LENGTH) {
-    return { valid: false, error: `At least ${USERNAME_MIN_LENGTH} characters.` };
+    return {
+      valid: false,
+      error: i18n.t("welcome:validation.minLength", { min: USERNAME_MIN_LENGTH }),
+    };
   }
   if (value.length > USERNAME_MAX_LENGTH) {
-    return { valid: false, error: `${USERNAME_MAX_LENGTH} characters is the max.` };
+    return {
+      valid: false,
+      error: i18n.t("welcome:validation.maxLength", { max: USERNAME_MAX_LENGTH }),
+    };
   }
   if (!USERNAME_PATTERN.test(value)) {
-    return { valid: false, error: "Letters, numbers, dashes and underscores only." };
+    return { valid: false, error: i18n.t("welcome:validation.charset") };
   }
   return { valid: true, error: null };
 }

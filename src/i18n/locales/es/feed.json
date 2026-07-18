@@ -1,0 +1,53 @@
+{
+  "header": {
+    "title": "Comunidad",
+    "subtitle": "Cada sesión pública de cada miembro, de la más reciente a la más antigua."
+  },
+  "loading": {
+    "title": "Cargando la comunidad…",
+    "subtitle": "Las sesiones públicas de todos los miembros están en camino."
+  },
+  "filters": {
+    "byZone": "Filtrar por zona de temperatura",
+    "byDevice": "Filtrar por vaporizador",
+    "byMood": "Filtrar por ánimo",
+    "devicePlaceholder": "Vaporizador",
+    "moodPlaceholder": "Ánimo",
+    "allDevices": "Todos los vaporizadores",
+    "allMoods": "Todos los ánimos",
+    "clear": "Limpiar filtros",
+    "zones": {
+      "all": "Todas las temperaturas",
+      "low": "Baja <170°C",
+      "medium": "Media 170–190°C",
+      "high": "Alta >190°C"
+    }
+  },
+  "zones": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "count": {
+    "filtered_one": "{{visible}} de {{count}} sesión pública",
+    "filtered_other": "{{visible}} de {{count}} sesiones públicas",
+    "all_one": "{{count}} sesión pública",
+    "all_other": "{{count}} sesiones públicas"
+  },
+  "noMatch": {
+    "title": "Ninguna sesión coincide con estos filtros",
+    "body": "Prueba con otro vaporizador, otra zona de temperatura u otro ánimo — o limpia los filtros para ver todo de nuevo."
+  },
+  "empty": {
+    "title": "La comunidad apenas está comenzando",
+    "description": "Este es el feed de la comunidad: cada sesión pública de cada miembro llega aquí, de la más reciente a la más antigua. Se llena a medida que la gente publica sus sesiones, y nadie ha publicado todavía.",
+    "logCta": "Registrar sesión",
+    "loggedInHint": "Registra una sesión y luego publícala desde tu <diaryLink>diario</diaryLink> — la primera aquí podría ser la tuya.",
+    "createCta": "Crear una cuenta",
+    "loggedOutHint": "Sé la primera persona en publicar una sesión. ¿Ya eres miembro? <signinLink>Inicia sesión</signinLink>"
+  },
+  "card": {
+    "by": "por",
+    "ariaLabel": "Sesión de {{strain}} por {{author}}, calificada con {{rating}} de 10"
+  }
+}

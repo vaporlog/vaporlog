@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { SessionLog } from "@/lib/types";
 import { DiarySessionCard } from "./DiarySessionCard";
 
@@ -14,13 +15,14 @@ export function SessionList({
   onTogglePublic,
   pendingToggleId = null,
 }: SessionListProps) {
+  const { t } = useTranslation("diary");
   return (
     <section aria-labelledby="diary-sessions-heading" className="space-y-3">
       <h2
         id="diary-sessions-heading"
         className="text-lg font-semibold tracking-tight"
       >
-        Sessions
+        {t("sessions.title")}
       </h2>
       <div className="space-y-3">
         {sessions.map((session) => (

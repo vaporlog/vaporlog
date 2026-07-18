@@ -1,7 +1,9 @@
 import { Link2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import i18n from "@/i18n";
 import type { SessionLog } from "@/lib/types";
 
 /**
@@ -15,7 +17,11 @@ function canonicalUrl(sessionId: string): string {
 }
 
 function shareText(session: SessionLog, strainName: string): string {
-  return `${session.author}'s ${strainName} session on vaporlog — ${session.rating}/10`;
+  return i18n.t("sessionCard:share.text", {
+    author: session.author,
+    strain: strainName,
+    rating: session.rating,
+  });
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -52,6 +58,7 @@ export default function ShareRow({
   session: SessionLog;
   strainName: string;
 }) {
+  const { t } = useTranslation("sessionCard");
   const url = canonicalUrl(session.id);
   const text = shareText(session, strainName);
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
@@ -64,9 +71,9 @@ export default function ShareRow({
   async function handleCopy() {
     const ok = await copyToClipboard(url);
     if (ok) {
-      toast.success("Link copied — pass it on.");
+      toast.success(t("share.copySuccess"));
     } else {
-      toast.error("Couldn't copy the link — long-press the address bar instead.");
+      toast.error(t("share.copyError"));
     }
   }
 
@@ -80,7 +87,7 @@ export default function ShareRow({
         className="pressable"
       >
         <Link2 className="size-4" aria-hidden />
-        Copy link
+        {t("share.copyLink")}
       </Button>
       <a
         href={xHref}
@@ -88,7 +95,7 @@ export default function ShareRow({
         rel="noopener noreferrer"
         className="pressable text-sm font-medium text-muted-foreground underline-offset-4 transition-colors duration-150 hover:text-foreground hover:underline"
       >
-        Share to X
+        {t("share.toX")}
       </a>
       <a
         href={redditHref}
@@ -96,7 +103,7 @@ export default function ShareRow({
         rel="noopener noreferrer"
         className="pressable text-sm font-medium text-muted-foreground underline-offset-4 transition-colors duration-150 hover:text-foreground hover:underline"
       >
-        Share to Reddit
+        {t("share.toReddit")}
       </a>
     </div>
   );

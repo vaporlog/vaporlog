@@ -1,4 +1,5 @@
 import { PenLine, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Reveal from "@/components/landing/Reveal";
 import { usePublicSessions } from "@/lib/data";
 
@@ -10,29 +11,32 @@ interface Step {
 
 /** How it works — three steps, one screen, one idea. */
 export default function HowItWorks() {
+  const { t } = useTranslation("landing");
   const { sessions, loading } = usePublicSessions();
   const sessionsCount = sessions.length;
 
   const STEPS: Step[] = [
     {
       icon: PenLine,
-      title: "Log it",
-      body: "Strain, device, temperature, how it felt. Thirty seconds, from the couch, mid-session.",
+      title: t("howItWorks.steps.log.title"),
+      body: t("howItWorks.steps.log.body"),
     },
     {
       icon: Sparkles,
-      title: "Discover your patterns",
-      body: "Your ratings surface the temps and strains you love most — your favorites, found for you.",
+      title: t("howItWorks.steps.discover.title"),
+      body: t("howItWorks.steps.discover.body"),
     },
     {
       icon: Users,
-      title: "Learn from experts",
+      title: t("howItWorks.steps.experts.title"),
       // Count-free until the public feed hydrates — and whenever it is
       // empty: describe the feed, skip the zero.
       body:
         !loading && sessionsCount > 0
-          ? `${sessionsCount} public sessions from connoisseurs, down to the exact degree. Copy what works.`
-          : "A public feed of sessions from connoisseurs, down to the exact degree. Copy what works.",
+          ? t("howItWorks.steps.experts.bodyWithCount", {
+              count: sessionsCount,
+            })
+          : t("howItWorks.steps.experts.bodyNoCount"),
     },
   ];
 
@@ -40,7 +44,7 @@ export default function HowItWorks() {
     <section className="border-t border-border/60 py-20 sm:py-28">
       <Reveal>
         <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          Log. Discover. Learn.
+          {t("howItWorks.title")}
         </h2>
       </Reveal>
       <div className="mt-12 grid gap-10 sm:grid-cols-3 sm:gap-6">
@@ -51,7 +55,7 @@ export default function HowItWorks() {
                 <step.icon aria-hidden="true" className="size-5 text-foreground" />
               </span>
               <p className="text-sm font-medium tabular-nums text-muted-foreground">
-                Step {index + 1}
+                {t("howItWorks.stepLabel", { number: index + 1 })}
               </p>
               <h3 className="text-xl font-semibold tracking-tight">
                 {step.title}

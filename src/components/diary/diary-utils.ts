@@ -8,9 +8,15 @@
  * re-render with real names (and catalog links) once the catalog arrives.
  */
 import { getDevice, getStrain } from "@/lib/data";
+import i18n from "@/i18n";
 import type { SessionLog } from "@/lib/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** BCP-47 locale for date formatting, derived from the active UI language. */
+function dateLocale(): string {
+  return i18n.language?.startsWith("es") ? "es-MX" : "en-US";
+}
 
 /** Humanize a slug when it is not part of the catalog (private strain/device).
  *  Personal slugs carry a `my-` prefix (see the log slice's personal.ts) that
@@ -42,13 +48,14 @@ export function isCatalogStrain(slug: string): boolean {
 /** e.g. "Sun, Mar 2 · 8:45 PM". Defensive against unparseable timestamps. */
 export function formatSessionDate(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Unknown date";
-  const day = date.toLocaleDateString("en-US", {
+  if (Number.isNaN(date.getTime())) return i18n.t("diary:unknownDate");
+  const locale = dateLocale();
+  const day = date.toLocaleDateString(locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
-  const time = date.toLocaleTimeString("en-US", {
+  const time = date.toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -152,7 +159,7 @@ export function computeWeeklyActivity(
     const start = new Date(currentMonday);
     start.setDate(currentMonday.getDate() - i * 7);
     buckets.push({
-      label: start.toLocaleDateString("en-US", {
+      label: start.toLocaleDateString(dateLocale(), {
         month: "short",
         day: "numeric",
       }),

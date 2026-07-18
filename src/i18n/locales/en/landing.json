@@ -1,0 +1,81 @@
+{
+  "hero": {
+    "eyebrow": "The journal of the art of vaporizing",
+    "title": "Remember every session.",
+    "subhead": "Log the strain, the temperature, the taste, and how it felt — and never lose a perfect session again. Start with <strong>{{strainLabel}}</strong>, <strong>{{devicesLabel}}</strong>, and <strong>{{sessionsLabel}}</strong> to learn from.",
+    "subheadFirst": "Log the strain, the temperature, the taste, and how it felt — and never lose a perfect session again. Start with <strong>{{strainLabel}}</strong> and <strong>{{devicesLabel}}</strong> — then be the first to log a public session others can learn from.",
+    "strainsCount": "{{count}} strains",
+    "strainsFallback": "thousands of strains",
+    "devicesCount": "{{count}} vaporizers",
+    "sessionsCount": "{{count}} expert sessions",
+    "login": "Already have an account? Log in"
+  },
+  "showcase": {
+    "eyebrow": "This is a vaporlog session",
+    "caption": "Everything that made it perfect — strain, temperature, flavor, mood — saved in 30 seconds. Next time you ask yourself <strong>“what was that one at 195°C?”</strong>, you’ll know."
+  },
+  "problem": {
+    "title": "Your best session ever — which temp was it?",
+    "punch": "Which strain? Which vaporizer? Gone.",
+    "body": "Memory keeps the feeling and loses the details — and the details were the recipe. Notes apps bury them. Spreadsheets never get opened from the couch. vaporlog keeps every degree, every flavor, every rating, exactly where you’ll look next time."
+  },
+  "howItWorks": {
+    "title": "Log. Discover. Learn.",
+    "stepLabel": "Step {{number}}",
+    "steps": {
+      "log": {
+        "title": "Log it",
+        "body": "Strain, device, temperature, how it felt. Thirty seconds, from the couch, mid-session."
+      },
+      "discover": {
+        "title": "Discover your patterns",
+        "body": "Your ratings surface the temps and strains you love most — your favorites, found for you."
+      },
+      "experts": {
+        "title": "Learn from experts",
+        "bodyWithCount": "{{count}} public sessions from connoisseurs, down to the exact degree. Copy what works.",
+        "bodyNoCount": "A public feed of sessions from connoisseurs, down to the exact degree. Copy what works."
+      }
+    }
+  },
+  "comparison": {
+    "title": "Your notes app forgot. Your spreadsheet never knew.",
+    "columns": {
+      "notes": "Notes app",
+      "spreadsheet": "Spreadsheet"
+    },
+    "rows": {
+      "temps": "Remembers temps, flavors & terpenes",
+      "favorites": "Finds your favorites from your own ratings",
+      "experts": "Expert sessions with the exact temps to copy",
+      "couch": "Couch-to-logged in 30 seconds"
+    },
+    "mark": {
+      "yes": "Yes",
+      "partial": "Sort of",
+      "no": "No"
+    }
+  },
+  "community": {
+    "emptyTitle": "Be the first to share a session.",
+    "emptyBody": "The public feed opens with its first members. Log a session, make it public, and it can appear here — pseudonym always, private by default.",
+    "headline": "{{total}} expert sessions. {{top}} rated 9 or higher.",
+    "body": "Connoisseurs documenting the craft — pseudonyms always, private by default. Tap a session to see exactly how they vaporize."
+  },
+  "closing": {
+    "title": "Memory fades. Your journal doesn’t.",
+    "subhead": "The best session of your life deserves better than “I think it was the green one?”",
+    "notReady": "Not ready?",
+    "browse": "Browse the {{catalog}} first",
+    "catalogWithCount": "{{count}}-strain catalog",
+    "catalog": "strain catalog"
+  },
+  "cta": {
+    "button": "Start Your Journal",
+    "sub": "Free during early access · your first entry takes under a minute"
+  },
+  "sessionCard": {
+    "duration": "{{count}} min",
+    "amount": "{{count}} g"
+  }
+}

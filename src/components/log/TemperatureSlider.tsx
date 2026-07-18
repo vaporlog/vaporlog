@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +22,10 @@ function zoneFor(celsius: number | null): Zone {
   return "high";
 }
 
-const ZONE_LABELS: Array<{ id: Exclude<Zone, null>; label: string; hint: string }> = [
-  { id: "low", label: "Low", hint: "<170°" },
-  { id: "medium", label: "Medium", hint: "170–190°" },
-  { id: "high", label: "High", hint: ">190°" },
+const ZONE_LABELS: Array<{ id: Exclude<Zone, null>; hint: string }> = [
+  { id: "low", hint: "<170°" },
+  { id: "medium", hint: "170–190°" },
+  { id: "high", hint: ">190°" },
 ];
 
 /**
@@ -40,6 +41,7 @@ export default function TemperatureSlider({
   value,
   onChange,
 }: TemperatureSliderProps) {
+  const { t } = useTranslation("log");
   const sliderValue = value ?? RESTING_C;
 
   // --- Spring-smoothed readout -------------------------------------------
@@ -122,7 +124,7 @@ export default function TemperatureSlider({
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
-            {zone ? `${ZONE_LABELS.find((z) => z.id === zone)?.label} temp` : "Drag to set"}
+            {zone ? t(`temp.status.${zone}`) : t("temp.dragToSet")}
           </span>
           {value !== null ? (
             <button
@@ -130,7 +132,7 @@ export default function TemperatureSlider({
               onClick={() => onChange(null)}
               className="pressable text-sm font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
             >
-              Clear
+              {t("temp.clear")}
             </button>
           ) : null}
         </div>
@@ -151,7 +153,7 @@ export default function TemperatureSlider({
           onValueChange={([v]) => {
             if (typeof v === "number") onChange(v);
           }}
-          aria-label="Temperature in Celsius"
+          aria-label={t("temp.ariaLabel")}
           className={cn(
             "py-3",
             // A thumb you can actually grab with a thumb.
@@ -192,7 +194,7 @@ export default function TemperatureSlider({
                 zone === z.id && "text-foreground",
               )}
             >
-              {z.label}
+              {t(`temp.zones.${z.id}`)}
             </span>
             <span className="text-[11px] tabular-nums">{z.hint}</span>
           </div>

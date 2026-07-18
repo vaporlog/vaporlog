@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ArrowRight,
@@ -51,6 +52,7 @@ export default function AccountStep({
   /** Called with the signed-in account after signUp/signIn succeeds. */
   onSuccess: (account: Account) => void;
 }) {
+  const { t } = useTranslation("welcome");
   const [mode, setMode] = useState<Mode>(initialMode);
   const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState("");
@@ -109,7 +111,7 @@ export default function AccountStep({
       onSuccess(account);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Something went wrong — try again.";
+        err instanceof Error ? err.message : t("account.genericError");
       if (mode === "signup" && /taken/i.test(message)) {
         setHandleTaken(true);
       } else {
@@ -123,17 +125,17 @@ export default function AccountStep({
 
   return (
     <WelcomeStep
-      title={mode === "signup" ? "Create your account" : "Welcome back"}
+      title={mode === "signup" ? t("account.titleSignup") : t("account.titleSignin")}
       lead={
         mode === "signup"
-          ? "Pick a handle and a password. Your sessions stay private by default — if you ever publish one, only your handle shows."
-          : "Sign in with your handle and password to open your diary."
+          ? t("account.leadSignup")
+          : t("account.leadSignin")
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <Label htmlFor="account-username" className="text-muted-foreground">
-            Your handle
+            {t("account.handleLabel")}
           </Label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
@@ -141,7 +143,7 @@ export default function AccountStep({
                 id="account-username"
                 value={username}
                 onChange={(e) => updateUsername(e.target.value)}
-                placeholder="e.g. TerpNomad"
+                placeholder={t("account.handlePlaceholder")}
                 maxLength={USERNAME_MAX_LENGTH}
                 autoComplete="username"
                 autoCapitalize="off"
@@ -168,14 +170,14 @@ export default function AccountStep({
                 className="pressable shrink-0"
               >
                 <Sparkles className="size-4" />
-                Surprise me
+                {t("account.surpriseMe")}
               </Button>
             ) : null}
           </div>
           <p id="account-username-hint" className="text-xs text-muted-foreground">
             {mode === "signup"
-              ? "3–20 characters — letters, numbers and dashes."
-              : "The handle you signed up with."}
+              ? t("account.handleHintSignup")
+              : t("account.handleHintSignin")}
           </p>
           {mode === "signup" && validation.error !== null ? (
             <p role="alert" className="text-sm text-destructive">
@@ -184,21 +186,26 @@ export default function AccountStep({
           ) : null}
           {mode === "signup" && handleTaken ? (
             <p role="alert" className="text-sm text-destructive">
-              That handle is taken.{" "}
-              <button
-                type="button"
-                onClick={() => switchMode("signin")}
-                className="pressable font-medium underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
-              >
-                Sign in with it instead
-              </button>
+              <Trans
+                i18nKey="account.handleTaken"
+                t={t}
+                components={{
+                  signin: (
+                    <button
+                      type="button"
+                      onClick={() => switchMode("signin")}
+                      className="pressable font-medium underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+                    />
+                  ),
+                }}
+              />
             </p>
           ) : null}
         </div>
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="account-password" className="text-muted-foreground">
-            Password
+            {t("account.passwordLabel")}
           </Label>
           <div className="relative">
             <Input
@@ -211,8 +218,8 @@ export default function AccountStep({
               }}
               placeholder={
                 mode === "signup"
-                  ? `At least ${PASSWORD_MIN_LENGTH} characters`
-                  : "Your password"
+                  ? t("account.passwordPlaceholderSignup", { min: PASSWORD_MIN_LENGTH })
+                  : t("account.passwordPlaceholderSignin")
               }
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               disabled={pending}
@@ -222,7 +229,7 @@ export default function AccountStep({
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("account.hidePassword") : t("account.showPassword")}
               aria-pressed={showPassword}
               className="pressable absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
             >
@@ -235,8 +242,8 @@ export default function AccountStep({
           </div>
           <p id="account-password-hint" className="text-xs text-muted-foreground">
             {mode === "signup"
-              ? `${PASSWORD_MIN_LENGTH} characters minimum. It's stored only as a hash — never in plain text.`
-              : "The password you chose when you signed up."}
+              ? t("account.passwordHintSignup", { min: PASSWORD_MIN_LENGTH })
+              : t("account.passwordHintSignin")}
           </p>
         </div>
 
@@ -256,7 +263,7 @@ export default function AccountStep({
             className="pressable text-muted-foreground"
           >
             <ArrowLeft className="size-4" />
-            Back
+            {t("account.back")}
           </Button>
           <Button
             type="submit"
@@ -266,11 +273,11 @@ export default function AccountStep({
           >
             {pending
               ? mode === "signup"
-                ? "Creating account…"
-                : "Signing in…"
+                ? t("account.creatingAccount")
+                : t("account.signingIn")
               : mode === "signup"
-                ? "Create account"
-                : "Sign in"}
+                ? t("account.createAccount")
+                : t("account.signIn")}
             <ArrowRight className="size-4" />
           </Button>
         </div>
@@ -284,12 +291,11 @@ export default function AccountStep({
           className="pressable self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           {mode === "signup"
-            ? "Already have an account? Sign in"
-            : "New to vaporlog? Create an account"}
+            ? t("account.switchToSignin")
+            : t("account.switchToSignup")}
         </button>
         <p className="text-xs text-muted-foreground">
-          your account syncs across your devices — sessions stay private by
-          default
+          {t("account.syncNote")}
         </p>
       </div>
     </WelcomeStep>

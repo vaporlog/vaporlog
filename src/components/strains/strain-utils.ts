@@ -2,6 +2,7 @@
  * Shared helpers for the strains slice (catalog, detail, recommendations).
  * Pure functions only — data comes in as arguments.
  */
+import i18n from "@/i18n";
 import type { SessionLog, Strain } from "@/lib/types";
 
 /** Community average for one strain, or `null` when it has no sessions. */
@@ -73,7 +74,7 @@ export function formatRating(value: number): string {
 export function formatSessionDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(i18n.language || "en", {
     month: "short",
     day: "numeric",
     year: "numeric",

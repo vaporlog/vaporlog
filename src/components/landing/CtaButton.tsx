@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -8,6 +9,8 @@ import { Button } from "@/components/ui/button";
  * "what does it cost / how long does it take" before the brain asks.
  */
 export default function CtaButton({ centered = true }: { centered?: boolean }) {
+  const { t } = useTranslation("landing");
+
   return (
     <div
       className={`flex flex-col gap-3 ${centered ? "items-center" : "items-start"}`}
@@ -18,13 +21,11 @@ export default function CtaButton({ centered = true }: { centered?: boolean }) {
         className="pressable herb-hover h-12 bg-herb px-7 text-base font-semibold text-herb-foreground"
       >
         <Link to="/welcome">
-          Start Your Journal
+          {t("cta.button")}
           <ArrowRight aria-hidden="true" />
         </Link>
       </Button>
-      <p className="text-sm text-muted-foreground">
-        Free during early access · your first entry takes under a minute
-      </p>
+      <p className="text-sm text-muted-foreground">{t("cta.sub")}</p>
     </div>
   );
 }

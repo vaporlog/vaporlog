@@ -1,7 +1,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import LanguageToggle from "@/components/LanguageToggle";
 import mascotUrl from "@/assets/mascot.png";
 import {
   DropdownMenu,
@@ -34,6 +36,7 @@ const NAV_LINK_CLASS = ({ isActive }: { isActive: boolean }) =>
  * always reflects the current session.
  */
 export default function AppLayout() {
+  const { t } = useTranslation("common");
   const location = useLocation();
   const navigate = useNavigate();
   const [account, setAccount] = useState<Account | null>(() =>
@@ -83,18 +86,18 @@ export default function AppLayout() {
                 menu below sm — at ~360px the full row would overflow. */}
             <div className="hidden items-center gap-1 sm:flex sm:gap-2">
               <NavLink to="/diary" className={NAV_LINK_CLASS}>
-                Diary
+                {t("nav.diary")}
               </NavLink>
               <NavLink to="/strains" className={NAV_LINK_CLASS}>
-                Strains
+                {t("nav.strains")}
               </NavLink>
               <NavLink to="/feed" className={NAV_LINK_CLASS}>
-                Feed
+                {t("nav.feed")}
               </NavLink>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger
-                aria-label="Open navigation menu"
+                aria-label={t("nav.openMenu")}
                 className="pressable flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:text-foreground sm:hidden"
               >
                 <Menu aria-hidden="true" className="size-5" />
@@ -104,10 +107,10 @@ export default function AppLayout() {
                     ("/" → /diary), so the mobile menu only carries the
                     two destinations the logo doesn't cover. */}
                 <DropdownMenuItem onSelect={() => navigate("/strains")}>
-                  Strains
+                  {t("nav.strains")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => navigate("/feed")}>
-                  Feed
+                  {t("nav.feed")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -121,12 +124,12 @@ export default function AppLayout() {
                   onClick={handleLogOut}
                   className="pressable rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
                 >
-                  Log out
+                  {t("nav.logOut")}
                 </button>
               </>
             ) : (
               <NavLink to="/welcome?mode=signin" className={NAV_LINK_CLASS}>
-                Sign in
+                {t("nav.signIn")}
               </NavLink>
             )}
             <Button
@@ -134,13 +137,14 @@ export default function AppLayout() {
               size="sm"
               className="pressable herb-hover ml-1 bg-herb text-herb-foreground"
             >
-              <Link to="/log" aria-label="Log a Session">
-                <span className="hidden sm:inline">Log a Session</span>
+              <Link to="/log" aria-label={t("nav.logSession")}>
+                <span className="hidden sm:inline">{t("nav.logSession")}</span>
                 <span aria-hidden="true" className="sm:hidden">
-                  Log
+                  {t("nav.logSessionShort")}
                 </span>
               </Link>
             </Button>
+            <LanguageToggle />
           </nav>
         </div>
       </header>
@@ -153,8 +157,8 @@ export default function AppLayout() {
 
       <footer className="border-t border-border/60">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-6 text-xs text-muted-foreground">
-          <span>vaporlog — the journal of the art of vaporizing</span>
-          <span>21+ only, where legal</span>
+          <span>{t("footer.tagline")}</span>
+          <span>{t("footer.legal")}</span>
         </div>
       </footer>
     </div>

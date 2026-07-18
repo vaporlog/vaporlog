@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface RatingScaleProps {
@@ -6,19 +7,6 @@ interface RatingScaleProps {
   /** When true, wraps the scale in a gentle error nudge after failed save. */
   invalid?: boolean;
 }
-
-const DESCRIPTORS: Record<number, string> = {
-  1: "Rough",
-  2: "Weak",
-  3: "Meh",
-  4: "Below par",
-  5: "Okay",
-  6: "Decent",
-  7: "Good",
-  8: "Great",
-  9: "Excellent",
-  10: "Perfect",
-};
 
 /**
  * The 1–10 rating. Large tappable numbers; the ONE herb accent in this app
@@ -46,6 +34,8 @@ export default function RatingScale({
   onChange,
   invalid = false,
 }: RatingScaleProps) {
+  const { t } = useTranslation("log");
+
   function pick(n: number) {
     onChange(n);
     // Subtle haptic on real devices — guarded, fire-and-forget.
@@ -67,7 +57,7 @@ export default function RatingScale({
       <style>{nudgeCss}</style>
       <div
         role="radiogroup"
-        aria-label="Rating from 1 to 10"
+        aria-label={t("rating.groupAria")}
         className="grid grid-cols-5 gap-2 sm:grid-cols-10"
       >
         {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
@@ -78,7 +68,7 @@ export default function RatingScale({
               type="button"
               role="radio"
               aria-checked={active}
-              aria-label={`${n} out of 10`}
+              aria-label={t("rating.outOf", { n })}
               onClick={() => pick(n)}
               className={cn(
                 "pressable flex h-12 items-center justify-center rounded-xl border text-lg font-semibold tabular-nums transition-colors duration-150",
@@ -96,9 +86,9 @@ export default function RatingScale({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
           {invalid && value === null
-            ? "Tap a number — how was it?"
+            ? t("rating.tapPrompt")
             : value === null
-              ? "1 rough · 10 perfect"
+              ? t("rating.scaleHint")
               : null}
         </span>
         {value !== null ? (
@@ -106,7 +96,7 @@ export default function RatingScale({
             key={value}
             className="animate-in fade-in-0 slide-in-from-bottom-1 font-medium text-foreground duration-200"
           >
-            {value}/10 — {DESCRIPTORS[value]}
+            {value}/10 — {t(`rating.descriptors.${value}`)}
           </span>
         ) : null}
       </div>

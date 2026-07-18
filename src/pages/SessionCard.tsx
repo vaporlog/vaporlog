@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowRight, Compass } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,24 +37,22 @@ const entranceCss = `
 
 /** Friendly 404 for unknown or private session ids. */
 function SessionNotFound() {
+  const { t } = useTranslation("sessionCard");
   return (
     <section className="flex flex-col items-center gap-5 py-16 text-center">
       <span className="flex size-12 items-center justify-center rounded-full bg-secondary">
         <Compass className="size-5 text-muted-foreground" aria-hidden />
       </span>
       <h1 className="text-3xl font-semibold tracking-tight">
-        This session went up in vapor
+        {t("notFound.title")}
       </h1>
-      <p className="max-w-md text-muted-foreground">
-        The link may be old, or the author made this session private. The
-        catalog, though, is always open.
-      </p>
+      <p className="max-w-md text-muted-foreground">{t("notFound.body")}</p>
       <Button
         asChild
         className="pressable herb-hover mt-2 bg-herb text-herb-foreground"
       >
         <Link to="/strains">
-          Explore the strain catalog
+          {t("notFound.cta")}
           <ArrowRight className="size-4" aria-hidden />
         </Link>
       </Button>
@@ -62,6 +61,7 @@ function SessionNotFound() {
 }
 
 export default function SessionCard() {
+  const { t } = useTranslation("sessionCard");
   const { id } = useParams<{ id: string }>();
   // Await the lazy catalog so the card's strain name/type resolve to the
   // real catalog entry (display.ts falls back to a humanized slug in the
@@ -81,10 +81,8 @@ export default function SessionCard() {
         className="flex flex-col items-center gap-4 py-16 text-center"
         role="status"
       >
-        <h1 className="text-2xl font-semibold">Loading session…</h1>
-        <p className="max-w-md text-muted-foreground">
-          Pulling this public session from the cloud.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("loading.title")}</h1>
+        <p className="max-w-md text-muted-foreground">{t("loading.body")}</p>
       </section>
     );
   }
@@ -122,13 +120,11 @@ export default function SessionCard() {
           className="pressable herb-hover bg-herb px-8 text-base text-herb-foreground"
         >
           <Link to="/welcome">
-            Start Your Journal
+            {t("cta.button")}
             <ArrowRight className="size-4" aria-hidden />
           </Link>
         </Button>
-        <p className="text-sm text-muted-foreground">
-          Free during early access — log your first session in under a minute.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("cta.subtext")}</p>
       </div>
 
       {/* 4 · SHARE ROW — copy link, X, Reddit */}
@@ -141,8 +137,7 @@ export default function SessionCard() {
         className="vl-enter max-w-md text-center text-xs leading-relaxed text-muted-foreground"
         style={{ animationDelay: "280ms" }}
       >
-        21+ only, where legal. Ratings and effects are one person&apos;s
-        experience, not medical advice.
+        {t("legal")}
       </p>
 
       {/* 6 · End strong — the line worth remembering */}
@@ -150,7 +145,7 @@ export default function SessionCard() {
         className="vl-enter text-center text-lg font-medium tracking-tight text-foreground"
         style={{ animationDelay: "350ms" }}
       >
-        Every great session deserves a witness.
+        {t("tagline")}
       </p>
 
       {/* Toaster lives in THIS page (cross-slice contract b). */}

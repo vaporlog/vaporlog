@@ -1,0 +1,53 @@
+{
+  "loading": {
+    "title": "Loading session…",
+    "body": "Pulling this public session from the cloud."
+  },
+  "notFound": {
+    "title": "This session went up in vapor",
+    "body": "The link may be old, or the author made this session private. The catalog, though, is always open.",
+    "cta": "Explore the strain catalog"
+  },
+  "cta": {
+    "button": "Start Your Journal",
+    "subtext": "Free during early access — log your first session in under a minute."
+  },
+  "legal": "21+ only, where legal. Ratings and effects are one person's experience, not medical advice.",
+  "tagline": "Every great session deserves a witness.",
+  "learn": {
+    "ariaLabel": "What this temperature means",
+    "title": "Reading the ritual",
+    "lesson": {
+      "low": "{{temp}}°C sits in the low zone — the flavor range. Gentle heat vaporizes the most delicate terpenes first, so the vapor tastes brighter and the effects tend to feel lighter and clearer. This is how connoisseurs taste a strain before they chase potency.",
+      "medium": "{{temp}}°C sits in the middle zone — the balance point. Warm enough to extract the heavier compounds, cool enough to keep most of the terpene character intact. Flavor and strength meet here, which is why most everyday sessions live in this range.",
+      "high": "{{temp}}°C sits in the high zone — maximum extraction. The vapor comes out thicker and the body effects land harder, traded against some of the finer flavor notes. Experienced users finish a bowl here once the tasting is done."
+    }
+  },
+  "zone": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "card": {
+    "ariaLabel": "{{strain}} session by {{author}}",
+    "overline": "A vaporlog session",
+    "by": "by",
+    "ratingAria": "Rated {{rating}} out of 10",
+    "ritual": {
+      "device": "Device",
+      "temp": "Temp",
+      "duration": "Duration",
+      "amount": "Amount"
+    },
+    "mood": "Mood",
+    "aromaFlavor": "Aroma · Flavor"
+  },
+  "share": {
+    "text": "{{author}}'s {{strain}} session on vaporlog — {{rating}}/10",
+    "copyLink": "Copy link",
+    "toX": "Share to X",
+    "toReddit": "Share to Reddit",
+    "copySuccess": "Link copied — pass it on.",
+    "copyError": "Couldn't copy the link — long-press the address bar instead."
+  }
+}

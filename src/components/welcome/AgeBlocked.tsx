@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Leaf } from "lucide-react";
 import WelcomeStep from "@/components/welcome/WelcomeStep";
 
@@ -7,19 +8,17 @@ import WelcomeStep from "@/components/welcome/WelcomeStep";
  * escape hatch mentioned is clearing site data, for genuine typos.
  */
 export default function AgeBlocked() {
+  const { t } = useTranslation("welcome");
   return (
-    <WelcomeStep title="This one's not for you — yet.">
+    <WelcomeStep title={t("blocked.title")}>
       <div className="flex items-start gap-3">
         <Leaf aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-herb" />
         <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-          vaporlog is strictly for adults 21 and over, in places where
-          vaporization is legal. No judgment, no lecture — we'll be right
-          here when the time is right.
+          {t("blocked.body")}
         </p>
       </div>
       <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
-        Entered the wrong birthday by mistake? Clearing this site's data in
-        your browser settings starts you over.
+        {t("blocked.resetHint")}
       </p>
     </WelcomeStep>
   );

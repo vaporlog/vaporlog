@@ -1,0 +1,140 @@
+{
+  "title": "Registrar sesión",
+  "subtitle": "El strain y el vaporizador son todo lo que necesitas. Todo lo demás es opcional, y cada tecla se guarda automáticamente.",
+  "optional": "Opcional",
+  "sections": {
+    "strain": "Strain",
+    "device": "Vaporizador",
+    "temperature": "Temperatura",
+    "details": "Detalles",
+    "experience": "Experiencia",
+    "rating": "Calificación",
+    "notes": "Notas",
+    "publish": "Publicar"
+  },
+  "details": {
+    "duration": "Duración (min)",
+    "amount": "Cantidad (g)"
+  },
+  "experience": {
+    "aromas": "Aromas",
+    "flavors": "Sabores",
+    "mood": "Ánimo",
+    "activities": "Actividades",
+    "addAroma": "Agrega tu propio aroma",
+    "addFlavor": "Agrega tu propio sabor",
+    "addMood": "Agrega tu propio ánimo",
+    "addActivity": "Agrega tu propia actividad"
+  },
+  "validation": {
+    "pickStrain": "Elige un strain, o agrega el tuyo.",
+    "pickDevice": "¿Qué vaporizador usaste?"
+  },
+  "notes": {
+    "placeholder": "¿Cómo estuvo? Terpenos, efectos, contexto — ¿la primera del día? — ¿qué harías diferente…?"
+  },
+  "publish": {
+    "public": "Pública",
+    "private": "Privada",
+    "description": "Privada por defecto. Las sesiones públicas aparecen como tarjetas de las que otros pueden aprender; solo se muestra tu seudónimo.",
+    "switchLabel": "Hacer pública esta sesión"
+  },
+  "sticky": {
+    "autosave": "Tu borrador se guarda automáticamente.",
+    "pickStrain": "Elige un strain",
+    "pickDevice": "Elige un vaporizador",
+    "pickRating": "Elige una calificación",
+    "save": "Guardar sesión",
+    "saving": "Guardando…"
+  },
+  "toasts": {
+    "draftRestored": {
+      "title": "Borrador restaurado",
+      "description": "Puedes retomar justo donde lo dejaste."
+    },
+    "saveError": {
+      "title": "No se pudo guardar esa sesión",
+      "description": "Revisa tu conexión e inténtalo de nuevo; tu borrador sigue aquí."
+    },
+    "saved": {
+      "title": "Sesión guardada",
+      "description": "{{name}} · {{rating}}/10 — agregada a tu diario.",
+      "fallbackName": "Tu sesión"
+    }
+  },
+  "strainPicker": {
+    "chooseAria": "Elige un strain",
+    "personal": "Strain personal",
+    "yours": "Tuyo",
+    "searchPlaceholder": "Buscar strains…",
+    "addTitle": "Agrega tu strain",
+    "backAria": "Volver a la búsqueda",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "p. ej. Basement Kush",
+    "typeLabel": "Tipo",
+    "optionalParens": "(opcional)",
+    "saveUse": "Guardar y usar este strain",
+    "privacyNote": "Se guarda solo en este dispositivo; tus strains personales son privados.",
+    "loading": "Cargando el catálogo…",
+    "noMatch": "Ningún strain coincide con “{{query}}”.",
+    "yourStrains": "Tus strains",
+    "catalog": "Catálogo",
+    "loadingFull": "Cargando el catálogo completo…",
+    "showingCount": "Mostrando {{shown}} de {{total}} coincidencias; sigue escribiendo para acotar.",
+    "addQuery": "Agregar “{{query}}” como tu strain",
+    "addFallback": "¿No lo encuentras? Agrega el tuyo"
+  },
+  "devicePicker": {
+    "chooseAria": "Elige un vaporizador",
+    "personal": "Vaporizador personal",
+    "catalogDevice": "Vaporizador del catálogo",
+    "yours": "Tuyo",
+    "searchPlaceholder": "Buscar vaporizadores…",
+    "addTitle": "Agrega tu vaporizador",
+    "backAria": "Volver a la búsqueda",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "p. ej. El Volcán del abuelo",
+    "saveUse": "Guardar y usar este vaporizador",
+    "privacyNote": "Se guarda solo en este dispositivo; tu equipo es privado.",
+    "noMatch": "Ningún vaporizador coincide con “{{query}}”.",
+    "yourDevices": "Tus vaporizadores",
+    "addQuery": "Agregar “{{query}}” como tu vaporizador",
+    "addFallback": "¿No lo encuentras? Agrega el tuyo"
+  },
+  "temp": {
+    "dragToSet": "Arrastra para ajustar",
+    "clear": "Quitar",
+    "ariaLabel": "Temperatura en Celsius",
+    "zones": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta"
+    },
+    "status": {
+      "low": "Temperatura baja",
+      "medium": "Temperatura media",
+      "high": "Temperatura alta"
+    }
+  },
+  "chipGroup": {
+    "addAria": "Agregar etiqueta personalizada"
+  },
+  "rating": {
+    "groupAria": "Calificación del 1 al 10",
+    "outOf": "{{n}} de 10",
+    "tapPrompt": "Toca un número — ¿cómo estuvo?",
+    "scaleHint": "1 malo · 10 perfecto",
+    "descriptors": {
+      "1": "Malo",
+      "2": "Flojo",
+      "3": "Meh",
+      "4": "Por debajo de lo normal",
+      "5": "Regular",
+      "6": "Decente",
+      "7": "Bueno",
+      "8": "Muy bueno",
+      "9": "Excelente",
+      "10": "Perfecto"
+    }
+  }
+}

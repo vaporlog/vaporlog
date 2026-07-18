@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +44,7 @@ const INITIAL_FILTERS: FeedFilterState = {
 };
 
 export default function Feed() {
+  const { t } = useTranslation("feed");
   // Cloud-backed public sessions; re-renders when the cache hydrates and
   // whenever a session is published/unpublished.
   const { sessions, loading } = usePublicSessions();
@@ -73,17 +75,17 @@ export default function Feed() {
   const filtering = hasActiveFilters(filters);
 
   const countLine = filtering
-    ? `${visible.length} of ${sessions.length} public ${
-        sessions.length === 1 ? "session" : "sessions"
-      }`
-    : `${visible.length} public ${visible.length === 1 ? "session" : "sessions"}`;
+    ? t("count.filtered", { count: sessions.length, visible: visible.length })
+    : t("count.all", { count: visible.length });
 
   return (
     <section className="flex flex-col gap-6 py-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold leading-tight">Community feed</h1>
+        <h1 className="text-3xl font-semibold leading-tight">
+          {t("header.title")}
+        </h1>
         <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-          Every public session from every member, newest first.
+          {t("header.subtitle")}
         </p>
       </header>
 
@@ -92,9 +94,9 @@ export default function Feed() {
           className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"
           role="status"
         >
-          <p className="font-medium">Loading the feed…</p>
+          <p className="font-medium">{t("loading.title")}</p>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Public sessions from every member are on their way.
+            {t("loading.subtitle")}
           </p>
         </div>
       ) : sessions.length > 0 ? (
@@ -118,7 +120,7 @@ export default function Feed() {
                 onClick={() => setFilters(INITIAL_FILTERS)}
                 className="pressable rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
               >
-                Clear filters
+                {t("filters.clear")}
               </button>
             )}
           </div>
@@ -136,18 +138,17 @@ export default function Feed() {
           ) : (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-16 text-center">
               <p className="text-sm font-medium text-foreground">
-                No sessions match these filters
+                {t("noMatch.title")}
               </p>
               <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                Try a different device, temperature zone, or mood — or clear
-                the filters to see everything again.
+                {t("noMatch.body")}
               </p>
               <button
                 type="button"
                 onClick={() => setFilters(INITIAL_FILTERS)}
                 className="pressable mt-1 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
               >
-                Clear filters
+                {t("filters.clear")}
               </button>
             </div>
           )}
@@ -158,12 +159,8 @@ export default function Feed() {
             <EmptyMedia variant="icon">
               <Users className="text-herb" aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>The feed is just getting started</EmptyTitle>
-            <EmptyDescription>
-              This is the community feed — every public session from every
-              member lands here, newest first. It fills up as people publish
-              their sessions, and nobody has published yet.
-            </EmptyDescription>
+            <EmptyTitle>{t("empty.title")}</EmptyTitle>
+            <EmptyDescription>{t("empty.description")}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             {account ? (
@@ -172,17 +169,21 @@ export default function Feed() {
                   asChild
                   className="pressable herb-hover bg-herb text-herb-foreground"
                 >
-                  <Link to="/log">Log a session</Link>
+                  <Link to="/log">{t("empty.logCta")}</Link>
                 </Button>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Log a session, then publish it from your{" "}
-                  <Link
-                    to="/diary"
-                    className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
-                  >
-                    diary
-                  </Link>{" "}
-                  — the first one here could be yours.
+                  <Trans
+                    i18nKey="empty.loggedInHint"
+                    ns="feed"
+                    components={{
+                      diaryLink: (
+                        <Link
+                          to="/diary"
+                          className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+                        />
+                      ),
+                    }}
+                  />
                 </p>
               </>
             ) : (
@@ -191,16 +192,21 @@ export default function Feed() {
                   asChild
                   className="pressable herb-hover bg-herb text-herb-foreground"
                 >
-                  <Link to="/welcome">Create an account</Link>
+                  <Link to="/welcome">{t("empty.createCta")}</Link>
                 </Button>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Be the first to publish a session. Already a member?{" "}
-                  <Link
-                    to="/welcome?mode=signin"
-                    className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
-                  >
-                    Sign in
-                  </Link>
+                  <Trans
+                    i18nKey="empty.loggedOutHint"
+                    ns="feed"
+                    components={{
+                      signinLink: (
+                        <Link
+                          to="/welcome?mode=signin"
+                          className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+                        />
+                      ),
+                    }}
+                  />
                 </p>
               </>
             )}

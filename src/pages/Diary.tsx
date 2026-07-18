@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,6 +18,7 @@ import { getProfile, toggleSessionPublic, useMySessions, useStrains } from "@/li
 
 /** Diary — your private session list + basic stats (age-gated). */
 export default function Diary() {
+  const { t } = useTranslation("diary");
   const profile = getProfile();
   // Cloud-backed personal sessions; re-renders when the cache hydrates and
   // on every optimistic mutation (save / publish / unpublish).
@@ -43,15 +45,13 @@ export default function Diary() {
       const updated = await toggleSessionPublic(id);
       if (!updated) return;
       toast.success(
-        updated.isPublic
-          ? "Session is now public — anyone with the link can view its card."
-          : "Session is now private again.",
+        updated.isPublic ? t("toggle.nowPublic") : t("toggle.nowPrivate"),
       );
     } catch {
       // The optimistic cache update is rolled back by the data layer; the
       // switch flips back on its own — just say why.
-      toast.error("Couldn't update that session", {
-        description: "Check your connection and try again.",
+      toast.error(t("toggle.error"), {
+        description: t("toggle.errorDescription"),
       });
     } finally {
       setPendingToggleId(null);
@@ -69,9 +69,9 @@ export default function Diary() {
           className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-6 py-16 text-center"
           role="status"
         >
-          <p className="font-medium">Loading your journal…</p>
+          <p className="font-medium">{t("loading.title")}</p>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Your sessions are syncing from the cloud.
+            {t("loading.subtitle")}
           </p>
         </div>
       ) : isEmpty ? (
