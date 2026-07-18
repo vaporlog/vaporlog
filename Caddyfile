@@ -1,0 +1,27 @@
+# vaporlog — Caddy serves the SPA and proxies /api to the app container.
+# Automatic HTTPS via Let's Encrypt: the certificate is obtained on first
+# boot and renewed automatically. Requires the domain's DNS A record to
+# point at this server BEFORE starting the container (HTTP-01 challenge
+# over port 80).
+
+vaporlog.online {
+	encode gzip
+
+	# API → fastify container (routes themselves live under /api)
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	# SPA: static files with history-API fallback
+	handle {
+		root * /usr/share/caddy
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Hashed build assets are immutable; the HTML shell is not.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@html path /index.html
+	header @html Cache-Control "no-cache"
+}

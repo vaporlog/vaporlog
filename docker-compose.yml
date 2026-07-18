@@ -1,5 +1,5 @@
 # vaporlog — full self-hosted stack:
-#   web  → nginx serving the React SPA + proxying /api
+#   web  → Caddy serving the React SPA + HTTPS automático (Let's Encrypt) + proxying /api
 #   api  → Node (fastify) REST API on port 4000 (internal)
 #   db   → PostgreSQL 17 (internal only, data persists in the pgdata volume)
 #
@@ -38,9 +38,17 @@ services:
     build: .
     ports:
       - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      # Let's Encrypt certificates + Caddy state persist across rebuilds
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - api
     restart: unless-stopped
 
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

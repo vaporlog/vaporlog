@@ -194,16 +194,20 @@ una instalación nueva:
 cat backup-vaporlog.sql | docker compose exec -T db psql -U vaporlog vaporlog
 ```
 
-## 12. Próximo paso: HTTPS con dominio propio
+## 12. HTTPS con dominio propio (ya configurado)
 
-Servir por `http://TU-IP` está bien para empezar, pero si quieres usar un dominio
-propio (`vaporlog.tu-dominio.com`) con candado HTTPS, hazlo como paso futuro:
+El contenedor web usa **Caddy**, que obtiene y renueva el certificado HTTPS
+de **Let's Encrypt** automáticamente — sin pasos manuales de certificados:
 
-- **Caddy** — la opción más sencilla: un contenedor más en `docker-compose.yml`
-  que obtiene y renueva los certificados HTTPS automáticamente.
-- **Nginx + certbot** — la opción clásica, también válida.
+1. En el panel DNS de tu dominio, crea un registro **A** que apunte
+   `vaporlog.online` → la IP del VPS (y espera a que propague).
+2. Actualiza el servidor: `git pull && docker compose up -d --build web`
+3. Abre el puerto 443: `ufw allow 443/tcp`
+4. Listo: **https://vaporlog.online** (HTTP redirige solo a HTTPS).
 
-Hasta entonces, la app funciona perfectamente por HTTP.
+> Si el dominio aún no resuelve cuando arrancas el contenedor, Caddy
+> reintenta con paciencia — evita reiniciarlo en bucle para no gastar los
+> intentos de Let's Encrypt.
 
 ---
 

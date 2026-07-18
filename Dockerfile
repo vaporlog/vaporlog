@@ -13,14 +13,12 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# ---------- Runtime stage: serve the static bundle with nginx ----------
-FROM nginx:1.27-alpine
+# ---------- Runtime stage: serve the static bundle with Caddy ----------
+# Caddy terminates HTTPS (Let's Encrypt, fully automatic) and proxies /api.
+FROM caddy:2-alpine
 
 # SPA + /api reverse proxy configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY Caddyfile /etc/caddy/Caddyfile
 
 # Static frontend built in the previous stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=build /app/dist /usr/share/caddy
