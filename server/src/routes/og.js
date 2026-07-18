@@ -26,8 +26,13 @@ const SITE_URL = (process.env.SITE_URL ?? "https://vaporlog.online").replace(
 const OG_IMAGE_URL = `${SITE_URL}/brand/og-default.jpg`;
 
 const BASE_HTML_CANDIDATES = [
-  process.env.OG_BASE_HTML_URL ?? "http://web/",
-  "http://localhost:3000/",
+  // Caddy only answers for the real domain, so the internal fetch must
+  // carry the site's Host header — plain http://web/ gets a 404/redirect.
+  {
+    url: process.env.OG_BASE_HTML_URL ?? "http://web/",
+    host: new URL(SITE_URL).host,
+  },
+  { url: "http://localhost:3000/" }, // local dev (vite), any host works
 ];
 
 /** Cached SPA shell — the build only changes on deploy, and a failed
@@ -35,10 +40,11 @@ const BASE_HTML_CANDIDATES = [
 let cachedBaseHtml = null;
 
 async function getBaseHtml() {
-  for (const url of BASE_HTML_CANDIDATES) {
+  for (const candidate of BASE_HTML_CANDIDATES) {
     try {
-      const response = await fetch(url, {
+      const response = await fetch(candidate.url, {
         signal: AbortSignal.timeout(3000),
+        headers: candidate.host ? { host: candidate.host } : {},
       });
       if (response.ok) {
         cachedBaseHtml = await response.text();
