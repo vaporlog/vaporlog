@@ -41,6 +41,7 @@
     "public": "Pública",
     "private": "Privada",
     "viewPublicCard": "Ver tarjeta pública",
+    "viewCard": "Ver tarjeta",
     "logAgain": "Registrar de nuevo",
     "makePublicAria": "Hacer pública la sesión de “{{strain}}”"
   },

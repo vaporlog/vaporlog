@@ -107,14 +107,14 @@ export function DiarySessionCard({
             >
               {session.isPublic ? t("card.public") : t("card.private")}
             </Label>
-            {session.isPublic && (
-              <Link
-                to={`/s/${encodeURIComponent(session.id)}`}
-                className="pressable text-sm font-medium text-herb underline-offset-4 transition-colors duration-150 hover:underline"
-              >
-                {t("card.viewPublicCard")}
-              </Link>
-            )}
+            {/* The card link works for private sessions too: /s/:id falls
+                back to the owner's own sessions, so only they can open it. */}
+            <Link
+              to={`/s/${encodeURIComponent(session.id)}`}
+              className="pressable text-sm font-medium text-herb underline-offset-4 transition-colors duration-150 hover:underline"
+            >
+              {session.isPublic ? t("card.viewPublicCard") : t("card.viewCard")}
+            </Link>
           </div>
           <Button
             asChild

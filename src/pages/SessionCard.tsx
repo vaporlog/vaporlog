@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import { usePublicSessions, useStrains } from "@/lib/data";
+import { useMySessions, usePublicSessions, useStrains } from "@/lib/data";
 import { displayStrainName } from "@/components/session-card/display";
 import LearnBlock from "@/components/session-card/LearnBlock";
 import PublicSessionCard from "@/components/session-card/PublicSessionCard";
@@ -71,11 +71,19 @@ export default function SessionCard() {
   // Cloud-backed public sessions: the not-found card only renders once the
   // cache has hydrated — before that an unknown id is indistinguishable
   // from a session that is still on its way.
-  const { sessions, loading } = usePublicSessions();
+  const { sessions: publicSessions, loading: publicLoading } =
+    usePublicSessions();
+  // Private cards resolve through the owner's own sessions: only someone
+  // signed in as the author ever finds a private id here — for everyone
+  // else the session stays invisible (same not-found as an unknown id).
+  const { sessions: mySessions, loading: myLoading } = useMySessions();
   const session =
-    id !== undefined ? sessions.find((s) => s.id === id) : undefined;
+    id !== undefined
+      ? (publicSessions.find((s) => s.id === id) ??
+        mySessions.find((s) => s.id === id))
+      : undefined;
 
-  if (loading) {
+  if (publicLoading || myLoading) {
     return (
       <section
         className="flex flex-col items-center gap-4 py-16 text-center"
@@ -91,6 +99,8 @@ export default function SessionCard() {
     return <SessionNotFound />;
   }
 
+  // Found via the owner's own list → private card, visible only to them.
+  const isPrivateView = !session.isPublic;
   const strainName = displayStrainName(session.strainSlug);
 
   return (
@@ -102,6 +112,17 @@ export default function SessionCard() {
         <PublicSessionCard session={session} />
       </div>
 
+      {/* Private view (owner only): a quiet note instead of the viral
+          machinery — the link is useless to anyone else by design. */}
+      {isPrivateView ? (
+        <p
+          className="vl-enter text-sm text-muted-foreground"
+          style={{ animationDelay: "70ms" }}
+        >
+          {t("privateNote")}
+        </p>
+      ) : null}
+
       {/* 2 · LEARN BLOCK — what this temperature means, for beginners */}
       {session.temperatureC !== null && (
         <div className="vl-enter w-full" style={{ animationDelay: "70ms" }}>
@@ -109,28 +130,32 @@ export default function SessionCard() {
         </div>
       )}
 
-      {/* 3 · ONE CTA — says exactly what happens next */}
-      <div
-        className="vl-enter flex flex-col items-center gap-3 text-center"
-        style={{ animationDelay: "140ms" }}
-      >
-        <Button
-          asChild
-          size="lg"
-          className="pressable herb-hover bg-herb px-8 text-base text-herb-foreground"
-        >
-          <Link to="/welcome">
-            {t("cta.button")}
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
-        </Button>
-        <p className="text-sm text-muted-foreground">{t("cta.subtext")}</p>
-      </div>
+      {!isPrivateView && (
+        <>
+          {/* 3 · ONE CTA — says exactly what happens next */}
+          <div
+            className="vl-enter flex flex-col items-center gap-3 text-center"
+            style={{ animationDelay: "140ms" }}
+          >
+            <Button
+              asChild
+              size="lg"
+              className="pressable herb-hover bg-herb px-8 text-base text-herb-foreground"
+            >
+              <Link to="/welcome">
+                {t("cta.button")}
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </Button>
+            <p className="text-sm text-muted-foreground">{t("cta.subtext")}</p>
+          </div>
 
-      {/* 4 · SHARE ROW — copy link, X, Reddit */}
-      <div className="vl-enter" style={{ animationDelay: "210ms" }}>
-        <ShareRow session={session} strainName={strainName} />
-      </div>
+          {/* 4 · SHARE ROW — copy link, X, Reddit */}
+          <div className="vl-enter" style={{ animationDelay: "210ms" }}>
+            <ShareRow session={session} strainName={strainName} />
+          </div>
+        </>
+      )}
 
       {/* 5 · Legal line (spec decision 5) */}
       <p

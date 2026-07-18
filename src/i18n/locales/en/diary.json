@@ -41,6 +41,7 @@
     "public": "Public",
     "private": "Private",
     "viewPublicCard": "View public card",
+    "viewCard": "View card",
     "logAgain": "Log again",
     "makePublicAria": "Make “{{strain}}” session public"
   },
