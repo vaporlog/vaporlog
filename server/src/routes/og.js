@@ -87,8 +87,9 @@ const ACRONYMS = new Map([
   ["xhale", "Xhale"],
 ]);
 
-/** "og-kush" → "OG Kush" — display fallback when only a slug is known. */
-function humanizeSlug(slug) {
+/** "og-kush" → "OG Kush" — display fallback when only a slug is known.
+ *  Exported for og-image.js, which renders the same display names. */
+export function humanizeSlug(slug) {
   return slug
     .split("-")
     .filter(Boolean)
@@ -128,12 +129,23 @@ function injectSessionMeta(html, session, id) {
     .join(" · ");
   const description = `${ritual ? `${ritual} — ` : ""}logged by @${author}. Terps, effects and ritual notes on vaporlog.`;
   const url = `${SITE_URL}/s/${id}`;
+  // Public sessions get a dynamically rendered card (see og-image.js);
+  // private/unknown ids keep the static brand image from index.html.
+  const image = `${SITE_URL}/api/og/s/${id}/card.png`;
 
   const replacements = new Map([
     [/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`],
     [
       /<meta property="og:title"[^>]*>/,
       `<meta property="og:title" content="${esc(title)}" />`,
+    ],
+    [
+      /<meta property="og:image"[^>]*>/,
+      `<meta property="og:image" content="${esc(image)}" />\n    <meta property="og:image:type" content="image/png" />`,
+    ],
+    [
+      /<meta name="twitter:image"[^>]*>/,
+      `<meta name="twitter:image" content="${esc(image)}" />`,
     ],
     [
       /<meta property="og:description"[^>]*>/,

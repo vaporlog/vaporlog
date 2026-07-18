@@ -12,5 +12,8 @@ RUN npm ci --omit=dev
 # Application source (ESM, "type": "module" in package.json)
 COPY src ./src
 
+# Bundled assets: DejaVu fonts for resvg + the embedded mascot (og-image.js)
+COPY assets ./assets
+
 EXPOSE 4000
 CMD ["node", "src/index.js"]

@@ -21,6 +21,7 @@ import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
 import deviceRoutes from "./routes/devices.js";
 import ogRoutes from "./routes/og.js";
+import ogImageRoutes from "./routes/og-image.js";
 
 const app = Fastify({ logger: true });
 
@@ -91,6 +92,7 @@ await app.register(authRoutes);
 await app.register(sessionRoutes);
 await app.register(deviceRoutes);
 await app.register(ogRoutes);
+await app.register(ogImageRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 try {
