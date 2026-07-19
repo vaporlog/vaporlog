@@ -48,6 +48,7 @@
   },
   "card": {
     "by": "by",
-    "ariaLabel": "{{strain}} session by {{author}}, rated {{rating}} out of 10"
+    "ariaLabel": "{{strain}} session by {{author}}, rated {{rating}} out of 10",
+    "authorProfileAria": "View @{{author}}'s public profile"
   }
 }

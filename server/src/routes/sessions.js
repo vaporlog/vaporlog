@@ -52,10 +52,13 @@ function asIsoTimestamp(value) {
 export default async function sessionRoutes(app) {
   // Community feed: every public session, newest first. The LEFT JOIN lets
   // the mapper fall back to the owner's live handle when the denormalized
-  // author column is empty.
+  // author column is empty, and exposes the owner's is_public flag so
+  // clients link the handle to /u/:handle only for public profiles.
   app.get("/api/sessions/public", async () => {
     const { rows } = await pool.query(
-      `select ${SESSION_COLUMNS}, p.handle as owner_handle
+      `select ${SESSION_COLUMNS},
+              p.handle    as owner_handle,
+              p.is_public as author_profile_public
          from sessions s
          left join profiles p on p.id = s.user_id
         where s.is_public

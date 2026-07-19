@@ -57,6 +57,13 @@ export interface SessionLog {
   isPublic: boolean;
   /** Pseudonym — never a real name or email. */
   author: string;
+  /**
+   * Whether the author's profile is publicly visible at /u/:handle.
+   * Optional: only public-feed payloads (GET /api/sessions/public) carry
+   * it — private endpoints (e.g. /api/sessions/mine) omit it entirely.
+   * When true, surfaces may link the handle to the public profile.
+   */
+  authorProfilePublic?: boolean;
   /** ISO 8601 timestamp. */
   createdAt: string;
 }

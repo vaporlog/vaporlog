@@ -20,8 +20,12 @@ interface FeedSessionCardProps {
 /**
  * One public session in the community feed — a compact preview that links
  * to the full shareable card at /s/:id. The whole surface is the link, so
- * no nested tappables: catalog strains get a type badge instead of a
- * second link, and personal (my-*) strains render their humanized name.
+ * nested tappables stay exceptional: catalog strains get a type badge
+ * instead of a second link, and personal (my-*) strains render their
+ * humanized name. The ONE exception is the author handle — it links to
+ * /u/:handle when (and only when) the author's profile is public
+ * (`authorProfilePublic === true`, a public-feed-only field); its click
+ * stops propagation so the card link does not fire too.
  *
  * Herb is spent exactly once here: the rating. Everything else stays on
  * the neutral scale. No entrance animation — this is a high-frequency
@@ -64,9 +68,25 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {t("card.by")}{" "}
-            <span className="font-medium text-foreground/80">
-              @{session.author}
-            </span>
+            {session.authorProfilePublic === true ? (
+              // The author made their profile public: the handle becomes a
+              // nested link to it. stopPropagation keeps the surrounding
+              // card link (/s/:id) from also firing on this click.
+              <Link
+                to={`/u/${encodeURIComponent(session.author)}`}
+                aria-label={t("card.authorProfileAria", {
+                  author: session.author,
+                })}
+                onClick={(event) => event.stopPropagation()}
+                className="font-medium text-foreground/80 transition-colors duration-150 hover:text-herb"
+              >
+                @{session.author}
+              </Link>
+            ) : (
+              <span className="font-medium text-foreground/80">
+                @{session.author}
+              </span>
+            )}
           </p>
         </div>
         <span className="flex shrink-0 items-center gap-1 text-sm">

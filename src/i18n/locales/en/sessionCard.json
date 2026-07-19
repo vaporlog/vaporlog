@@ -31,6 +31,7 @@
   },
   "card": {
     "ariaLabel": "{{strain}} session by {{author}}",
+    "authorProfileAria": "View @{{author}}'s public profile",
     "overline": "A vaporlog session",
     "by": "by",
     "ratingAria": "Rated {{rating}} out of 10",

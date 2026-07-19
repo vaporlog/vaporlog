@@ -48,6 +48,7 @@
   },
   "card": {
     "by": "por",
-    "ariaLabel": "Sesión de {{strain}} por {{author}}, calificada con {{rating}} de 10"
+    "ariaLabel": "Sesión de {{strain}} por {{author}}, calificada con {{rating}} de 10",
+    "authorProfileAria": "Ver el perfil público de @{{author}}"
   }
 }

@@ -111,10 +111,24 @@ export default function PublicSessionCard({
         </p>
       )}
 
-      {/* Pseudonym + date */}
+      {/* Pseudonym + date — the handle links to the author's profile only
+          when they made it public; otherwise it stays plain text. Same
+          static styling either way (this card is the OG-image reference). */}
       <p className="mt-3 text-sm text-muted-foreground">
         {t("card.by")}{" "}
-        <span className="font-medium text-foreground">{session.author}</span>
+        {session.authorProfilePublic === true ? (
+          <Link
+            to={`/u/${encodeURIComponent(session.author)}`}
+            aria-label={t("card.authorProfileAria", {
+              author: session.author,
+            })}
+            className="font-medium text-foreground transition-colors duration-150 hover:text-herb"
+          >
+            {session.author}
+          </Link>
+        ) : (
+          <span className="font-medium text-foreground">{session.author}</span>
+        )}
         {dateLabel !== null && ` · ${dateLabel}`}
       </p>
 
