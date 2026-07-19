@@ -44,9 +44,15 @@ export function rowToAccount(row) {
  * `row.owner_handle` is an optional LEFT JOIN profiles handle used as the
  * author fallback when the denormalized author column is empty; last
  * resort is "anonymous".
+ *
+ * `row.author_profile_public` is an optional LEFT JOIN profiles is_public
+ * flag. It is attached as `authorProfilePublic` ONLY when the query
+ * actually selected it (public payloads like GET /api/sessions/public);
+ * NULL (no profiles row) and queries without the join (private endpoints
+ * like /api/sessions/mine) leave the key out of the payload entirely.
  */
 export function rowToSession(row) {
-  return {
+  const session = {
     id: row.id,
     strainSlug: row.strain_slug,
     deviceSlug: row.device_slug ?? "",
@@ -66,6 +72,10 @@ export function rowToSession(row) {
         : (row.owner_handle ?? "anonymous"),
     createdAt: toIso(row.created_at),
   };
+  if (typeof row.author_profile_public === "boolean") {
+    session.authorProfilePublic = row.author_profile_public;
+  }
+  return session;
 }
 
 /**

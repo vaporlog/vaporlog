@@ -31,6 +31,7 @@
   },
   "card": {
     "ariaLabel": "Sesión de {{strain}} por {{author}}",
+    "authorProfileAria": "Ver el perfil público de @{{author}}",
     "overline": "Una sesión de vaporlog",
     "by": "por",
     "ratingAria": "Calificada con {{rating}} de 10",
