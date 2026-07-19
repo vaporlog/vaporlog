@@ -197,11 +197,65 @@ export interface PublicCollectionEntry {
   favorite: boolean;
 }
 
-/**
- * The public profile payload (GET /api/u/:handle). The optional blocks are
- * present only while their privacy flag is on. Grams and hours NEVER
- * appear here — stats carries only a session count and a device reference.
- */
+/** Admin dashboard — aggregate stats (no private grams/minutes). */
+export interface AdminStats {
+  users: {
+    total: number;
+    today: number;
+    last7Days: number;
+    last30Days: number;
+  };
+  sessions: {
+    total: number;
+    public: number;
+    private: number;
+    today: number;
+    last7Days: number;
+    last30Days: number;
+  };
+  activeUsers: {
+    last7Days: number;
+    last30Days: number;
+  };
+  averages: {
+    sessionsPerUser: number;
+    averageRating: number;
+  };
+  topStrains: { slug: string; count: number }[];
+  topDevices: { slug: string; name: string; category: string; count: number }[];
+  topMoods: { tag: string; count: number }[];
+  dailySeries: { day: string; sessions: number; publicSessions: number }[];
+}
+
+/** Admin dashboard user list item (aggregate counts only). */
+export interface AdminUser {
+  id: string;
+  handle: string;
+  role: string;
+  createdAt: string;
+  sessionCount: number;
+  lastSessionAt: string | null;
+}
+
+/** Admin dashboard system health snapshot. */
+export interface AdminSystem {
+  db: "up" | "down";
+  migrations: string[];
+  activeTokens: number;
+  deviceCount: number;
+  deviceReviewCount: number;
+}
+
+/** Paginated response from GET /api/admin/users. */
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  pagination: {
+    limit: number;
+    offset: number;
+    returned: number;
+  };
+}
+
 export interface PublicProfile {
   handle: string;
   bio: string;

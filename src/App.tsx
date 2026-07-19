@@ -26,6 +26,7 @@ const SessionCard = lazy(() => import("@/pages/SessionCard"));
 const Feed = lazy(() => import("@/pages/Feed"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const PublicProfile = lazy(() => import("@/pages/PublicProfile"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
 
 /**
  * Route map. Each page file in src/pages/ is owned by a later wave of
@@ -63,6 +64,7 @@ const router = createBrowserRouter(
           { path: "/log", element: <LogSession /> },
           { path: "/diary", element: <Diary /> },
           { path: "/profile", element: <Profile /> },
+          { path: "/admin", element: <AdminDashboard /> },
         ],
       },
       { path: "/strains", element: <Strains /> },

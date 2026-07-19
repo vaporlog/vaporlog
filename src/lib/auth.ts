@@ -42,6 +42,8 @@ export interface Account {
   birthdate: string;
   /** ISO 8601 timestamp. */
   createdAt: string;
+  /** Server role: 'user', 'admin', or 'moderator'. */
+  role: string;
 }
 
 export interface SignUpInput {
@@ -83,7 +85,8 @@ function setCache(next: Account | null): void {
       (prev.id !== next.id ||
         prev.username !== next.username ||
         prev.birthdate !== next.birthdate ||
-        prev.createdAt !== next.createdAt));
+        prev.createdAt !== next.createdAt ||
+        prev.role !== next.role));
   accountCache = next;
   if (changed) notifyAuthChanged();
 }

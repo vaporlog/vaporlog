@@ -1,0 +1,56 @@
+{
+  "title": "Panel de administración",
+  "subtitle": "Resumen de usuarios, sesiones y estado del sistema.",
+  "loading": "Cargando…",
+  "error": {
+    "loading": "No se pudieron cargar los datos de admin.",
+    "loadingUsers": "No se pudieron cargar los usuarios."
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "users": "Usuarios",
+    "system": "Sistema"
+  },
+  "kpi": {
+    "totalUsers": "Usuarios totales",
+    "newToday": "+{{count}} hoy",
+    "totalSessions": "Sesiones totales",
+    "publicSessions": "{{count}} públicas",
+    "activeUsers7d": "Activos (7 días)",
+    "activeUsers30d": "{{count}} en 30 días",
+    "sessionsPerUser": "Sesiones / usuario",
+    "averageRating": "Rating medio {{value}}"
+  },
+  "overview": {
+    "dailySessionsTitle": "Sesiones por día",
+    "dailySessionsDescription": "Últimos 30 días, totales vs. públicas.",
+    "dailySessionsLegend": "Sesiones",
+    "publicSessionsLegend": "Públicas",
+    "topStrains": "Strains top",
+    "topDevices": "Dispositivos top",
+    "topMoods": "Moods top",
+    "emptyStrains": "Aún no hay strains registrados.",
+    "emptyDevices": "Aún no hay dispositivos registrados.",
+    "emptyMoods": "Aún no hay moods registrados."
+  },
+  "users": {
+    "title": "Usuarios",
+    "description": "Cuentas ordenadas por fecha de registro.",
+    "handle": "Handle",
+    "role": "Rol",
+    "joined": "Registro",
+    "sessions": "Sesiones",
+    "lastSession": "Última sesión",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "offset": "Desplazamiento {{offset}}"
+  },
+  "system": {
+    "dbStatus": "Base de datos",
+    "activeTokens": "Tokens activos",
+    "deviceCount": "Dispositivos",
+    "reviewCount": "Reseñas",
+    "migrationsTitle": "Migraciones aplicadas",
+    "noMigrations": "No hay migraciones registradas."
+  }
+}

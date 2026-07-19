@@ -73,6 +73,7 @@ export default async function authRoutes(app) {
          values ($1, $2, $3)
          returning id,
                    handle,
+                   role,
                    to_char(birthdate, 'YYYY-MM-DD') as birthdate,
                    created_at`,
         [normalizedHandle, passwordHash, birthdate],
@@ -99,6 +100,7 @@ export default async function authRoutes(app) {
     const { rows } = await pool.query(
       `select id,
               handle,
+              role,
               password_hash,
               to_char(birthdate, 'YYYY-MM-DD') as birthdate,
               created_at

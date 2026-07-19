@@ -1,0 +1,56 @@
+{
+  "title": "Admin dashboard",
+  "subtitle": "Overview of users, sessions, and system health.",
+  "loading": "Loading…",
+  "error": {
+    "loading": "Could not load admin data.",
+    "loadingUsers": "Could not load users."
+  },
+  "tabs": {
+    "overview": "Overview",
+    "users": "Users",
+    "system": "System"
+  },
+  "kpi": {
+    "totalUsers": "Total users",
+    "newToday": "+{{count}} today",
+    "totalSessions": "Total sessions",
+    "publicSessions": "{{count}} public",
+    "activeUsers7d": "Active users (7d)",
+    "activeUsers30d": "{{count}} in 30d",
+    "sessionsPerUser": "Sessions / user",
+    "averageRating": "Avg. rating {{value}}"
+  },
+  "overview": {
+    "dailySessionsTitle": "Sessions per day",
+    "dailySessionsDescription": "Last 30 days, total vs. public.",
+    "dailySessionsLegend": "Sessions",
+    "publicSessionsLegend": "Public",
+    "topStrains": "Top strains",
+    "topDevices": "Top devices",
+    "topMoods": "Top moods",
+    "emptyStrains": "No strains logged yet.",
+    "emptyDevices": "No devices logged yet.",
+    "emptyMoods": "No moods logged yet."
+  },
+  "users": {
+    "title": "Users",
+    "description": "Accounts ordered by signup date.",
+    "handle": "Handle",
+    "role": "Role",
+    "joined": "Joined",
+    "sessions": "Sessions",
+    "lastSession": "Last session",
+    "previous": "Previous",
+    "next": "Next",
+    "offset": "Offset {{offset}}"
+  },
+  "system": {
+    "dbStatus": "Database",
+    "activeTokens": "Active tokens",
+    "deviceCount": "Devices",
+    "reviewCount": "Device reviews",
+    "migrationsTitle": "Migrations applied",
+    "noMigrations": "No migrations recorded."
+  }
+}

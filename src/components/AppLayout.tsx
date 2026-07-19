@@ -44,6 +44,7 @@ function UserMenu({
 }) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
+  const isAdmin = account.role === "admin";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -68,6 +69,11 @@ function UserMenu({
         <DropdownMenuItem onSelect={() => navigate("/profile")}>
           {t("nav.profile")}
         </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem onSelect={() => navigate("/admin")}>
+            {t("nav.admin")}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onSelect={() => {
             void onLogOut();

@@ -26,6 +26,7 @@ export async function authenticate(request, reply) {
   const { rows } = await pool.query(
     `select p.id,
             p.handle,
+            p.role,
             to_char(p.birthdate, 'YYYY-MM-DD') as birthdate,
             p.created_at
        from auth_tokens t

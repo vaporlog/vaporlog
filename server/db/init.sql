@@ -49,7 +49,8 @@ create table if not exists profiles (
   public_stats         boolean not null default false,
   public_reviews       boolean not null default false,
   public_collection    boolean not null default false,
-  favorite_device_slug text
+  favorite_device_slug text,
+  role                 text not null default 'user' check (role in ('user', 'admin', 'moderator'))
 );
 
 -- Case-insensitive handle uniqueness. This index is the REAL guard against

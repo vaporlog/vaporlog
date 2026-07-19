@@ -25,7 +25,7 @@ function toNumberOrNull(value) {
 
 /**
  * Maps a profiles row to the public Account shape:
- * { id, username, birthdate, createdAt }.
+ * { id, username, birthdate, createdAt, role }.
  * Expects `birthdate` already formatted as 'YYYY-MM-DD' text (the queries
  * use to_char(birthdate, 'YYYY-MM-DD') to dodge pg date-parser timezone
  * pitfalls); passes NULL through as "".
@@ -36,6 +36,7 @@ export function rowToAccount(row) {
     username: row.handle,
     birthdate: row.birthdate ?? "",
     createdAt: toIso(row.created_at),
+    role: row.role ?? "user",
   };
 }
 

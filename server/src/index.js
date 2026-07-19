@@ -22,6 +22,7 @@ import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
 import deviceRoutes from "./routes/devices.js";
 import profileRoutes from "./routes/profile.js";
+import adminRoutes from "./routes/admin.js";
 import ogRoutes from "./routes/og.js";
 import ogImageRoutes from "./routes/og-image.js";
 
@@ -94,6 +95,7 @@ await app.register(authRoutes);
 await app.register(sessionRoutes);
 await app.register(deviceRoutes);
 await app.register(profileRoutes);
+await app.register(adminRoutes);
 await app.register(ogRoutes);
 await app.register(ogImageRoutes);
 
