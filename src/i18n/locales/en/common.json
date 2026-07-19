@@ -8,7 +8,8 @@
     "logOut": "Log out",
     "logSession": "Log a Session",
     "logSessionShort": "Log",
-    "openMenu": "Open navigation menu"
+    "openMenu": "Open navigation menu",
+    "userMenu": "Open user menu"
   },
   "footer": {
     "tagline": "vaporlog — the journal of the art of vaporizing",
