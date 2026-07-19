@@ -2,7 +2,8 @@
 
 Contexto operativo para agentes (Kimi Code, Kimi Work, etc.) que trabajen en este
 repositorio. Léelo completo antes de tocar nada. La guía de despliegue para
-humanos está en `DEPLOY.md`; este archivo es el mapa de cómo se trabaja aquí.
+humanos está en `DEPLOY.md`; este archivo es el mapa de cómo se trabaja aquí,
+y `ROADMAP.md` es el backlog priorizado de lo que sigue.
 
 ## Qué es vaporlog
 
