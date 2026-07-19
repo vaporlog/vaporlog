@@ -28,14 +28,67 @@ const NAV_LINK_CLASS = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 /**
+ * Collapsed user menu shown while a session is active. The trigger is an
+ * avatar with the handle's initial (plus the @handle itself when
+ * `showHandle` is set, i.e. on desktop) and the content groups every
+ * account action — Profile and Log out — so the main nav stays clean.
+ */
+function UserMenu({
+  account,
+  onLogOut,
+  showHandle = false,
+}: {
+  account: Account;
+  onLogOut: () => Promise<void>;
+  showHandle?: boolean;
+}) {
+  const { t } = useTranslation("common");
+  const navigate = useNavigate();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={t("nav.userMenu")}
+        className={`pressable flex items-center gap-2 rounded-md text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground ${
+          showHandle ? "ml-1 px-2 py-1.5" : "size-8 justify-center sm:hidden"
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-6 items-center justify-center rounded-full bg-herb/15 text-xs font-semibold text-herb"
+        >
+          {account.username.charAt(0).toUpperCase()}
+        </span>
+        {showHandle && <span>@{account.username}</span>}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuLabel className="font-normal text-muted-foreground">
+          @{account.username}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate("/profile")}>
+          {t("nav.profile")}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            void onLogOut();
+          }}
+        >
+          {t("nav.logOut")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
  * Shared app shell: clean header (wordmark → "/", Diary, Strains, Feed,
  * auth state, "Log a Session" accent CTA) + minimal footer. Every route
  * renders inside this layout via <Outlet />.
  *
- * Auth area: signed-in users see their @handle and a quiet "Log out";
- * everyone else sees a quiet "Sign in" link to /welcome. The account is
- * re-read on every navigation and on auth-change events so the header
- * always reflects the current session.
+ * Auth area: signed-in users get a single collapsed user menu (avatar +
+ * @handle trigger → Profile, Log out); everyone else sees a quiet
+ * "Sign in" link to /welcome. The account is re-read on every navigation
+ * and on auth-change events so the header always reflects the session.
  */
 export default function AppLayout() {
   const { t } = useTranslation("common");
@@ -84,8 +137,8 @@ export default function AppLayout() {
           </Link>
 
           <nav className="flex items-center gap-1 sm:gap-2">
-            {/* Full header row from sm up: section links, auth state,
-                "Log a Session" CTA and language toggle, all inline. */}
+            {/* Full header row from sm up: section links, collapsed user
+                menu, "Log a Session" CTA and language toggle, all inline. */}
             <div className="hidden items-center gap-1 sm:flex sm:gap-2">
               <NavLink to="/diary" className={NAV_LINK_CLASS}>
                 {t("nav.diary")}
@@ -96,24 +149,12 @@ export default function AppLayout() {
               <NavLink to="/feed" className={NAV_LINK_CLASS}>
                 {t("nav.feed")}
               </NavLink>
-              {account && (
-                <NavLink to="/profile" className={NAV_LINK_CLASS}>
-                  {t("nav.profile")}
-                </NavLink>
-              )}
               {account ? (
-                <>
-                  <span className="ml-1 text-sm text-muted-foreground">
-                    @{account.username}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleLogOut}
-                    className="pressable rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
-                  >
-                    {t("nav.logOut")}
-                  </button>
-                </>
+                <UserMenu
+                  account={account}
+                  onLogOut={handleLogOut}
+                  showHandle
+                />
               ) : (
                 <NavLink to="/welcome?mode=signin" className={NAV_LINK_CLASS}>
                   {t("nav.signIn")}
@@ -130,8 +171,13 @@ export default function AppLayout() {
               </Button>
               <LanguageToggle />
             </div>
-            {/* Below sm only the wordmark and this hamburger remain; the
-                whole menu folds in here so the ~360px row can't overflow. */}
+            {/* Below sm the collapsed user menu also appears next to the
+                hamburger (avatar-only trigger), keeping both headers in
+                sync: account actions live in the user menu, not here. */}
+            {account && <UserMenu account={account} onLogOut={handleLogOut} />}
+            {/* Below sm only the wordmark, the user menu and this hamburger
+                remain; navigation, CTA and language fold in here so the
+                ~360px row can't overflow. */}
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label={t("nav.openMenu")}
@@ -149,11 +195,6 @@ export default function AppLayout() {
                 <DropdownMenuItem onSelect={() => navigate("/feed")}>
                   {t("nav.feed")}
                 </DropdownMenuItem>
-                {account && (
-                  <DropdownMenuItem onSelect={() => navigate("/profile")}>
-                    {t("nav.profile")}
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => navigate("/log")}
@@ -161,26 +202,15 @@ export default function AppLayout() {
                 >
                   {t("nav.logSession")}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {account ? (
+                {!account && (
                   <>
-                    <DropdownMenuLabel className="font-normal text-muted-foreground">
-                      @{account.username}
-                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onSelect={() => {
-                        void handleLogOut();
-                      }}
+                      onSelect={() => navigate("/welcome?mode=signin")}
                     >
-                      {t("nav.logOut")}
+                      {t("nav.signIn")}
                     </DropdownMenuItem>
                   </>
-                ) : (
-                  <DropdownMenuItem
-                    onSelect={() => navigate("/welcome?mode=signin")}
-                  >
-                    {t("nav.signIn")}
-                  </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 {/* Plain row (not a menu item) so tapping EN|ES doesn't

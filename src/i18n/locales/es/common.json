@@ -8,7 +8,8 @@
     "logOut": "Cerrar sesión",
     "logSession": "Registrar sesión",
     "logSessionShort": "Registrar",
-    "openMenu": "Abrir menú de navegación"
+    "openMenu": "Abrir menú de navegación",
+    "userMenu": "Abrir menú de usuario"
   },
   "footer": {
     "tagline": "vaporlog — el diario del arte de vaporizar",
