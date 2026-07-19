@@ -97,3 +97,116 @@ export interface Profile {
   /** ISO 8601 timestamp. */
   createdAt: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* User profile (profile page + public profile) — mirrors the shapes  */
+/* served by /api/profile* and /api/u/:handle (server/src/routes/     */
+/* profile.js). camelCase both ways; the API owns the row mapping.    */
+/* ------------------------------------------------------------------ */
+
+/** The signed-in user's full profile settings (GET /api/profile). */
+export interface ProfileSettings {
+  handle: string;
+  bio: string;
+  /** Master switch: the public page exists only while true. */
+  isPublic: boolean;
+  /** Per-block public flags (each only matters while isPublic is true). */
+  publicStats: boolean;
+  publicReviews: boolean;
+  publicCollection: boolean;
+  /** Catalog device slug, or null when no favorite is set. */
+  favoriteDeviceSlug: string | null;
+  /** ISO 8601 timestamp of account creation. */
+  memberSince: string;
+}
+
+/** Fields PATCH /api/profile accepts (all optional). */
+export interface ProfilePatch {
+  bio?: string;
+  isPublic?: boolean;
+  publicStats?: boolean;
+  publicReviews?: boolean;
+  publicCollection?: boolean;
+  favoriteDeviceSlug?: string | null;
+}
+
+/** One device review (1–5 + text); one per device per user. */
+export interface DeviceReview {
+  deviceSlug: string;
+  /** Catalog device name, or null for non-catalog (personal `my-*`) slugs. */
+  deviceName: string | null;
+  /** Whole number 1–5. */
+  rating: number;
+  body: string;
+  /** ISO 8601 timestamps. */
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Per-device usage aggregate (private stats). */
+export interface ProfileDeviceStat {
+  slug: string;
+  /** Catalog device name, or null for non-catalog slugs. */
+  name: string | null;
+  sessions: number;
+  totalMinutes: number;
+  avgTemperatureC: number | null;
+}
+
+/** One strain in the top-strains ranking (private stats). */
+export interface ProfileStrainStat {
+  slug: string;
+  count: number;
+}
+
+/** One week in the sessions-per-week series (private stats). */
+export interface ProfileWeekBucket {
+  /** ISO date (YYYY-MM-DD) of the week start (Monday). */
+  weekStart: string;
+  count: number;
+}
+
+/** Private statistics (GET /api/profile/stats) — never public as-is. */
+export interface ProfileStats {
+  totalSessions: number;
+  totalMinutes: number;
+  avgTemperatureC: number | null;
+  devices: ProfileDeviceStat[];
+  topStrains: ProfileStrainStat[];
+  weekly: ProfileWeekBucket[];
+}
+
+/** A device referenced by name on public surfaces. */
+export interface PublicDeviceRef {
+  slug: string;
+  name: string;
+}
+
+/** One device in a public collection: counts only, never grams/hours. */
+export interface PublicCollectionEntry {
+  slug: string;
+  name: string | null;
+  sessions: number;
+  favorite: boolean;
+}
+
+/**
+ * The public profile payload (GET /api/u/:handle). The optional blocks are
+ * present only while their privacy flag is on. Grams and hours NEVER
+ * appear here — stats carries only a session count and a device reference.
+ */
+export interface PublicProfile {
+  handle: string;
+  bio: string;
+  /** ISO 8601 timestamp of account creation. */
+  memberSince: string;
+  favoriteDevice?: PublicDeviceRef;
+  /** Only sessions the owner individually published. */
+  sessions: SessionLog[];
+  stats?: {
+    totalSessions: number;
+    favoriteDevice: PublicDeviceRef | null;
+  };
+  reviews?: DeviceReview[];
+  collection?: PublicCollectionEntry[];
+}

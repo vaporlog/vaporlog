@@ -96,6 +96,11 @@ export default function AppLayout() {
               <NavLink to="/feed" className={NAV_LINK_CLASS}>
                 {t("nav.feed")}
               </NavLink>
+              {account && (
+                <NavLink to="/profile" className={NAV_LINK_CLASS}>
+                  {t("nav.profile")}
+                </NavLink>
+              )}
               {account ? (
                 <>
                   <span className="ml-1 text-sm text-muted-foreground">
@@ -144,6 +149,11 @@ export default function AppLayout() {
                 <DropdownMenuItem onSelect={() => navigate("/feed")}>
                   {t("nav.feed")}
                 </DropdownMenuItem>
+                {account && (
+                  <DropdownMenuItem onSelect={() => navigate("/profile")}>
+                    {t("nav.profile")}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => navigate("/log")}

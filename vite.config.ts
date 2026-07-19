@@ -13,6 +13,11 @@ export default defineConfig({
   plugins: [inspectAttr(), react()],
   server: {
     port: 3000,
+    // Listen on every interface (0.0.0.0) so the dev server is reachable
+    // from other devices on the LAN — e.g. testing the app from a phone
+    // on the same Wi-Fi via http://<PC-IP>:<port>. /api calls still go
+    // through the proxy below, so the API itself can stay on localhost.
+    host: true,
     proxy: {
       // Dev: same-origin /api calls are forwarded to the local API
       // (mirrors the nginx /api → api:4000 proxy used in production).

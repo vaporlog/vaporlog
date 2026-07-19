@@ -24,15 +24,17 @@ const StrainDetail = lazy(() => import("@/pages/StrainDetail"));
 const Recommendations = lazy(() => import("@/pages/Recommendations"));
 const SessionCard = lazy(() => import("@/pages/SessionCard"));
 const Feed = lazy(() => import("@/pages/Feed"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const PublicProfile = lazy(() => import("@/pages/PublicProfile"));
 
 /**
  * Route map. Each page file in src/pages/ is owned by a later wave of
  * agents — replace the page component's internals, never the route paths.
  *
- * Auth guard: only /log and /diary require a signed-in account. Landing,
- * /welcome, the strain catalog, /recommendations, the community feed
- * (/feed), and public session cards (/s/:id) stay open so newcomers can
- * look before they sign up.
+ * Auth guard: /log, /diary and /profile require a signed-in account.
+ * Landing, /welcome, the strain catalog, /recommendations, the community
+ * feed (/feed), public session cards (/s/:id) and public profiles
+ * (/u/:handle) stay open so newcomers can look before they sign up.
  */
 /**
  * Router basename: on GitHub Pages the app is served from the /vaporlog/
@@ -60,6 +62,7 @@ const router = createBrowserRouter(
         children: [
           { path: "/log", element: <LogSession /> },
           { path: "/diary", element: <Diary /> },
+          { path: "/profile", element: <Profile /> },
         ],
       },
       { path: "/strains", element: <Strains /> },
@@ -67,6 +70,7 @@ const router = createBrowserRouter(
       { path: "/recommendations", element: <Recommendations /> },
       { path: "/feed", element: <Feed /> },
       { path: "/s/:id", element: <SessionCard /> },
+      { path: "/u/:handle", element: <PublicProfile /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

@@ -67,3 +67,52 @@ export function rowToSession(row) {
     createdAt: toIso(row.created_at),
   };
 }
+
+/**
+ * Maps a profiles row to the owner's ProfileSettings shape (camelCase) —
+ * the full private view of the profile page: identity, free-form bio, the
+ * is_public master switch, the per-block public flags, favorite device and
+ * member-since timestamp.
+ */
+export function rowToProfileSettings(row) {
+  return {
+    handle: row.handle,
+    bio: row.bio ?? "",
+    isPublic: row.is_public === true,
+    publicStats: row.public_stats === true,
+    publicReviews: row.public_reviews === true,
+    publicCollection: row.public_collection === true,
+    favoriteDeviceSlug: row.favorite_device_slug ?? null,
+    memberSince: toIso(row.created_at),
+  };
+}
+
+/**
+ * Maps a device_reviews row to the camelCase review shape. `row.device_name`
+ * is an optional LEFT JOIN devices name; null when the slug is not a catalog
+ * device (e.g. a personal `my-*` device) — clients humanize the slug then.
+ */
+export function rowToDeviceReview(row) {
+  return {
+    deviceSlug: row.device_slug,
+    deviceName: row.device_name ?? null,
+    rating: Number(row.rating),
+    body: row.body ?? "",
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+  };
+}
+
+/**
+ * Maps one row of the per-device stats aggregation to camelCase.
+ * `row.name` is the LEFT JOIN devices name (null for non-catalog slugs).
+ */
+export function rowToDeviceStat(row) {
+  return {
+    slug: row.slug,
+    name: row.name ?? null,
+    sessions: Number(row.sessions),
+    totalMinutes: Number(row.total_minutes ?? 0),
+    avgTemperatureC: toNumberOrNull(row.avg_temperature_c),
+  };
+}

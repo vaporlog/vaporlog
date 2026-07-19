@@ -50,7 +50,7 @@ export function clearToken(): void {
 
 export interface ApiFetchOptions {
   /** HTTP method — defaults to GET (or POST when a body is given). */
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** JSON-serializable request body. */
   body?: unknown;
   /** Attach `Authorization: Bearer <token>` from storage. */

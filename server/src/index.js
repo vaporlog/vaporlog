@@ -13,6 +13,7 @@
  *   src/routes/auth.js   — /api/auth/*
  *   src/routes/sessions.js — /api/sessions/*
  *   src/routes/devices.js  — /api/devices (public catalog)
+ *   src/routes/profile.js  — /api/profile/* + /api/u/:handle
  */
 import Fastify from "fastify";
 import cors from "@fastify/cors";
@@ -20,6 +21,7 @@ import { pool } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
 import deviceRoutes from "./routes/devices.js";
+import profileRoutes from "./routes/profile.js";
 import ogRoutes from "./routes/og.js";
 import ogImageRoutes from "./routes/og-image.js";
 
@@ -91,6 +93,7 @@ app.get("/api/health", async () => {
 await app.register(authRoutes);
 await app.register(sessionRoutes);
 await app.register(deviceRoutes);
+await app.register(profileRoutes);
 await app.register(ogRoutes);
 await app.register(ogImageRoutes);
 

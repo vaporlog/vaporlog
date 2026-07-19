@@ -1,0 +1,160 @@
+{
+  "loading": {
+    "title": "Cargando tu perfil…",
+    "subtitle": "Tus datos se están sincronizando desde la nube."
+  },
+  "loadError": {
+    "title": "No pudimos cargar tu perfil",
+    "body": "Comprueba tu conexión e inténtalo de nuevo.",
+    "retry": "Reintentar"
+  },
+  "identity": {
+    "memberSince": "Miembro desde {{date}}",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "Un par de líneas sobre tu ritual — opcional, siempre editable.",
+    "bioEmpty": "Aún no tienes bio.",
+    "addBio": "Añadir una bio",
+    "editBio": "Editar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "cancel": "Cancelar",
+    "saved": "Bio actualizada.",
+    "error": "No se pudo guardar tu bio — inténtalo de nuevo."
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "privateNote": "Solo tú ves esto.",
+    "total": "Sesiones totales",
+    "topDevice": "Vapo más usado",
+    "topStrain": "Hierba más usada",
+    "totalHours": "Horas totales",
+    "avgTemp": "Temperatura media: {{value}}°C",
+    "weeklyTitle": "Sesiones por semana",
+    "chartTitle": "Sesiones por semana de las últimas {{count}} semanas",
+    "devicesTitle": "Tus dispositivos",
+    "sessionCount_one": "{{count}} sesión",
+    "sessionCount_other": "{{count}} sesiones",
+    "empty": {
+      "title": "Aún no hay estadísticas",
+      "body": "Registra tu primera sesión y tus estadísticas personales aparecerán aquí.",
+      "cta": "Registra tu primera sesión"
+    }
+  },
+  "collection": {
+    "title": "Colección",
+    "subtitle": "Los dispositivos que usas, según tus sesiones.",
+    "favorite": "Favorito",
+    "makeFavorite": "Marcar como favorito",
+    "removeFavorite": "Quitar favorito",
+    "favoriteAria": "Marcar {{device}} como favorito",
+    "sessionCount_one": "{{count}} sesión",
+    "sessionCount_other": "{{count}} sesiones",
+    "empty": {
+      "title": "Aún no hay dispositivos",
+      "body": "Tu colección se construye sola a medida que registras sesiones.",
+      "cta": "Registrar una sesión"
+    }
+  },
+  "reviews": {
+    "title": "Reseñas",
+    "subtitle": "Tu opinión sobre los dispositivos que usas. Viven solo en tu perfil.",
+    "add": "Escribir una reseña",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "pickDevice": "Elige un dispositivo",
+    "dialog": {
+      "titleNew": "Reseña de {{device}}",
+      "titleEdit": "Editar tu reseña de {{device}}",
+      "ratingLabel": "Valoración",
+      "ratingAria": "{{value}} de 5",
+      "bodyLabel": "Tu reseña",
+      "bodyPlaceholder": "¿Qué debería saber alguien sobre este dispositivo?",
+      "save": "Guardar reseña",
+      "saving": "Guardando…",
+      "cancel": "Cancelar"
+    },
+    "deleteConfirm": {
+      "title": "¿Eliminar esta reseña?",
+      "body": "Esto no se puede deshacer. La reseña se eliminará permanentemente.",
+      "action": "Sí, eliminarla",
+      "cancel": "Cancelar"
+    },
+    "saved": "Reseña guardada.",
+    "deleted": "Reseña eliminada.",
+    "error": "No se pudo guardar la reseña — inténtalo de nuevo.",
+    "deleteError": "No se pudo eliminar la reseña — inténtalo de nuevo.",
+    "empty": {
+      "title": "Aún no hay reseñas",
+      "body": "Reseña un dispositivo de tu colección — te ayuda a recordar qué funcionó."
+    }
+  },
+  "privacy": {
+    "title": "Privacidad",
+    "master": {
+      "label": "Perfil público",
+      "description": "Cualquiera con el enlace puede ver tu perfil. Desactivado por defecto."
+    },
+    "stats": {
+      "label": "Estadísticas",
+      "description": "Muestra solo tus sesiones totales y tu equipo favorito."
+    },
+    "reviews": {
+      "label": "Reseñas",
+      "description": "Muestra tus reseñas de dispositivos en tu perfil público."
+    },
+    "collection": {
+      "label": "Colección",
+      "description": "Muestra los dispositivos que usas y cuántas sesiones tiene cada uno."
+    },
+    "neverShow": "Los gramos y las horas nunca se muestran en público.",
+    "publicLinkLabel": "Tu perfil público",
+    "copy": "Copiar enlace",
+    "copied": "Copiado",
+    "publicSessionsNote": "Las sesiones que publicas desde tu diario siempre son visibles mientras tu perfil sea público.",
+    "updated": "Configuración de privacidad actualizada.",
+    "error": "No se pudo actualizar tu privacidad — inténtalo de nuevo."
+  },
+  "data": {
+    "title": "Tus datos",
+    "export": {
+      "label": "Exportar mis datos",
+      "description": "Descarga todo lo que guardamos sobre ti — perfil, sesiones y reseñas — en JSON.",
+      "button": "Descargar JSON",
+      "working": "Preparando…",
+      "error": "No se pudieron exportar tus datos — inténtalo de nuevo."
+    },
+    "delete": {
+      "label": "Eliminar cuenta",
+      "description": "Elimina permanentemente tu cuenta, tus sesiones y tus reseñas. No hay vuelta atrás.",
+      "button": "Eliminar cuenta",
+      "confirmTitle": "¿Eliminar tu cuenta?",
+      "confirmBody": "Esto elimina permanentemente tu cuenta, todas las sesiones y todas las reseñas. No se puede deshacer. Si quieres una copia antes, exporta tus datos.",
+      "confirmAction": "Sí, eliminar todo",
+      "cancel": "Cancelar",
+      "working": "Eliminando…",
+      "error": "No se pudo eliminar tu cuenta — inténtalo de nuevo."
+    }
+  },
+  "public": {
+    "loading": {
+      "title": "Cargando perfil…"
+    },
+    "private": {
+      "title": "Este perfil es privado o no existe",
+      "body": "Los perfiles de vaporlog son privados por defecto — su dueño elige qué compartir.",
+      "cta": "Volver a vaporlog"
+    },
+    "memberSince": "Miembro desde {{date}}",
+    "cta": "Empieza tu diario — gratis",
+    "sessionsTitle": "Sesiones públicas",
+    "noSessions": "Aún no hay sesiones públicas.",
+    "statsTitle": "Estadísticas",
+    "totalSessions": "Sesiones totales",
+    "favoriteDevice": "Equipo favorito",
+    "reviewsTitle": "Reseñas",
+    "collectionTitle": "Colección",
+    "favorite": "Favorito",
+    "sessionCount_one": "{{count}} sesión",
+    "sessionCount_other": "{{count}} sesiones"
+  }
+}

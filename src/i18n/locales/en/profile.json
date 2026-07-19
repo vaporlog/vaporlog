@@ -1,0 +1,160 @@
+{
+  "loading": {
+    "title": "Loading your profile…",
+    "subtitle": "Your data is syncing from the cloud."
+  },
+  "loadError": {
+    "title": "We couldn't load your profile",
+    "body": "Check your connection and try again.",
+    "retry": "Try again"
+  },
+  "identity": {
+    "memberSince": "Member since {{date}}",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "A line or two about your ritual — optional, always editable.",
+    "bioEmpty": "No bio yet.",
+    "addBio": "Add a bio",
+    "editBio": "Edit",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "saved": "Bio updated.",
+    "error": "Couldn't save your bio — try again."
+  },
+  "stats": {
+    "title": "Statistics",
+    "privateNote": "Only you can see this.",
+    "total": "Total sessions",
+    "topDevice": "Most used device",
+    "topStrain": "Most used strain",
+    "totalHours": "Total hours",
+    "avgTemp": "Average temperature: {{value}}°C",
+    "weeklyTitle": "Sessions per week",
+    "chartTitle": "Sessions per week for the last {{count}} weeks",
+    "devicesTitle": "Your devices",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "empty": {
+      "title": "No statistics yet",
+      "body": "Log your first session and your personal stats will appear here.",
+      "cta": "Log your first session"
+    }
+  },
+  "collection": {
+    "title": "Collection",
+    "subtitle": "The devices you use, built from your sessions.",
+    "favorite": "Favorite",
+    "makeFavorite": "Set as favorite",
+    "removeFavorite": "Remove favorite",
+    "favoriteAria": "Mark {{device}} as favorite",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "empty": {
+      "title": "No devices yet",
+      "body": "Your collection builds itself as you log sessions.",
+      "cta": "Log a session"
+    }
+  },
+  "reviews": {
+    "title": "Reviews",
+    "subtitle": "Your take on the devices you use. They live only on your profile.",
+    "add": "Write a review",
+    "edit": "Edit",
+    "delete": "Delete",
+    "pickDevice": "Choose a device",
+    "dialog": {
+      "titleNew": "Review {{device}}",
+      "titleEdit": "Edit your review of {{device}}",
+      "ratingLabel": "Rating",
+      "ratingAria": "{{value}} out of 5",
+      "bodyLabel": "Your review",
+      "bodyPlaceholder": "What should someone know about this device?",
+      "save": "Save review",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    },
+    "deleteConfirm": {
+      "title": "Delete this review?",
+      "body": "This can't be undone. The review will be permanently removed.",
+      "action": "Yes, delete it",
+      "cancel": "Cancel"
+    },
+    "saved": "Review saved.",
+    "deleted": "Review deleted.",
+    "error": "Couldn't save the review — try again.",
+    "deleteError": "Couldn't delete the review — try again.",
+    "empty": {
+      "title": "No reviews yet",
+      "body": "Review a device from your collection — it helps you remember what worked."
+    }
+  },
+  "privacy": {
+    "title": "Privacy",
+    "master": {
+      "label": "Public profile",
+      "description": "Anyone with the link can see your profile. Off by default."
+    },
+    "stats": {
+      "label": "Statistics",
+      "description": "Shows only your total sessions and your favorite device."
+    },
+    "reviews": {
+      "label": "Reviews",
+      "description": "Shows your device reviews on your public profile."
+    },
+    "collection": {
+      "label": "Collection",
+      "description": "Shows the devices you use and how many sessions each has."
+    },
+    "neverShow": "Grams and hours are never shown publicly.",
+    "publicLinkLabel": "Your public profile",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "publicSessionsNote": "Sessions you publish from your diary are always visible while your profile is public.",
+    "updated": "Privacy settings updated.",
+    "error": "Couldn't update your privacy settings — try again."
+  },
+  "data": {
+    "title": "Your data",
+    "export": {
+      "label": "Export my data",
+      "description": "Download everything we store about you — profile, sessions and reviews — as JSON.",
+      "button": "Download JSON",
+      "working": "Preparing…",
+      "error": "Couldn't export your data — try again."
+    },
+    "delete": {
+      "label": "Delete account",
+      "description": "Permanently deletes your account, your sessions and your reviews. There is no way back.",
+      "button": "Delete account",
+      "confirmTitle": "Delete your account?",
+      "confirmBody": "This permanently deletes your account, every session and every review. It can't be undone. If you want a copy first, export your data.",
+      "confirmAction": "Yes, delete everything",
+      "cancel": "Cancel",
+      "working": "Deleting…",
+      "error": "Couldn't delete your account — try again."
+    }
+  },
+  "public": {
+    "loading": {
+      "title": "Loading profile…"
+    },
+    "private": {
+      "title": "This profile is private or doesn't exist",
+      "body": "vaporlog profiles are private by default — the owner chooses what to share.",
+      "cta": "Back to vaporlog"
+    },
+    "memberSince": "Member since {{date}}",
+    "cta": "Start your journal — free",
+    "sessionsTitle": "Public sessions",
+    "noSessions": "No public sessions yet.",
+    "statsTitle": "Statistics",
+    "totalSessions": "Total sessions",
+    "favoriteDevice": "Favorite device",
+    "reviewsTitle": "Reviews",
+    "collectionTitle": "Collection",
+    "favorite": "Favorite",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions"
+  }
+}
