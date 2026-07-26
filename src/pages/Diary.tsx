@@ -14,7 +14,13 @@ import {
   computeStats,
   computeWeeklyActivity,
 } from "@/components/diary/diary-utils";
-import { getProfile, toggleSessionPublic, useMySessions, useStrains } from "@/lib/data";
+import {
+  getProfile,
+  toggleSessionPublic,
+  toggleSessionUnwantedEffectsPublic,
+  useMySessions,
+  useStrains,
+} from "@/lib/data";
 
 /** Diary — your private session list + basic stats (age-gated). */
 export default function Diary() {
@@ -58,6 +64,27 @@ export default function Diary() {
     }
   };
 
+   
+  const handleToggleUnwantedEffectsPublic = async (id: string) => {
+    if (pendingToggleId !== null) return;
+    setPendingToggleId(id);
+    try {
+      const updated = await toggleSessionUnwantedEffectsPublic(id);
+      if (!updated) return;
+      toast.success(
+        updated.unwantedEffectsPublic
+          ? t("toggle.unwantedEffectsNowPublic")
+          : t("toggle.unwantedEffectsNowPrivate"),
+      );
+    } catch {
+      toast.error(t("toggle.error"), {
+        description: t("toggle.errorDescription"),
+      });
+    } finally {
+      setPendingToggleId(null);
+    }
+  };
+
   const isEmpty = sessions.length === 0;
 
   return (
@@ -84,6 +111,7 @@ export default function Diary() {
           <SessionList
             sessions={sessions}
             onTogglePublic={handleTogglePublic}
+            onToggleUnwantedEffectsPublic={handleToggleUnwantedEffectsPublic}
             pendingToggleId={pendingToggleId}
           />
         </>

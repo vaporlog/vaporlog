@@ -32,6 +32,8 @@
     "weeklyTitle": "Sessions per week",
     "chartTitle": "Sessions per week for the last {{count}} weeks",
     "devicesTitle": "Your devices",
+    "likedPercent": "Sessions you liked",
+    "topUnwantedEffects": "Most common unwanted effects",
     "sessionCount_one": "{{count}} session",
     "sessionCount_other": "{{count}} sessions",
     "empty": {

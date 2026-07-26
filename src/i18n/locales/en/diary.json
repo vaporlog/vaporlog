@@ -43,11 +43,20 @@
     "viewPublicCard": "View public card",
     "viewCard": "View card",
     "logAgain": "Log again",
-    "makePublicAria": "Make “{{strain}}” session public"
+    "makePublicAria": "Make “{{strain}}” session public",
+    "liked": {
+      "yes": "Liked",
+      "no": "Did not like"
+    },
+    "includeUnwantedEffectsAria": "Include unwanted effects on the public card for “{{strain}}”",
+    "unwantedEffectsPublic": "Unwanted effects visible",
+    "unwantedEffectsPrivate": "Unwanted effects hidden"
   },
   "toggle": {
     "nowPublic": "Session is now public — anyone with the link can view its card.",
     "nowPrivate": "Session is now private again.",
+    "unwantedEffectsNowPublic": "Unwanted effects are now visible on the public card.",
+    "unwantedEffectsNowPrivate": "Unwanted effects are now hidden from the public card.",
     "error": "Couldn't update that session",
     "errorDescription": "Check your connection and try again."
   },

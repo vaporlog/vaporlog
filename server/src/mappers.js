@@ -65,6 +65,10 @@ export function rowToSession(row) {
     flavors: row.flavors ?? [],
     moods: row.moods ?? [],
     activities: row.activities ?? [],
+    unwantedEffects: row.unwanted_effects ?? [],
+    liked:
+      typeof row.liked === "boolean" ? row.liked : (row.liked ?? null),
+    unwantedEffectsPublic: row.unwanted_effects_public === true,
     notes: row.notes ?? "",
     isPublic: row.is_public,
     author:

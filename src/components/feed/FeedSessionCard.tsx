@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Star } from "lucide-react";
+import { Star, ThumbsUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getStrain } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
@@ -95,6 +95,12 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
             {formatRating(session.rating)}
           </span>
           <span className="text-muted-foreground">/10</span>
+          {session.liked === true && (
+            <ThumbsUp
+              className="ml-1 size-3.5 text-herb"
+              aria-label={t("card.liked")}
+            />
+          )}
         </span>
       </div>
 

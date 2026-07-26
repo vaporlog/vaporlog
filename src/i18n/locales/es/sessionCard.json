@@ -42,7 +42,9 @@
       "amount": "Cantidad"
     },
     "mood": "Ánimo",
-    "aromaFlavor": "Aroma · Sabor"
+    "aromaFlavor": "Aroma · Sabor",
+    "liked": "Te gustó",
+    "unwantedEffects": "Efectos no deseados"
   },
   "share": {
     "text": "La sesión de {{strain}} de {{author}} en vaporlog — {{rating}}/10",

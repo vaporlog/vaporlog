@@ -119,7 +119,7 @@ function injectSessionMeta(html, session, id) {
   const author = session.owner_handle || session.author || "anonymous";
   const device = session.device_name || humanizeSlug(session.device_slug || "");
 
-  const title = `${strain} · ${rating.toFixed(1)}/10 — a vaporlog session`;
+  const title = `${strain} · ${rating.toFixed(1)}/10${session.liked === true ? " — liked" : ""} — a vaporlog session`;
   const ritual = [
     device,
     session.temperature_c !== null ? `${session.temperature_c}°C` : null,
@@ -194,7 +194,7 @@ export default async function ogRoutes(app) {
     if (UUID_RE.test(id)) {
       const { rows } = await pool.query(
         `select s.strain_slug, s.device_slug, s.temperature_c,
-                s.duration_min, s.rating, s.author,
+                s.duration_min, s.rating, s.author, s.liked,
                 p.handle as owner_handle,
                 d.name   as device_name
            from sessions s

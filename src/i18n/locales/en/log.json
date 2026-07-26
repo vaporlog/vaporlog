@@ -9,6 +9,7 @@
     "details": "Details",
     "experience": "Experience",
     "rating": "Rating",
+    "unwantedEffects": "Unwanted effects",
     "notes": "Notes",
     "publish": "Publish"
   },
@@ -26,6 +27,15 @@
     "addMood": "Add your own mood",
     "addActivity": "Add your own activity"
   },
+  "liked": {
+    "label": "Did you like it?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "unwantedEffects": {
+    "description": "Anything that detracted from the experience — optional.",
+    "add": "Add your own unwanted effect"
+  },
   "validation": {
     "pickStrain": "Pick a strain — or add your own.",
     "pickDevice": "Which vaporizer did you use?"
@@ -37,7 +47,9 @@
     "public": "Public",
     "private": "Private",
     "description": "Private by default. Public sessions appear as cards others can learn from — only your pseudonym shows.",
-    "switchLabel": "Make this session public"
+    "switchLabel": "Make this session public",
+    "includeUnwantedEffects": "Include unwanted effects",
+    "includeUnwantedEffectsDescription": "If on, your unwanted-effects tags also show on the public session card."
   },
   "sticky": {
     "autosave": "Your draft autosaves as you go.",

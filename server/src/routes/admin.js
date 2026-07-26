@@ -92,6 +92,15 @@ export default async function adminRoutes(app) {
         limit 10`,
     );
 
+    const topUnwantedEffectsRes = await pool.query(
+      `select tag,
+              count(*)::int as count
+         from (select unnest(unwanted_effects) as tag from sessions) t
+        group by tag
+        order by count desc, tag
+        limit 10`,
+    );
+
     const dailySeriesRes = await pool.query(
       `select to_char(created_at, 'YYYY-MM-DD') as day,
               count(*)::int as sessions,
@@ -143,6 +152,10 @@ export default async function adminRoutes(app) {
           count: Number(row.count),
         })),
         topMoods: topMoodsRes.rows.map((row) => ({
+          tag: row.tag,
+          count: Number(row.count),
+        })),
+        topUnwantedEffects: topUnwantedEffectsRes.rows.map((row) => ({
           tag: row.tag,
           count: Number(row.count),
         })),

@@ -192,6 +192,8 @@ function buildCardSvg(session) {
     ? `<image href="${mascotDataUri}" x="805" y="100" width="330" height="330" />`
     : "";
 
+  const likedSuffix = session.liked === true ? " — liked" : "";
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
     <radialGradient id="glow" cx="18%" cy="88%" r="75%">
@@ -207,7 +209,7 @@ function buildCardSvg(session) {
   <rect x="740" y="0" width="3" height="${HEIGHT}" fill="${ACCENT}" />
   <text x="80" y="100" font-family="DejaVu Sans" font-weight="bold" font-size="42"><tspan fill="#FFFFFF">vapor</tspan><tspan fill="${ACCENT}">log</tspan></text>
   ${strainTspans}
-  <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="60" fill="${ACCENT}">${rating.toFixed(1)}/10</text>
+  <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="60" fill="${ACCENT}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
   ${ritual ? `<text x="80" y="${ritualY}" font-family="DejaVu Sans" font-size="32" fill="${GRAY}">${esc(ritual)}</text>` : ""}
   ${chipSvgs.join("\n  ")}
   <text x="80" y="578" font-family="DejaVu Sans" font-size="22" fill="${GRAY}">vaporlog — the journal of the art of vaporizing</text>
@@ -230,7 +232,7 @@ export default async function ogImageRoutes(app) {
 
     const { rows } = await pool.query(
       `select s.strain_slug, s.device_slug, s.temperature_c,
-              s.duration_min, s.rating, s.author, s.moods,
+              s.duration_min, s.rating, s.author, s.liked, s.moods,
               p.handle as owner_handle,
               d.name   as device_name
          from sessions s

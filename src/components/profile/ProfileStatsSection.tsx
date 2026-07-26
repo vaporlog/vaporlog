@@ -58,6 +58,11 @@ export default function ProfileStatsSection({
       value: topStrain !== null ? displayStrainName(topStrain.slug) : "—",
     },
     { label: t("stats.totalHours"), value: formatHours(stats.totalMinutes) },
+    {
+      label: t("stats.likedPercent"),
+      value:
+        stats.likedPercent !== null ? `${Math.round(stats.likedPercent)}%` : "—",
+    },
   ];
 
   return (
@@ -181,6 +186,30 @@ export default function ProfileStatsSection({
                         }}
                       />
                     </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Most common unwanted effects */}
+          {stats.topUnwantedEffects.length > 0 && (
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+              <h3 className="text-sm font-medium text-foreground">
+                {t("stats.topUnwantedEffects")}
+              </h3>
+              <ul className="mt-3 space-y-3">
+                {stats.topUnwantedEffects.map((effect) => (
+                  <li
+                    key={effect.tag}
+                    className="flex items-baseline justify-between gap-3 text-sm"
+                  >
+                    <span className="truncate font-medium text-foreground">
+                      {effect.tag}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">
+                      {t("stats.sessionCount", { count: effect.count })}
+                    </span>
                   </li>
                 ))}
               </ul>

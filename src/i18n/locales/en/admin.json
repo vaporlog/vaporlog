@@ -29,9 +29,11 @@
     "topStrains": "Top strains",
     "topDevices": "Top devices",
     "topMoods": "Top moods",
+    "topUnwantedEffects": "Top unwanted effects",
     "emptyStrains": "No strains logged yet.",
     "emptyDevices": "No devices logged yet.",
-    "emptyMoods": "No moods logged yet."
+    "emptyMoods": "No moods logged yet.",
+    "emptyUnwantedEffects": "No unwanted effects logged yet."
   },
   "users": {
     "title": "Users",

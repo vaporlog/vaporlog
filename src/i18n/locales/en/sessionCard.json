@@ -42,7 +42,9 @@
       "amount": "Amount"
     },
     "mood": "Mood",
-    "aromaFlavor": "Aroma · Flavor"
+    "aromaFlavor": "Aroma · Flavor",
+    "liked": "Liked",
+    "unwantedEffects": "Unwanted effects"
   },
   "share": {
     "text": "{{author}}'s {{strain}} session on vaporlog — {{rating}}/10",

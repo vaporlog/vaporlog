@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Scale, Thermometer, Wind } from "lucide-react";
+import { Clock, Scale, Thermometer, ThumbsUp, Wind } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -134,13 +134,16 @@ export default function PublicSessionCard({
 
       {/* Rating — the one accent highlight */}
       <div
-        className="mt-8"
+        className="mt-8 flex items-center justify-center gap-2"
         aria-label={t("card.ratingAria", { rating: session.rating })}
       >
         <span className="text-6xl font-semibold tracking-tight text-herb">
           {session.rating}
         </span>
         <span className="text-2xl font-medium text-muted-foreground">/10</span>
+        {session.liked === true && (
+          <ThumbsUp className="ml-1 size-8 text-herb" aria-label={t("card.liked")} />
+        )}
       </div>
 
       {/* The ritual row — how it was vaporized */}
@@ -204,6 +207,26 @@ export default function PublicSessionCard({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Unwanted effects — only when explicitly published */}
+      {session.unwantedEffectsPublic && session.unwantedEffects.length > 0 && (
+        <div className="mt-8 flex flex-col gap-2">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+            {t("card.unwantedEffects")}
+          </p>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {session.unwantedEffects.map((effect) => (
+              <Badge
+                key={effect}
+                variant="outline"
+                className="border-destructive/30 text-destructive"
+              >
+                {effect}
+              </Badge>
+            ))}
+          </div>
         </div>
       )}
 

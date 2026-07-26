@@ -16,6 +16,7 @@ import DevicePicker from "@/components/log/DevicePicker";
 import TemperatureSlider from "@/components/log/TemperatureSlider";
 import ChipGroup from "@/components/log/ChipGroup";
 import RatingScale from "@/components/log/RatingScale";
+import LikeDislike from "@/components/log/LikeDislike";
 import {
   addPersonalVocab,
   clearDraft,
@@ -136,6 +137,7 @@ export default function LogSession() {
     flavors: getPersonalVocab("flavors"),
     moods: getPersonalVocab("moods"),
     activities: getPersonalVocab("activities"),
+    unwantedEffects: getPersonalVocab("unwantedEffects"),
   }));
 
   // Resolve a ?strain= prefill that the sync cache could not verify yet.
@@ -241,6 +243,10 @@ export default function LogSession() {
     vocab.activities,
     personalVocab.activities,
   );
+  const unwantedEffectOptions = mergeVocabOptions(
+    vocab.unwantedEffects,
+    personalVocab.unwantedEffects,
+  );
 
   async function handleSave() {
     if (saving) return;
@@ -264,10 +270,13 @@ export default function LogSession() {
       durationMin: draft.durationMin,
       amountG: draft.amountG,
       rating: draft.rating,
+      liked: draft.liked,
       aromas: draft.aromas,
       flavors: draft.flavors,
       moods: draft.moods,
       activities: draft.activities,
+      unwantedEffects: draft.unwantedEffects,
+      unwantedEffectsPublic: draft.unwantedEffectsPublic,
       notes: draft.notes.trim(),
       isPublic: draft.isPublic,
       author: getProfile()?.username ?? "anonymous",
@@ -479,15 +488,53 @@ export default function LogSession() {
 
         <div ref={ratingRef}>
           <Section step={6} title={t("sections.rating")}>
-            <RatingScale
-              value={draft.rating}
-              onChange={(r) => update("rating", r)}
-              invalid={missingRating}
-            />
+            <div className="flex flex-col gap-6">
+              <RatingScale
+                value={draft.rating}
+                onChange={(r) => update("rating", r)}
+                invalid={missingRating}
+              />
+              <LikeDislike
+                value={draft.liked}
+                onChange={(liked) => update("liked", liked)}
+              />
+            </div>
           </Section>
         </div>
 
-        <Section step={7} title={t("sections.notes")} hint={t("optional")}>
+        <Section
+          step={7}
+          title={t("sections.unwantedEffects")}
+          hint={t("optional")}
+        >
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-muted-foreground">
+              {t("unwantedEffects.description")}
+            </p>
+            <ChipGroup
+              options={unwantedEffectOptions}
+              selected={draft.unwantedEffects}
+              custom={visibleCustomTags(
+                draft.customUnwantedEffects,
+                unwantedEffectOptions,
+              )}
+              onToggle={(tag) =>
+                update("unwantedEffects", toggleInList(draft.unwantedEffects, tag))
+              }
+              onAddCustom={(tag) => {
+                rememberCustomTag("unwantedEffects", tag);
+                setDraft((d) => ({
+                  ...d,
+                  customUnwantedEffects: [...d.customUnwantedEffects, tag],
+                  unwantedEffects: [...d.unwantedEffects, tag],
+                }));
+              }}
+              addLabel={t("unwantedEffects.add")}
+            />
+          </div>
+        </Section>
+
+        <Section step={8} title={t("sections.notes")} hint={t("optional")}>
           <Textarea
             value={draft.notes}
             onChange={(e) => update("notes", e.target.value)}
@@ -497,22 +544,53 @@ export default function LogSession() {
           />
         </Section>
 
-        <Section step={8} title={t("sections.publish")}>
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="text-sm font-semibold">
-                {draft.isPublic ? t("publish.public") : t("publish.private")}
-              </span>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("publish.description")}
-              </p>
+        <Section step={9} title={t("sections.publish")}>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm font-semibold">
+                  {draft.isPublic ? t("publish.public") : t("publish.private")}
+                </span>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("publish.description")}
+                </p>
+              </div>
+              <Switch
+                checked={draft.isPublic}
+                onCheckedChange={(checked) =>
+                  setDraft((d) => ({
+                    ...d,
+                    isPublic: checked,
+                    unwantedEffectsPublic: checked
+                      ? d.unwantedEffectsPublic
+                      : false,
+                  }))
+                }
+                aria-label={t("publish.switchLabel")}
+                className="shrink-0 scale-125"
+              />
             </div>
-            <Switch
-              checked={draft.isPublic}
-              onCheckedChange={(checked) => update("isPublic", checked)}
-              aria-label={t("publish.switchLabel")}
-              className="shrink-0 scale-125"
-            />
+
+            {draft.isPublic && (
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="text-sm font-semibold">
+                    {t("publish.includeUnwantedEffects")}
+                  </span>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {t("publish.includeUnwantedEffectsDescription")}
+                  </p>
+                </div>
+                <Switch
+                  checked={draft.unwantedEffectsPublic}
+                  onCheckedChange={(checked) =>
+                    update("unwantedEffectsPublic", checked)
+                  }
+                  aria-label={t("publish.includeUnwantedEffects")}
+                  className="shrink-0 scale-125"
+                />
+              </div>
+            )}
           </div>
         </Section>
       </div>

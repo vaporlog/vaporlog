@@ -29,9 +29,11 @@
     "topStrains": "Strains top",
     "topDevices": "Dispositivos top",
     "topMoods": "Moods top",
+    "topUnwantedEffects": "Efectos no deseados top",
     "emptyStrains": "Aún no hay strains registrados.",
     "emptyDevices": "Aún no hay dispositivos registrados.",
-    "emptyMoods": "Aún no hay moods registrados."
+    "emptyMoods": "Aún no hay moods registrados.",
+    "emptyUnwantedEffects": "Aún no hay efectos no deseados registrados."
   },
   "users": {
     "title": "Usuarios",

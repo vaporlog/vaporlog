@@ -799,6 +799,49 @@ export async function toggleSessionPublic(
   return updated;
 }
 
+/**
+ * Toggles `unwantedEffectsPublic` on one of the current account's own
+ * sessions (optimistic, with rollback + rethrow on failure). Returns the
+ * updated session, or `undefined` when the id does not belong to a personal
+ * session. Rejects when signed out.
+ */
+export async function toggleSessionUnwantedEffectsPublic(
+  id: string,
+): Promise<SessionLog | undefined> {
+  const account = getCurrentAccount();
+  if (!account) {
+    throw new Error("Sign in to update session privacy.");
+  }
+  const existing = mySessionsCache.find((s) => s.id === id);
+  if (!existing) return undefined;
+  const updated: SessionLog = {
+    ...existing,
+    unwantedEffectsPublic: !existing.unwantedEffectsPublic,
+  };
+  const snapshot = snapshotCaches();
+  setMyCache(
+    mySessionsCache.map((s) => (s.id === id ? updated : s)),
+    myState.loading,
+  );
+  if (updated.isPublic) {
+    upsertPublicCache(updated);
+  }
+  try {
+    await apiFetch<{ session: SessionLog }>(
+      `/sessions/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        body: { unwantedEffectsPublic: updated.unwantedEffectsPublic },
+        auth: true,
+      },
+    );
+  } catch (error) {
+    restoreCaches(snapshot);
+    throw error;
+  }
+  return updated;
+}
+
 /* ------------------------------------------------------------------ */
 /* Public sessions (cross-account)                                     */
 /* ------------------------------------------------------------------ */

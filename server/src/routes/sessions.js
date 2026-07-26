@@ -26,8 +26,16 @@ const UUID_RE =
 const SESSION_COLUMNS = `
   s.id, s.user_id, s.strain_slug, s.device_slug, s.temperature_c,
   s.duration_min, s.amount_g, s.rating, s.aromas, s.flavors, s.moods,
-  s.activities, s.notes, s.is_public, s.author, s.created_at
+  s.activities, s.unwanted_effects, s.liked, s.unwanted_effects_public,
+  s.notes, s.is_public, s.author, s.created_at
 `;
+
+/** Coerces an arbitrary JSON value to a clean boolean | null. */
+function asBooleanOrNull(value) {
+  if (value === true) return true;
+  if (value === false) return false;
+  return null;
+}
 
 /** Coerces an arbitrary JSON value to a clean string[]. */
 function asStringArray(value) {
@@ -64,7 +72,12 @@ export default async function sessionRoutes(app) {
         where s.is_public
         order by s.created_at desc`,
     );
-    return { sessions: rows.map(rowToSession) };
+    const sessions = rows.map(rowToSession).map((session) => ({
+      ...session,
+      // Unwanted effects are only visible publicly when explicitly opted in.
+      unwantedEffects: session.unwantedEffectsPublic ? session.unwantedEffects : [],
+    }));
+    return { sessions };
   });
 
   // The caller's own sessions, newest first.
@@ -111,12 +124,15 @@ export default async function sessionRoutes(app) {
       }
 
       const rating = Number(body.rating);
+      const liked = asBooleanOrNull(body.liked);
+      const unwantedEffects = asStringArray(body.unwantedEffects);
+      const unwantedEffectsPublic = body.unwantedEffectsPublic === true;
       const { rows } = await pool.query(
         `insert into sessions (
            id, user_id, strain_slug, device_slug, temperature_c, duration_min,
-           amount_g, rating, aromas, flavors, moods, activities, notes,
-           is_public, author, created_at
-         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+           amount_g, rating, aromas, flavors, moods, activities, unwanted_effects,
+           liked, unwanted_effects_public, notes, is_public, author, created_at
+         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
          on conflict (id) do update set
            strain_slug   = excluded.strain_slug,
            device_slug   = excluded.device_slug,
@@ -128,6 +144,9 @@ export default async function sessionRoutes(app) {
            flavors       = excluded.flavors,
            moods         = excluded.moods,
            activities    = excluded.activities,
+           unwanted_effects         = excluded.unwanted_effects,
+           liked                    = excluded.liked,
+           unwanted_effects_public  = excluded.unwanted_effects_public,
            notes         = excluded.notes,
            is_public     = excluded.is_public,
            author        = excluded.author,
@@ -146,6 +165,9 @@ export default async function sessionRoutes(app) {
           asStringArray(body.flavors),
           asStringArray(body.moods),
           asStringArray(body.activities),
+          unwantedEffects,
+          liked,
+          unwantedEffectsPublic,
           typeof body.notes === "string" ? body.notes : "",
           body.isPublic === true,
           request.account.username, // author stamped from the caller's handle
@@ -156,25 +178,39 @@ export default async function sessionRoutes(app) {
     },
   );
 
-  // Publish/unpublish one of the caller's own sessions.
+  // Publish/unpublish one of the caller's own sessions, and optionally
+  // toggle whether unwanted effects are included in the public view.
   app.patch(
     "/api/sessions/:id",
     { preHandler: authenticate },
     async (request, reply) => {
       const { id } = request.params;
-      const { isPublic } = request.body ?? {};
+      const { isPublic, unwantedEffectsPublic } = request.body ?? {};
       if (!UUID_RE.test(id)) {
         return reply.code(404).send({ error: "Session not found." });
       }
-      if (typeof isPublic !== "boolean") {
-        return reply.code(400).send({ error: "isPublic must be a boolean." });
+      const sets = [];
+      const params = [];
+      if (typeof isPublic === "boolean") {
+        params.push(isPublic);
+        sets.push(`is_public = $${params.length}`);
       }
+      if (typeof unwantedEffectsPublic === "boolean") {
+        params.push(unwantedEffectsPublic);
+        sets.push(`unwanted_effects_public = $${params.length}`);
+      }
+      if (sets.length === 0) {
+        return reply
+          .code(400)
+          .send({ error: "isPublic or unwantedEffectsPublic must be a boolean." });
+      }
+      params.push(id, request.account.id);
       const { rows } = await pool.query(
         `update sessions
-            set is_public = $1
-          where id = $2 and user_id = $3
+            set ${sets.join(", ")}
+          where id = $${params.length - 1} and user_id = $${params.length}
           returning *`,
-        [isPublic, id, request.account.id],
+        params,
       );
       if (rows.length === 0) {
         return reply.code(404).send({ error: "Session not found." });

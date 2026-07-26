@@ -48,7 +48,8 @@ const REVIEW_BODY_MAX_LENGTH = 2000;
 const SESSION_COLUMNS = `
   s.id, s.user_id, s.strain_slug, s.device_slug, s.temperature_c,
   s.duration_min, s.amount_g, s.rating, s.aromas, s.flavors, s.moods,
-  s.activities, s.notes, s.is_public, s.author, s.created_at
+  s.activities, s.unwanted_effects, s.liked, s.unwanted_effects_public,
+  s.notes, s.is_public, s.author, s.created_at
 `;
 
 /** Profile columns the own-profile and public-profile queries share. */
@@ -186,7 +187,7 @@ export default async function profileRoutes(app) {
     { preHandler: authenticate },
     async (request) => {
       const userId = request.account.id;
-      const [totalsRes, devicesRes, strainsRes, weeklyRes] = await Promise.all([
+      const [totalsRes, devicesRes, strainsRes, weeklyRes, likedRes, unwantedEffectsRes] = await Promise.all([
         pool.query(
           `select count(*)::int as total_sessions,
                   coalesce(sum(duration_min), 0)::float8 as total_minutes,
@@ -238,9 +239,33 @@ export default async function profileRoutes(app) {
             order by w.week_start`,
           [userId],
         ),
+        pool.query(
+          `select count(*)::int as total_sessions,
+                  count(*) filter (where liked is not null)::int as rated_sessions,
+                  count(*) filter (where liked = true)::int as liked_sessions
+             from sessions
+            where user_id = $1`,
+          [userId],
+        ),
+        pool.query(
+          `select tag,
+                  count(*)::int as count
+             from (select unnest(unwanted_effects) as tag from sessions where user_id = $1) t
+            group by tag
+            order by count desc, tag
+            limit 3`,
+          [userId],
+        ),
       ]);
 
       const totals = totalsRes.rows[0];
+      const liked = likedRes.rows[0];
+      const likedPercent =
+        Number(liked.rated_sessions) > 0
+          ? Math.round(
+              (Number(liked.liked_sessions) / Number(liked.rated_sessions)) * 100,
+            )
+          : null;
       return {
         stats: {
           totalSessions: Number(totals.total_sessions),
@@ -256,6 +281,11 @@ export default async function profileRoutes(app) {
           })),
           weekly: weeklyRes.rows.map((row) => ({
             weekStart: row.week_start,
+            count: Number(row.count),
+          })),
+          likedPercent,
+          topUnwantedEffects: unwantedEffectsRes.rows.map((row) => ({
+            tag: row.tag,
             count: Number(row.count),
           })),
         },
@@ -422,7 +452,12 @@ export default async function profileRoutes(app) {
         profile.created_at instanceof Date
           ? profile.created_at.toISOString()
           : new Date(profile.created_at).toISOString(),
-      sessions: sessionsRes.rows.map(rowToSession),
+      sessions: sessionsRes.rows.map(rowToSession).map((session) => ({
+        ...session,
+        unwantedEffects: session.unwantedEffectsPublic
+          ? session.unwantedEffects
+          : [],
+      })),
     };
     if (favoriteDevice !== null) payload.favoriteDevice = favoriteDevice;
 

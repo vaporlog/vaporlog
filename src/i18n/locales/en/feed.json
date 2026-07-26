@@ -49,6 +49,7 @@
   "card": {
     "by": "by",
     "ariaLabel": "{{strain}} session by {{author}}, rated {{rating}} out of 10",
-    "authorProfileAria": "View @{{author}}'s public profile"
+    "authorProfileAria": "View @{{author}}'s public profile",
+    "liked": "Liked"
   }
 }

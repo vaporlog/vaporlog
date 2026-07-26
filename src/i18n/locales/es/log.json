@@ -9,6 +9,7 @@
     "details": "Detalles",
     "experience": "Experiencia",
     "rating": "Calificación",
+    "unwantedEffects": "Efectos no deseados",
     "notes": "Notas",
     "publish": "Publicar"
   },
@@ -26,6 +27,15 @@
     "addMood": "Agrega tu propio ánimo",
     "addActivity": "Agrega tu propia actividad"
   },
+  "liked": {
+    "label": "¿Te gustó?",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "unwantedEffects": {
+    "description": "Cualquier cosa que restó a la experiencia — opcional.",
+    "add": "Agrega tu propio efecto no deseado"
+  },
   "validation": {
     "pickStrain": "Elige un strain, o agrega el tuyo.",
     "pickDevice": "¿Qué vaporizador usaste?"
@@ -37,7 +47,9 @@
     "public": "Pública",
     "private": "Privada",
     "description": "Privada por defecto. Las sesiones públicas aparecen como tarjetas de las que otros pueden aprender; solo se muestra tu seudónimo.",
-    "switchLabel": "Hacer pública esta sesión"
+    "switchLabel": "Hacer pública esta sesión",
+    "includeUnwantedEffects": "Incluir efectos no deseados",
+    "includeUnwantedEffectsDescription": "Si está activo, tus etiquetas de efectos no deseados también aparecerán en la tarjeta pública."
   },
   "sticky": {
     "autosave": "Tu borrador se guarda automáticamente.",

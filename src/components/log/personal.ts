@@ -64,17 +64,23 @@ export interface LogDraft {
   durationMin: number | null;
   amountG: number | null;
   rating: number | null;
+  /** Optional thumbs-up / thumbs-down sentiment. null = not answered. */
+  liked: boolean | null;
   aromas: string[];
   flavors: string[];
   moods: string[];
   activities: string[];
+  unwantedEffects: string[];
   /** Custom tags the user appended per list (rendered after the vocab chips). */
   customAromas: string[];
   customFlavors: string[];
   customMoods: string[];
   customActivities: string[];
+  customUnwantedEffects: string[];
   notes: string;
   isPublic: boolean;
+  /** Whether unwanted effects are included when publishing this session. */
+  unwantedEffectsPublic: boolean;
 }
 
 export const EMPTY_DRAFT: LogDraft = {
@@ -84,16 +90,20 @@ export const EMPTY_DRAFT: LogDraft = {
   durationMin: null,
   amountG: null,
   rating: null,
+  liked: null,
   aromas: [],
   flavors: [],
   moods: [],
   activities: [],
+  unwantedEffects: [],
   customAromas: [],
   customFlavors: [],
   customMoods: [],
   customActivities: [],
+  customUnwantedEffects: [],
   notes: "",
   isPublic: false,
+  unwantedEffectsPublic: false,
 };
 
 /** Turns a display name into a collision-safe personal slug. */
@@ -173,14 +183,20 @@ export function addPersonalDevice(name: string): PersonalDevice {
 /* Personal vocabulary (custom Experience tags, per account)           */
 /* ------------------------------------------------------------------ */
 
-/** The four Experience tag lists that accept personal entries. */
-export type VocabCategory = "aromas" | "flavors" | "moods" | "activities";
+/** The five Experience tag lists that accept personal entries. */
+export type VocabCategory =
+  | "aromas"
+  | "flavors"
+  | "moods"
+  | "activities"
+  | "unwantedEffects";
 
 const VOCAB_CATEGORIES: VocabCategory[] = [
   "aromas",
   "flavors",
   "moods",
   "activities",
+  "unwantedEffects",
 ];
 
 /** Persisted shape of the personal vocabulary store. */
@@ -191,6 +207,7 @@ const EMPTY_PERSONAL_VOCAB: PersonalVocabStore = {
   flavors: [],
   moods: [],
   activities: [],
+  unwantedEffects: [],
 };
 
 /** Reads the whole personal vocabulary store. Never throws. */

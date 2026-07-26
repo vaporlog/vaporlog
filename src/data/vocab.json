@@ -176,5 +176,19 @@
     "Talkative",
     "Tingly",
     "Uplifted"
+  ],
+  "unwantedEffects": [
+    "Anxiety",
+    "Brain Fog",
+    "Cough",
+    "Dizziness",
+    "Dry Eyes",
+    "Dry Mouth",
+    "Headache",
+    "Nausea",
+    "Paranoia",
+    "Rapid Heartbeat",
+    "Social Anxiety",
+    "Thirst"
   ]
 }

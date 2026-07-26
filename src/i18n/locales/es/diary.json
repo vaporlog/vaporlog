@@ -43,11 +43,20 @@
     "viewPublicCard": "Ver tarjeta pública",
     "viewCard": "Ver tarjeta",
     "logAgain": "Registrar de nuevo",
-    "makePublicAria": "Hacer pública la sesión de “{{strain}}”"
+    "makePublicAria": "Hacer pública la sesión de “{{strain}}”",
+    "liked": {
+      "yes": "Te gustó",
+      "no": "No te gustó"
+    },
+    "includeUnwantedEffectsAria": "Incluir efectos no deseados en la tarjeta pública de “{{strain}}”",
+    "unwantedEffectsPublic": "Efectos no deseados visibles",
+    "unwantedEffectsPrivate": "Efectos no deseados ocultos"
   },
   "toggle": {
     "nowPublic": "La sesión ahora es pública — cualquiera con el enlace puede ver su tarjeta.",
     "nowPrivate": "La sesión vuelve a ser privada.",
+    "unwantedEffectsNowPublic": "Los efectos no deseados ahora son visibles en la tarjeta pública.",
+    "unwantedEffectsNowPrivate": "Los efectos no deseados ahora están ocultos en la tarjeta pública.",
     "error": "No se pudo actualizar esa sesión",
     "errorDescription": "Revisa tu conexión e inténtalo de nuevo."
   },

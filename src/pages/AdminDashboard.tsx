@@ -300,7 +300,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Top lists */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <TopListCard
               title={t("overview.topStrains")}
               items={stats?.topStrains.map((s) => ({ label: s.slug, count: s.count })) ?? []}
@@ -320,6 +320,12 @@ export default function AdminDashboard() {
               items={stats?.topMoods.map((m) => ({ label: m.tag, count: m.count })) ?? []}
               loading={loading.stats}
               empty={t("overview.emptyMoods")}
+            />
+            <TopListCard
+              title={t("overview.topUnwantedEffects")}
+              items={stats?.topUnwantedEffects.map((m) => ({ label: m.tag, count: m.count })) ?? []}
+              loading={loading.stats}
+              empty={t("overview.emptyUnwantedEffects")}
             />
           </div>
         </TabsContent>

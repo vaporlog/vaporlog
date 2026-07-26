@@ -53,6 +53,12 @@ export interface SessionLog {
   flavors: string[];
   moods: string[];
   activities: string[];
+  /** Tags from the controlled unwanted-effects vocabulary + custom additions. */
+  unwantedEffects: string[];
+  /** Optional thumbs-up / thumbs-down sentiment. null = not answered. */
+  liked: boolean | null;
+  /** Whether unwantedEffects are included when the session is published. */
+  unwantedEffectsPublic: boolean;
   notes: string;
   isPublic: boolean;
   /** Pseudonym — never a real name or email. */
@@ -94,6 +100,7 @@ export interface Vocab {
   moods: string[];
   activities: string[];
   effects: string[];
+  unwantedEffects: string[];
 }
 
 /** Local user profile (age gate + pseudonym). Stored in localStorage. */
@@ -181,6 +188,10 @@ export interface ProfileStats {
   devices: ProfileDeviceStat[];
   topStrains: ProfileStrainStat[];
   weekly: ProfileWeekBucket[];
+  /** Percentage of sessions with liked=true among sessions where liked was set. */
+  likedPercent: number | null;
+  /** Most common unwanted-effect tags across the user's sessions. */
+  topUnwantedEffects: { tag: string; count: number }[];
 }
 
 /** A device referenced by name on public surfaces. */
@@ -224,6 +235,7 @@ export interface AdminStats {
   topStrains: { slug: string; count: number }[];
   topDevices: { slug: string; name: string; category: string; count: number }[];
   topMoods: { tag: string; count: number }[];
+  topUnwantedEffects: { tag: string; count: number }[];
   dailySeries: { day: string; sessions: number; publicSessions: number }[];
 }
 
