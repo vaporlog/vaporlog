@@ -166,6 +166,14 @@ diario, hint en comentarios para "primera sesión del día".
   template; valores desconocidos caen a `split`). Última elección en
   `localStorage["vaporlog.og-template"]`. Cepa, dispositivo y rating
   visibles en los 3 diseños. Caddy no cambió (`{uri}` ya pasa el query).
+- `6837c4a` — **tema claro/oscuro en todo el sitio**: paleta `.dark` en
+  `index.css` (acento herb se aclara a `#74C69D`, `color-scheme` sync),
+  `src/lib/theme.ts` (localStorage `vaporlog.theme`, default claro),
+  script anti-flash en `index.html`, toggle sol/luna en el header (y en el
+  menú móvil). Incluye barrido de lint: set-state-in-effect resuelto en
+  AppLayout/PublicProfile (ajuste durante render), y reglas shadcn
+  (`react-refresh/only-export-components`, `react-hooks/purity`) apagadas
+  solo para `src/components/ui/**` en `eslint.config.js`.
 
 ## Skills del proyecto (`.kimi/skills/`)
 
