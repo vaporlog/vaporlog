@@ -127,7 +127,7 @@ export default function Welcome() {
     transitionTo(() => setStep(1), -1);
   }
 
-  function handleAccountSuccess(_account: Account) {
+  function handleAccountSuccess() {
     // signUp/signIn already persisted the session — the diary is the home
     // screen once you're signed in, so land there.
     navigate("/diary");

@@ -18,5 +18,11 @@
   },
   "language": {
     "label": "Idioma"
+  },
+  "theme": {
+    "label": "Tema",
+    "toggleAria": "Cambiar tema de color",
+    "toLight": "Cambiar a tema claro",
+    "toDark": "Cambiar a tema oscuro"
   }
 }

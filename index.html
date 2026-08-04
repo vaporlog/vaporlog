@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Dark theme, applied pre-paint so returning visitors never see a
+      // light flash. Source of truth: src/lib/theme.ts.
+      try {
+        if (localStorage.getItem("vaporlog.theme") === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {
+        /* storage unavailable — default light */
+      }
+    </script>
     <link rel="icon" href="%BASE_URL%brand/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%brand/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%BASE_URL%brand/favicon-16x16.png" />

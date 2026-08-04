@@ -6,16 +6,22 @@
  * vaporlog design tokens — foundation
  * ---------------------------------------------------------------------------
  * Viral-product principle: three colors max.
- *   1. White      #FFFFFF  — background
- *   2. Near-black #0A0A0A  — text
+ *   1. White      #FFFFFF  — background (light theme, the default)
+ *   2. Near-black #0A0A0A  — text (light theme)
  *   3. Herb green #2D6A4F  — the ONE accent (primary CTA / actions / rating
  *                            highlights only), darker hover #1B4332
  * All other surfaces are neutral grays derived from the same scale.
+ * The `.dark` block inverts the neutrals and brightens the accent to the
+ * brand's #74C69D so it keeps contrast on near-black. The theme is toggled
+ * by the `.dark` class on <html> (see src/lib/theme.ts); `color-scheme`
+ * keeps scrollbars and native form controls in sync.
  * Motion: transform/opacity only, custom ease curves, <300ms for UI,
  * honors prefers-reduced-motion (keeps opacity/color fades, drops movement).
  */
 @layer base {
   :root {
+    color-scheme: light;
+
     --background: 0 0% 100%; /* #FFFFFF */
     --foreground: 0 0% 4%; /* #0A0A0A */
 
@@ -46,6 +52,8 @@
     --ring: var(--herb);
     --radius: 0.75rem;
 
+    --chart-2: 0 0% 45%; /* secondary series gray (admin chart) */
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 26%;
     --sidebar-primary: var(--herb);
@@ -59,6 +67,49 @@
     --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
     --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --background: 0 0% 4%; /* #0A0A0A */
+    --foreground: 0 0% 96%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 96%;
+
+    /* Same accent, brightened to the brand's #74C69D for dark surfaces. */
+    --herb: 150 42% 62%; /* #74C69D */
+    --herb-hover: 150 45% 72%;
+    --primary: var(--herb);
+    --primary-foreground: 150 40% 8%;
+
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 62%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 96%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 17%;
+    --input: 0 0% 17%;
+    --ring: var(--herb);
+
+    --chart-2: 0 0% 60%;
+
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 80%;
+    --sidebar-primary: var(--herb);
+    --sidebar-primary-foreground: 150 40% 8%;
+    --sidebar-accent: 0 0% 14%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 17%;
+    --sidebar-ring: var(--herb);
   }
 }
 

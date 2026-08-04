@@ -40,9 +40,16 @@ export default function PublicProfile() {
   // (humanized-slug fallback until it lands, same as the feed).
   useStrains();
 
+  // Reset to loading when the handle changes — state adjusted during
+  // render (React's pattern), not inside the fetch effect.
+  const [lastHandle, setLastHandle] = useState(handle);
+  if (lastHandle !== handle) {
+    setLastHandle(handle);
+    setState({ status: "loading" });
+  }
+
   useEffect(() => {
     let alive = true;
-    setState({ status: "loading" });
     fetchPublicProfile(handle)
       .then((profile) => {
         if (alive) setState({ status: "ready", profile });

@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "@/components/LanguageToggle";
+import ThemeToggle from "@/components/ThemeToggle";
 import mascotUrl from "@/assets/mascot.png";
 import {
   DropdownMenu,
@@ -104,10 +105,15 @@ export default function AppLayout() {
     getCurrentAccount(),
   );
 
-  // Re-read the session on every route change (sign-in redirects land here).
-  useEffect(() => {
+  // Re-read the session on every route change (sign-in redirects land
+  // here). State is adjusted DURING render — React's recommended pattern —
+  // because a synchronous setState inside an effect causes a cascading
+  // extra render (react-hooks/set-state-in-effect).
+  const [lastPathname, setLastPathname] = useState(location.pathname);
+  if (lastPathname !== location.pathname) {
+    setLastPathname(location.pathname);
     setAccount(getCurrentAccount());
-  }, [location.pathname]);
+  }
 
   // Scroll back to the top on every route change — react-router does not
   // restore scroll position by itself. 'instant' avoids a visible scroll
@@ -175,6 +181,7 @@ export default function AppLayout() {
                   {t("nav.logSession")}
                 </Link>
               </Button>
+              <ThemeToggle />
               <LanguageToggle />
             </div>
             {/* Below sm the collapsed user menu also appears next to the
@@ -219,8 +226,14 @@ export default function AppLayout() {
                   </>
                 )}
                 <DropdownMenuSeparator />
-                {/* Plain row (not a menu item) so tapping EN|ES doesn't
+                {/* Plain rows (not menu items) so tapping them doesn't
                     dismiss the menu before the change is visible. */}
+                <div className="flex items-center justify-between px-2 py-1.5">
+                  <span className="text-sm text-muted-foreground">
+                    {t("theme.label")}
+                  </span>
+                  <ThemeToggle />
+                </div>
                 <div className="flex items-center justify-between px-2 py-1.5">
                   <span className="text-sm text-muted-foreground">
                     {t("language.label")}

@@ -18,5 +18,11 @@
   },
   "language": {
     "label": "Language"
+  },
+  "theme": {
+    "label": "Theme",
+    "toggleAria": "Toggle color theme",
+    "toLight": "Switch to light theme",
+    "toDark": "Switch to dark theme"
   }
 }
