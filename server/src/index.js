@@ -91,6 +91,14 @@ app.get("/api/health", async () => {
   }
 });
 
+// Public client configuration: values the browser needs that are not
+// secrets by design. The Google client ID is public (it identifies the
+// OAuth app to Google's button); when unset, the frontend hides the
+// Google sign-in button entirely.
+app.get("/api/config", async () => ({
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? null,
+}));
+
 await app.register(authRoutes);
 await app.register(sessionRoutes);
 await app.register(deviceRoutes);

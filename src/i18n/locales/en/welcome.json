@@ -64,6 +64,7 @@
     "signIn": "Sign in",
     "switchToSignin": "Already have an account? Sign in",
     "switchToSignup": "New to vaporlog? Create an account",
+    "orContinueWith": "or continue with",
     "syncNote": "your account syncs across your devices — sessions stay private by default"
   },
   "validation": {

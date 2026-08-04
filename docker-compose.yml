@@ -33,6 +33,9 @@ services:
       # where to fetch the SPA shell from (Caddy's internal :8080 block).
       SITE_URL: https://vaporlog.online
       OG_BASE_HTML_URL: http://web:8080/
+      # Google sign-in (routes/auth.js): OAuth client ID, public by design.
+      # Empty = feature disabled (the welcome flow hides the button).
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     depends_on:
       db:
         condition: service_healthy

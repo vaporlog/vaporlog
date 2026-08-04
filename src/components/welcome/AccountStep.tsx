@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import WelcomeStep from "@/components/welcome/WelcomeStep";
+import GoogleButton from "@/components/welcome/GoogleButton";
 import {
   generateHandle,
   USERNAME_MAX_LENGTH,
@@ -20,6 +21,7 @@ import {
 import {
   PASSWORD_MIN_LENGTH,
   signIn,
+  signInWithGoogle,
   signUp,
   type Account,
 } from "@/lib/auth";
@@ -117,6 +119,32 @@ export default function AccountStep({
       } else {
         setError(message);
       }
+      setPending(false);
+    }
+  }
+
+  /**
+   * Google credential from the GIS button. One door for both modes: the
+   * server signs in a known google_sub or creates the account on the spot.
+   * A brand-new Google account arriving via ?mode=signin has no age-gate
+   * birthdate — the server's 400 bounces the user back to step 1, and the
+   * age gate then routes them forward in signup mode.
+   */
+  async function handleGoogleCredential(credential: string) {
+    setPending(true);
+    setError(null);
+    setHandleTaken(false);
+    try {
+      const account = await signInWithGoogle(credential, birthdate);
+      onSuccess(account);
+    } catch (err) {
+      if ((err as { status?: number }).status === 400) {
+        onBack();
+        return;
+      }
+      setError(
+        err instanceof Error ? err.message : t("account.genericError"),
+      );
       setPending(false);
     }
   }
@@ -282,6 +310,11 @@ export default function AccountStep({
           </Button>
         </div>
       </form>
+
+      {/* Google sign-in renders only when configured (no client ID → the
+          component returns null and this whole block collapses). Hidden
+          while another auth request is in flight. */}
+      {!pending && <GoogleButton onCredential={handleGoogleCredential} />}
 
       <div className="flex flex-col gap-2">
         <button

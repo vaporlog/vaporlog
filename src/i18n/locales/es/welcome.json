@@ -64,6 +64,7 @@
     "signIn": "Iniciar sesión",
     "switchToSignin": "¿Ya tienes una cuenta? Inicia sesión",
     "switchToSignup": "¿Nuevo en vaporlog? Crea una cuenta",
+    "orContinueWith": "o continúa con",
     "syncNote": "tu cuenta se sincroniza entre tus dispositivos — las sesiones son privadas por defecto"
   },
   "validation": {

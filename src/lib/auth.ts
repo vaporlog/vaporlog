@@ -262,6 +262,33 @@ export async function signIn(
 }
 
 /**
+ * Signs in (or signs up) with a Google Identity Services credential. The
+ * server verifies the ID token and creates the account on the spot for a
+ * never-seen google_sub — `birthdate` (from the age-gate step) is only
+ * required on that creation path; the server answers 400 when it is
+ * missing so the caller can bounce the user back to the age gate.
+ * The anonymous personal-keys migration always runs: a returning user may
+ * also carry pre-auth local data worth merging (it never clobbers).
+ */
+export async function signInWithGoogle(
+  credential: string,
+  birthdate: string,
+): Promise<Account> {
+  const data = await apiFetch<AuthResponse>("/auth/google", {
+    method: "POST",
+    body: { credential, birthdate },
+  });
+  if (!data?.token || !data.account) {
+    throw new Error("Google sign-in failed — please try again.");
+  }
+  // Same ordering contract as signUp: migration, then token, then cache.
+  migrateAnonymousPersonalKeys(data.account.id);
+  setToken(data.token);
+  setCache(data.account);
+  return data.account;
+}
+
+/**
  * Signs out the current account (no-op when already signed out). Clears
  * the local cache + token synchronously so the UI reacts immediately; the
  * server-side token revocation is fire-and-forget (a stranded token

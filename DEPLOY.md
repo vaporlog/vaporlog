@@ -209,6 +209,39 @@ de **Let's Encrypt** automáticamente — sin pasos manuales de certificados:
 > reintenta con paciencia — evita reiniciarlo en bucle para no gastar los
 > intentos de Let's Encrypt.
 
+## 13. Inicio de sesión con Google (opcional)
+
+La app funciona sin esto — si no configuras nada, el botón de Google simplemente
+no aparece y el registro con handle+password sigue igual. Para activarlo:
+
+1. Entra a [Google Cloud Console](https://console.cloud.google.com/) y crea un
+   proyecto (o usa uno existente).
+2. En **APIs & Services → OAuth consent screen**: tipo *External*, rellena nombre
+   y correo de contacto. Los scopes básicos (`openid`, `email`, `profile`) no
+   requieren verificación de Google.
+3. En **APIs & Services → Credentials → Create credentials → OAuth client ID**:
+   - Tipo: **Web application**.
+   - **Authorized JavaScript origins**: `https://vaporlog.online` (y
+     `http://localhost:3000` si quieres probarlo en tu PC).
+   - No hacen falta redirect URIs (el flujo usa el botón de Google, sin redirects).
+4. Copia el **Client ID** (termina en `.apps.googleusercontent.com`) — no es un
+   secreto — y ponlo en `.env`:
+   ```
+   GOOGLE_CLIENT_ID=tu-client-id.apps.googleusercontent.com
+   ```
+5. Aplica la migración y reconstruye la API:
+   ```bash
+   git pull
+   docker exec -i vaporlog-db-1 psql -U vaporlog -d vaporlog < server/db/migrations/008_google_auth.sql
+   docker compose up -d --build api web
+   ```
+
+Cómo funciona por dentro: el botón de Google entrega un token firmado al
+navegador; la API lo verifica con las llaves públicas de Google (librería `jose`,
+sin secretos que guardar) y crea la cuenta al vuelo con un handle derivado del
+correo. La fecha de nacimiento del age gate (21+) se sigue pidiendo — Google no
+la comparte.
+
 ---
 
 ¿Problemas? Revisa `docker compose logs -f` — casi siempre el error está ahí a
