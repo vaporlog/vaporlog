@@ -48,6 +48,12 @@
   },
   "share": {
     "text": "{{author}}'s {{strain}} session on vaporlog — {{rating}}/10",
+    "templateLabel": "Thumbnail",
+    "templates": {
+      "split": "Classic",
+      "minimal": "Minimal",
+      "stats": "Stats"
+    },
     "copyLink": "Copy link",
     "toX": "Share to X",
     "toReddit": "Share to Reddit",

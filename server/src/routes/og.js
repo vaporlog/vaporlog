@@ -107,13 +107,26 @@ function esc(value) {
 }
 
 /**
+ * OG card templates offered by the share UI. "split" is the default and
+ * keeps clean param-less URLs; the others travel as ?t=<name> on both the
+ * shared /s/:id link and the card.png it points at. og-image.js imports
+ * this list to validate the param on its side.
+ */
+export const OG_TEMPLATES = ["split", "minimal", "stats"];
+
+/** Validates the ?t= share param; anything unknown falls back to "split". */
+export function normalizeTemplate(value) {
+  return OG_TEMPLATES.includes(value) ? value : "split";
+}
+
+/**
  * Rewrites the default preview tags of the SPA shell for one public
  * session. The defaults in index.html are replaced in place (crawlers take
  * the FIRST og:title they see, so appending after them would lose); if the
  * markers are ever missing, the session tags go right after <head> so they
  * still win.
  */
-function injectSessionMeta(html, session, id) {
+function injectSessionMeta(html, session, id, template = "split") {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -128,10 +141,11 @@ function injectSessionMeta(html, session, id) {
     .filter(Boolean)
     .join(" · ");
   const description = `${ritual ? `${ritual} — ` : ""}logged by @${author}. Terps, effects and ritual notes on vaporlog.`;
-  const url = `${SITE_URL}/s/${id}`;
+  const templateQuery = template === "split" ? "" : `?t=${template}`;
+  const url = `${SITE_URL}/s/${id}${templateQuery}`;
   // Public sessions get a dynamically rendered card (see og-image.js);
   // private/unknown ids keep the static brand image from index.html.
-  const image = `${SITE_URL}/api/og/s/${id}/card.png`;
+  const image = `${SITE_URL}/api/og/s/${id}/card.png${templateQuery}`;
 
   const replacements = new Map([
     [/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`],
@@ -190,6 +204,9 @@ export default async function ogRoutes(app) {
     }
 
     const { id } = request.params;
+    // The share UI's template choice travels in the shared link's ?t= and
+    // is forwarded into the og:image URL so the crawler renders that card.
+    const template = normalizeTemplate(request.query?.t);
     let out = html;
     if (UUID_RE.test(id)) {
       const { rows } = await pool.query(
@@ -204,7 +221,7 @@ export default async function ogRoutes(app) {
         [id],
       );
       if (rows.length > 0) {
-        out = injectSessionMeta(html, rows[0], id);
+        out = injectSessionMeta(html, rows[0], id, template);
       }
     }
 

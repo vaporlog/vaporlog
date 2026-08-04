@@ -2,6 +2,9 @@
  * vaporlog API — dynamic OG card renderer for public sessions.
  *
  *   GET /api/og/s/:id/card.png  (open) → image/png, 1200×630
+ *     ?t=split|minimal|stats picks the card design (default: split);
+ *     unknown values fall back to split. The share UI appends the choice
+ *     to the shared /s/:id link and og.js forwards it into og:image.
  *
  * Renders a per-session Open Graph image on the fly: strain, rating, ritual
  * (device · temperature · duration) and author handle over the brand's black
@@ -23,7 +26,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
 import { pool } from "../db.js";
-import { humanizeSlug } from "./og.js";
+import { humanizeSlug, normalizeTemplate } from "./og.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -104,40 +107,81 @@ function wrapTwoLines(text, fontSize, maxWidth) {
 }
 
 /**
- * Picks the largest bold size that renders the strain within the left
- * panel's TEXT_WIDTH in at most two lines; the last resort truncates
- * with an ellipsis.
+ * Picks the largest bold size that renders the strain within `textWidth`
+ * in at most two lines; the last resort truncates with an ellipsis.
+ * The split template uses the narrow default (620px); edge-to-edge
+ * templates pass a wider width and larger sizes.
  */
-function layoutStrain(name) {
-  const TEXT_WIDTH = 620;
-  for (const size of [84, 72, 62, 52]) {
-    if (fitsOneLine(name, size, TEXT_WIDTH)) {
+function layoutStrain(
+  name,
+  textWidth = 620,
+  sizes = [84, 72, 62, 52],
+  fallbackSize = 46,
+) {
+  for (const size of sizes) {
+    if (fitsOneLine(name, size, textWidth)) {
       return { lines: [name], size };
     }
-    const lines = wrapTwoLines(name, size, TEXT_WIDTH);
+    const lines = wrapTwoLines(name, size, textWidth);
     if (
       lines.length <= 2 &&
-      lines.every((line) => fitsOneLine(line, size, TEXT_WIDTH))
+      lines.every((line) => fitsOneLine(line, size, textWidth))
     ) {
       return { lines, size };
     }
   }
-  // Extremely long name: hard-truncate to something that fits at 46px.
+  // Extremely long name: hard-truncate to something that fits.
   let clipped = name;
-  while (clipped.length > 1 && !fitsOneLine(`${clipped}…`, 46, TEXT_WIDTH)) {
+  while (
+    clipped.length > 1 &&
+    !fitsOneLine(`${clipped}…`, fallbackSize, textWidth)
+  ) {
     clipped = clipped.slice(0, -1);
   }
-  return { lines: [`${clipped.trimEnd()}` + "…"], size: 46 };
+  return { lines: [`${clipped.trimEnd()}` + "…"], size: fallbackSize };
 }
 
-function buildCardSvg(session) {
+/** Shared header/footer pieces so every template stays on-brand. */
+function wordmarkSvg(x, y, size) {
+  return `<text x="${x}" y="${y}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}"><tspan fill="#FFFFFF">vapor</tspan><tspan fill="${ACCENT}">log</tspan></text>`;
+}
+
+/** Truncates text with an ellipsis until it fits `maxWidth` at `fontSize`. */
+function fitLine(text, fontSize, maxWidth) {
+  const original = String(text);
+  let out = original;
+  while (out.length > 1 && !fitsOneLine(`${out}…`, fontSize, maxWidth)) {
+    out = out.slice(0, -1);
+  }
+  return out === original ? out : `${out.trimEnd()}…`;
+}
+
+/** "@handle" clipped to fit `maxWidth` at `fontSize` (ellipsis appended). */
+function fitAuthor(author, fontSize, maxWidth) {
+  return fitLine(`@${author}`, fontSize, maxWidth);
+}
+
+/** Black background + the brand glow, common to all three templates. */
+function backdropSvg() {
+  return `<rect width="${WIDTH}" height="${HEIGHT}" fill="#000000" />
+  <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow)" />`;
+}
+
+const GLOW_DEFS = `<defs>
+    <radialGradient id="glow" cx="18%" cy="88%" r="75%">
+      <stop offset="0%" stop-color="${ACCENT}" stop-opacity="0.16" />
+      <stop offset="55%" stop-color="${ACCENT}" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+  </defs>`;
+
+function buildSplitSvg(session) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
   const device = session.device_name || humanizeSlug(session.device_slug || "");
 
-  const ritual = [
-    device,
+  const ritualRest = [
     fmtNumber(session.temperature_c) !== null
       ? `${fmtNumber(session.temperature_c)}°C`
       : null,
@@ -174,7 +218,8 @@ function buildCardSvg(session) {
   // Mood chips: outlined pills under the ritual line; any chip that would
   // cross into the brand panel (x > 700) is simply not drawn.
   const moods = Array.isArray(session.moods) ? session.moods : [];
-  const chipsTop = (ritual ? ritualY : ratingY) + 42;
+  const hasRitual = device !== "" || ritualRest !== "";
+  const chipsTop = (hasRitual ? ritualY : ratingY) + 42;
   let chipX = 80;
   const chipSvgs = [];
   for (const mood of moods.slice(0, 4)) {
@@ -210,13 +255,140 @@ function buildCardSvg(session) {
   <text x="80" y="100" font-family="DejaVu Sans" font-weight="bold" font-size="42"><tspan fill="#FFFFFF">vapor</tspan><tspan fill="${ACCENT}">log</tspan></text>
   ${strainTspans}
   <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="60" fill="${ACCENT}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
-  ${ritual ? `<text x="80" y="${ritualY}" font-family="DejaVu Sans" font-size="32" fill="${GRAY}">${esc(ritual)}</text>` : ""}
+  ${hasRitual ? `<text x="80" y="${ritualY}" font-family="DejaVu Sans" font-size="32"><tspan fill="#FFFFFF">${esc(device)}</tspan>${ritualRest ? `<tspan fill="${GRAY}">  ·  ${esc(ritualRest)}</tspan>` : ""}</text>` : ""}
   ${chipSvgs.join("\n  ")}
   <text x="80" y="578" font-family="DejaVu Sans" font-size="22" fill="${GRAY}">vaporlog — the journal of the art of vaporizing</text>
   ${mascot}
   <text x="970" y="480" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="34" fill="#FFFFFF">${esc(authorLabel)}</text>
   <text x="970" y="530" text-anchor="middle" font-family="DejaVu Sans" font-size="26" fill="${GRAY}">vaporized this</text>
 </svg>`;
+}
+
+/**
+ * Template "minimal": typography only. The strain carries the whole card
+ * edge-to-edge, rating as the single accent, no mascot, no panels.
+ */
+function buildMinimalSvg(session) {
+  const strain = humanizeSlug(session.strain_slug || "session");
+  const rating = Number(session.rating);
+  const author = session.owner_handle || session.author || "anonymous";
+  const device = session.device_name || humanizeSlug(session.device_slug || "");
+
+  const details = [
+    fmtNumber(session.temperature_c) !== null
+      ? `${fmtNumber(session.temperature_c)}°C`
+      : null,
+    fmtNumber(session.duration_min) !== null
+      ? `${fmtNumber(session.duration_min)} min`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+
+  const { lines, size } = layoutStrain(strain, 1040, [84, 72, 62, 52], 46);
+  const lineHeight = size * 1.12;
+  const strainY0 = lines.length === 1 ? 300 : 246;
+  const strainTspans = lines
+    .map(
+      (line, i) =>
+        `<text x="80" y="${strainY0 + i * lineHeight}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}" fill="#FFFFFF">${esc(line)}</text>`,
+    )
+    .join("");
+  const ratingY = strainY0 + (lines.length - 1) * lineHeight + 108;
+  const deviceY = ratingY + 58;
+  const detailY = deviceY + 44;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  ${GLOW_DEFS}
+  ${backdropSvg()}
+  <rect x="0" y="0" width="10" height="${HEIGHT}" fill="${ACCENT}" />
+  ${wordmarkSvg(80, 106, 40)}
+  ${strainTspans}
+  <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="66" fill="${ACCENT}">${rating.toFixed(1)}/10</text>
+  <text x="80" y="${deviceY}" font-family="DejaVu Sans" font-size="34" fill="#FFFFFF">${esc(fitLine(device, 34, 1040))}</text>
+  ${details ? `<text x="80" y="${detailY}" font-family="DejaVu Sans" font-size="28" fill="${GRAY}">${esc(details)}</text>` : ""}
+  <text x="80" y="578" font-family="DejaVu Sans" font-size="24" fill="${GRAY}">${esc(fitAuthor(author, 24, 500))}</text>
+  <text x="1120" y="578" text-anchor="end" font-family="DejaVu Sans" font-size="22" fill="${GRAY}">vaporlog — the journal of the art of vaporizing</text>
+</svg>`;
+}
+
+/**
+ * Template "stats": the session as a dashboard — strain header plus three
+ * big number panels (rating, temperature, duration). Missing values show
+ * an em dash rather than a fake zero.
+ */
+function buildStatsSvg(session) {
+  const strain = humanizeSlug(session.strain_slug || "session");
+  const rating = Number(session.rating);
+  const author = session.owner_handle || session.author || "anonymous";
+  const device = session.device_name || humanizeSlug(session.device_slug || "");
+  const temp = fmtNumber(session.temperature_c);
+  const duration = fmtNumber(session.duration_min);
+
+  const { lines, size } = layoutStrain(strain, 1040, [56, 48, 44], 40);
+  const lineHeight = size * 1.12;
+  const strainY0 = lines.length === 1 ? 200 : 178;
+  const strainTspans = lines
+    .map(
+      (line, i) =>
+        `<text x="80" y="${strainY0 + i * lineHeight}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}" fill="#FFFFFF">${esc(line)}</text>`,
+    )
+    .join("");
+  const deviceY = strainY0 + (lines.length - 1) * lineHeight + 44;
+
+  // Three panels, 80..1120 with 16px gutters.
+  const panels = [
+    {
+      value: `${rating.toFixed(1)}`,
+      suffix: "/10",
+      label: "rating",
+      accent: true,
+    },
+    {
+      value: temp !== null ? `${temp}°C` : "—",
+      suffix: "",
+      label: "temperature",
+      accent: false,
+    },
+    {
+      value: duration !== null ? duration : "—",
+      suffix: duration !== null ? " min" : "",
+      label: "duration",
+      accent: false,
+    },
+  ];
+  const panelSvgs = panels
+    .map((panel, i) => {
+      const x = 80 + i * (336 + 16);
+      const cx = x + 168;
+      return `<rect x="${x}" y="310" width="336" height="200" rx="20" fill="${PANEL}" />
+  <text x="${cx}" y="422" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="72" fill="${panel.accent ? ACCENT : "#FFFFFF"}">${esc(panel.value)}<tspan font-size="30" fill="${GRAY}">${esc(panel.suffix)}</tspan></text>
+  <text x="${cx}" y="472" text-anchor="middle" font-family="DejaVu Sans" font-size="24" fill="${GRAY}">${panel.label}</text>`;
+    })
+    .join("\n  ");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  ${GLOW_DEFS}
+  ${backdropSvg()}
+  <rect x="0" y="0" width="10" height="${HEIGHT}" fill="${ACCENT}" />
+  ${wordmarkSvg(80, 96, 38)}
+  <text x="1120" y="96" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${GRAY}">${esc(fitAuthor(author, 26, 420))}</text>
+  ${strainTspans}
+  <text x="80" y="${deviceY}" font-family="DejaVu Sans" font-size="30" fill="#C9CFCB">${esc(fitLine(device, 30, 1040))}</text>
+  ${panelSvgs}
+  <text x="80" y="578" font-family="DejaVu Sans" font-size="22" fill="${GRAY}">vaporlog — the journal of the art of vaporizing</text>
+</svg>`;
+}
+
+const TEMPLATE_BUILDERS = {
+  split: buildSplitSvg,
+  minimal: buildMinimalSvg,
+  stats: buildStatsSvg,
+};
+
+/** Renders one session card in the requested template (validated caller-side). */
+function buildCardSvg(session, template = "split") {
+  return (TEMPLATE_BUILDERS[template] ?? buildSplitSvg)(session);
 }
 
 /** Bounded LRU-ish card cache (oldest key evicted past MAX_ENTRIES). */
@@ -248,12 +420,15 @@ export default async function ogImageRoutes(app) {
 
     try {
       const session = rows[0];
+      // The share UI picks the card design via ?t= (see OG_TEMPLATES in
+      // og.js); unknown values fall back to the default split layout.
+      const template = normalizeTemplate(request.query?.t);
       // sessions has no updated_at; the rendered content itself is the key,
       // so editing the session changes the key and invalidates naturally.
-      const cacheKey = `${id}:${JSON.stringify(session)}`;
+      const cacheKey = `${id}:${template}:${JSON.stringify(session)}`;
       let png = cardCache.get(cacheKey);
       if (png === undefined) {
-        const resvg = new Resvg(buildCardSvg(session), {
+        const resvg = new Resvg(buildCardSvg(session, template), {
           fitTo: { mode: "width", value: WIDTH },
           font: { fontFiles: FONT_FILES, loadSystemFonts: false },
           background: "#000000",
