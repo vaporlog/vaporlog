@@ -45,7 +45,7 @@ import ProfileIdentity from "@/components/profile/ProfileIdentity";
 import ProfileStatsSection from "@/components/profile/ProfileStatsSection";
 import ReviewStars from "@/components/profile/ReviewStars";
 import { displayDeviceName } from "@/components/profile/profile-utils";
-import { signOut } from "@/lib/auth";
+import { refreshAccount, signOut } from "@/lib/auth";
 import { useDevices } from "@/lib/data";
 import {
   deleteAccount,
@@ -86,6 +86,7 @@ export default function Profile() {
   const [loadFailed, setLoadFailed] = useState(false);
 
   const [savingBio, setSavingBio] = useState(false);
+  const [savingHandle, setSavingHandle] = useState(false);
   const [pendingFlag, setPendingFlag] = useState<string | null>(null);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -140,6 +141,33 @@ export default function Profile() {
       return false;
     } finally {
       setSavingBio(false);
+    }
+  }
+
+  /**
+   * Handle rename. The server rewrites sessions.author atomically (the old
+   * handle must not linger on published sessions) and the account cache is
+   * refreshed so the header picks up the new handle. "taken" renders
+   * inline in the identity block; anything else toasts here.
+   */
+  async function handleSaveHandle(
+    nextHandle: string,
+  ): Promise<"ok" | "taken" | "error"> {
+    if (savingHandle) return "error";
+    setSavingHandle(true);
+    try {
+      const next = await updateProfile({ handle: nextHandle });
+      setProfile(next);
+      await refreshAccount();
+      toast.success(t("identity.handleSaved"));
+      return "ok";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (/taken/i.test(message)) return "taken";
+      toast.error(t("identity.handleError"));
+      return "error";
+    } finally {
+      setSavingHandle(false);
     }
   }
 
@@ -289,6 +317,8 @@ export default function Profile() {
         bio={profile.bio}
         saving={savingBio}
         onSaveBio={handleSaveBio}
+        savingHandle={savingHandle}
+        onSaveHandle={handleSaveHandle}
       />
 
       <PrivacySection

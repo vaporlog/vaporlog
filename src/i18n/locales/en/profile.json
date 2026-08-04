@@ -19,7 +19,13 @@
     "saving": "Saving…",
     "cancel": "Cancel",
     "saved": "Bio updated.",
-    "error": "Couldn't save your bio — try again."
+    "error": "Couldn't save your bio — try again.",
+    "editHandle": "Change handle",
+    "handleLabel": "Handle",
+    "handleHint": "3–20 letters, numbers, _ or -. Your public link and your published sessions switch to the new handle.",
+    "handleTaken": "That handle is taken.",
+    "handleSaved": "Handle updated — your published sessions now show the new one.",
+    "handleError": "Couldn't change your handle — try again."
   },
   "stats": {
     "title": "Statistics",

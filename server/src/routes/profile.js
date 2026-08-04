@@ -3,9 +3,12 @@
  *
  * Own profile (Bearer, see ../authenticate.js):
  *   GET    /api/profile           → 200 { profile, reviews }
- *   PATCH  /api/profile           { bio?, isPublic?, publicStats?,
+ *   PATCH  /api/profile           { handle?, bio?, isPublic?, publicStats?,
  *                                   publicReviews?, publicCollection?,
  *                                   favoriteDeviceSlug? } → 200 { profile }
+ *          · handle: 3–20 [a-z0-9_-], unique case-insensitively (409 like
+ *            sign-up); rewrites sessions.author so the old handle never
+ *            lingers on published sessions
  *          · favoriteDeviceSlug must be a catalog device slug or null
  *   GET    /api/profile/stats     → 200 { stats } (private aggregates from
  *          the caller's sessions: totals, per-device, top strains, weekly)
@@ -43,6 +46,10 @@ import { authenticate } from "../authenticate.js";
 
 const BIO_MAX_LENGTH = 500;
 const REVIEW_BODY_MAX_LENGTH = 2000;
+
+/** Same handle contract as sign-up (auth.js keeps its own copy). */
+const HANDLE_RE = /^[a-z0-9_-]{3,20}$/i;
+const HANDLE_TAKEN_ERROR = "That handle is taken.";
 
 /** Every sessions column the public profile reads, aliased through `s`. */
 const SESSION_COLUMNS = `
@@ -106,14 +113,49 @@ export default async function profileRoutes(app) {
     };
   });
 
-  // Partial update: bio, privacy flags, favorite device. Only the keys
-  // present in the body are touched; an empty patch returns the profile
-  // unchanged.
+  // Partial update: handle, bio, privacy flags, favorite device. Only the
+  // keys present in the body are touched; an empty patch returns the
+  // profile unchanged.
   app.patch(
     "/api/profile",
     { preHandler: authenticate },
     async (request, reply) => {
       const body = request.body ?? {};
+
+      // Handle change first: identity, not a setting. One CTE statement
+      // renames the profile AND rewrites the denormalized sessions.author
+      // — the whole point of an editable handle is that the old one must
+      // not linger on published sessions. A unique violation on the
+      // lower(handle) index gets the same 409 contract as sign-up.
+      if ("handle" in body) {
+        if (
+          typeof body.handle !== "string" ||
+          !HANDLE_RE.test(body.handle.trim())
+        ) {
+          return reply.code(400).send({
+            error: "Handle must be 3–20 letters, numbers, _ or -.",
+          });
+        }
+        const nextHandle = body.handle.trim().toLowerCase();
+        if (nextHandle !== request.account.username) {
+          try {
+            await pool.query(
+              `with renamed as (
+                 update profiles set handle = $1 where id = $2 returning id
+               )
+               update sessions set author = $1
+                where user_id = (select id from renamed)`,
+              [nextHandle, request.account.id],
+            );
+          } catch (error) {
+            if (error.code === "23505") {
+              return reply.code(409).send({ error: HANDLE_TAKEN_ERROR });
+            }
+            throw error;
+          }
+        }
+      }
+
       const sets = [];
       const params = [];
 

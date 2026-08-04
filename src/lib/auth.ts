@@ -307,3 +307,25 @@ export function signOut(): void {
   clearToken();
   setCache(null);
 }
+
+/**
+ * Re-fetches the account from the server into the in-memory cache (and
+ * notifies subscribers). Used after server-side identity changes — e.g. a
+ * handle rename via PATCH /api/profile — so the header and every
+ * getCurrentAccount() reader pick up the new value. Resolves to the fresh
+ * account, or null on failure (the local cache then stays as it was).
+ */
+export async function refreshAccount(): Promise<Account | null> {
+  try {
+    const data = await apiFetch<{ account: Account }>("/auth/me", {
+      auth: true,
+    });
+    if (data?.account) {
+      setCache(data.account);
+      return data.account;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

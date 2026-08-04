@@ -19,7 +19,13 @@
     "saving": "Guardando…",
     "cancel": "Cancelar",
     "saved": "Bio actualizada.",
-    "error": "No se pudo guardar tu bio — inténtalo de nuevo."
+    "error": "No se pudo guardar tu bio — inténtalo de nuevo.",
+    "editHandle": "Cambiar handle",
+    "handleLabel": "Handle",
+    "handleHint": "3–20 letras, números, _ o -. Tu enlace público y tus sesiones publicadas pasan al nuevo handle.",
+    "handleTaken": "Ese handle está ocupado.",
+    "handleSaved": "Handle actualizado — tus sesiones publicadas ya muestran el nuevo.",
+    "handleError": "No se pudo cambiar tu handle — inténtalo de nuevo."
   },
   "stats": {
     "title": "Estadísticas",

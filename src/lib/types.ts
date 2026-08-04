@@ -136,6 +136,8 @@ export interface ProfileSettings {
 
 /** Fields PATCH /api/profile accepts (all optional). */
 export interface ProfilePatch {
+  /** New handle — unique case-insensitively; also rewrites session authors. */
+  handle?: string;
   bio?: string;
   isPublic?: boolean;
   publicStats?: boolean;
