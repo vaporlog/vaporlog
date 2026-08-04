@@ -147,6 +147,25 @@ diario, hint en comentarios para "primera sesión del día".
 - `c34fe5d` — menú de usuario colapsado en el nav (avatar+handle ▾) y
   @handle enlazado a `/u/:handle` en tarjetas cuando el perfil es público
   (`authorProfilePublic`).
+- `a370ab1` — **liked + efectos no deseados**: cada sesión puede marcar
+  👍/👎 (`liked`) y llevar etiquetas de efectos no deseados (catálogo fijo
+  de 12 + personales). Los efectos no deseados son privados por sesión con
+  switch propio (`unwantedEffectsPublic`, migración
+  `007_liked_and_unwanted_effects.sql`); el feed solo los muestra si ambos
+  switches están activos. Stats privados en `/profile` los incluyen.
+- `fe09229` — **usabilidad del /log**: ChipGroups colapsan a ~10 chips
+  ordenados por frecuencia propia del usuario (+ "ver todos"), sticky bar
+  con checklist de requeridos (el botón dice qué falta y scrollea ahí),
+  quick-picks de duración/cantidad, banner "¿igual que la última vez?" que
+  prellena strain+device+temp de la sesión anterior, y efectos no deseados
+  tras un toggle. `personal.ts` exporta `VOCAB_CATEGORIES`.
+- `b8bc46c` — **templates de miniatura OG al compartir**: la fila de
+  compartir en `/s/:id` ofrece 3 previews reales (split/minimal/stats); la
+  elección viaja como `?t=` en el link (`/s/:id?t=minimal`), `og.js` la
+  propaga al `og:image` y `og-image.js` renderiza ese diseño (caché por
+  template; valores desconocidos caen a `split`). Última elección en
+  `localStorage["vaporlog.og-template"]`. Cepa, dispositivo y rating
+  visibles en los 3 diseños. Caddy no cambió (`{uri}` ya pasa el query).
 
 ## Skills del proyecto (`.kimi/skills/`)
 
