@@ -183,6 +183,13 @@ diario, hint en comentarios para "primera sesión del día".
   (público) vive en `GOOGLE_CLIENT_ID` del `.env` del VPS y llega al
   navegador vía `GET /api/config`. Setup: `DEPLOY.md` sección 13.
   Vinculación handle↔Google: pendiente a propósito.
+- `efd5b45` — **handle editable** (`/profile`, lápiz junto al @handle):
+  `PATCH /api/profile` acepta `handle` y un CTE renombra el perfil +
+  reescribe `sessions.author` en un statement (el handle derivado del
+  email de Google dejaba de filtrarse en sesiones ya publicadas). 409
+  "taken" igual que signup. `refreshAccount()` en `lib/auth.ts` sincroniza
+  el caché/header tras el renombrado. Ojo: `/u/:handle` viejo deja de
+  resolver (es el punto — tapar la fuga).
 
 ## Skills del proyecto (`.kimi/skills/`)
 
