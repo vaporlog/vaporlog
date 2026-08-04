@@ -174,6 +174,15 @@ diario, hint en comentarios para "primera sesión del día".
   AppLayout/PublicProfile (ajuste durante render), y reglas shadcn
   (`react-refresh/only-export-components`, `react-hooks/purity`) apagadas
   solo para `src/components/ui/**` en `eslint.config.js`.
+- `be99320` — **login con Google (GIS ID token)**: botón oficial en
+  `/welcome` bajo "o continúa con" (oculto si no hay client ID). El server
+  verifica el JWT con `jose` (JWKS de Google, sin secretos); `google_sub`
+  nuevo crea cuenta al vuelo (handle derivado del email con dedup,
+  `password_hash` null, birthdate del age gate obligatorio — Google no
+  comparte cumpleaños). Migración `008_google_auth.sql`. El client ID
+  (público) vive en `GOOGLE_CLIENT_ID` del `.env` del VPS y llega al
+  navegador vía `GET /api/config`. Setup: `DEPLOY.md` sección 13.
+  Vinculación handle↔Google: pendiente a propósito.
 
 ## Skills del proyecto (`.kimi/skills/`)
 
