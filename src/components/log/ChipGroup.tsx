@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChipGroupProps {
@@ -14,13 +14,26 @@ interface ChipGroupProps {
   onAddCustom: (tag: string) => void;
   /** Placeholder for the custom-tag input, e.g. "Add your own aroma". */
   addLabel: string;
+  /**
+   * How many option chips render before collapsing behind "show all".
+   * Selected options outside the first page always stay visible.
+   */
+  collapsedCount?: number;
 }
+
+/** Default first-page size; a group only collapses when hiding ≥3 chips. */
+const DEFAULT_COLLAPSED_COUNT = 10;
 
 /**
  * Tappable multi-select chips (≥40px targets). Selection uses near-black
  * fill — the herb accent stays reserved for CTAs and the rating.
  * Custom tags normalize to Title Case, dedupe against the vocabulary, and
  * land at the end of the list.
+ *
+ * Long vocabularies (aromas ships 65) collapse to a first page of
+ * `collapsedCount` chips — the caller orders options by the user's own
+ * frequency, so the first page is usually all they need. Selected chips
+ * outside the first page stay visible while collapsed.
  */
 export default function ChipGroup({
   options,
@@ -29,11 +42,24 @@ export default function ChipGroup({
   onToggle,
   onAddCustom,
   addLabel,
+  collapsedCount = DEFAULT_COLLAPSED_COUNT,
 }: ChipGroupProps) {
   const { t } = useTranslation("log");
   const [draft, setDraft] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const selectedSet = new Set(selected);
+
+  const collapsible = options.length > collapsedCount + 2;
+  let visibleOptions = options;
+  if (collapsible && !expanded) {
+    const head = options.slice(0, collapsedCount);
+    const headSet = new Set(head);
+    visibleOptions = [
+      ...head,
+      ...options.filter((o) => !headSet.has(o) && selectedSet.has(o)),
+    ];
+  }
 
   function titleCase(raw: string): string {
     return raw
@@ -65,7 +91,7 @@ export default function ChipGroup({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
-        {options.map((tag) => (
+        {visibleOptions.map((tag) => (
           <Chip
             key={tag}
             label={tag}
@@ -82,6 +108,23 @@ export default function ChipGroup({
             onClick={() => onToggle(tag)}
           />
         ))}
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            aria-expanded={expanded}
+            className="pressable flex min-h-10 items-center gap-1 rounded-full border border-dashed border-foreground/30 px-4 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+          >
+            {expanded
+              ? t("chipGroup.showLess")
+              : t("chipGroup.showAll", { count: options.length })}
+            {expanded ? (
+              <ChevronUp className="size-4" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="size-4" aria-hidden="true" />
+            )}
+          </button>
+        ) : null}
       </div>
 
       <div className="flex items-center gap-2">

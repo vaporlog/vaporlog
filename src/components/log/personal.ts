@@ -199,6 +199,9 @@ const VOCAB_CATEGORIES: VocabCategory[] = [
   "unwantedEffects",
 ];
 
+/** Every Experience category, for callers that iterate them (e.g. frequency counts). */
+export { VOCAB_CATEGORIES };
+
 /** Persisted shape of the personal vocabulary store. */
 type PersonalVocabStore = Record<VocabCategory, string[]>;
 

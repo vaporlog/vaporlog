@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { getDevices, getProfile, getStrains, getVocab, saveSession, useDevices, useStrains } from "@/lib/data";
+import { Check, X } from "lucide-react";
+import { getDevices, getProfile, getStrains, getVocab, saveSession, useDevices, useMySessions, useStrains } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import {
   getPersonalVocab,
   loadDraft,
   saveDraft,
+  VOCAB_CATEGORIES,
   type LogDraft,
   type VocabCategory,
 } from "@/components/log/personal";
@@ -61,6 +63,24 @@ function visibleCustomTags(
 ): string[] {
   const optionLower = new Set(mergedOptions.map((t) => t.toLowerCase()));
   return custom.filter((t) => !optionLower.has(t.toLowerCase()));
+}
+
+/**
+ * Reorders chip options by how often the user picked each tag in past
+ * sessions (case-insensitive counts). Stable sort keeps the original
+ * (alphabetical) order inside ties, and a user with no history gets the
+ * options untouched. ChipGroup collapses to the first page, so this
+ * ordering is what puts "your usual tags" on it.
+ */
+function orderByFrequency(
+  options: string[],
+  counts: Map<string, number>,
+): string[] {
+  if (counts.size === 0) return options;
+  return [...options].sort(
+    (a, b) =>
+      (counts.get(b.toLowerCase()) ?? 0) - (counts.get(a.toLowerCase()) ?? 0),
+  );
 }
 
 /**
@@ -140,6 +160,44 @@ export default function LogSession() {
     unwantedEffects: getPersonalVocab("unwantedEffects"),
   }));
 
+  // Own past sessions power two conveniences: chip options ordered by
+  // personal frequency, and the "same as last time" banner.
+  const { sessions: mySessions } = useMySessions();
+
+  // The banner is only offered on a genuinely fresh form: no meaningful
+  // restored draft content and no query-param prefill in flight.
+  const [canSuggestLast] = useState(() => {
+    const d = initial.draft;
+    const hasContent =
+      d.strainSlug !== null ||
+      d.deviceSlug !== null ||
+      d.temperatureC !== null ||
+      d.durationMin !== null ||
+      d.amountG !== null ||
+      d.rating !== null ||
+      d.liked !== null ||
+      d.notes.trim() !== "" ||
+      d.isPublic ||
+      d.aromas.length +
+        d.flavors.length +
+        d.moods.length +
+        d.activities.length +
+        d.unwantedEffects.length >
+        0;
+    return (
+      !hasContent &&
+      initial.pendingStrain === null &&
+      initial.pendingDevice === null
+    );
+  });
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Unwanted effects hide behind a toggle; a restored draft with tags
+  // already selected opens it.
+  const [unwantedOpen, setUnwantedOpen] = useState(
+    () => initial.draft.unwantedEffects.length > 0,
+  );
+
   // Resolve a ?strain= prefill that the sync cache could not verify yet.
   // Never clobbers a strain the user picked (or typed a draft for) meanwhile.
   useEffect(() => {
@@ -215,7 +273,22 @@ export default function LogSession() {
   const missingDevice = triedSave && !draft.deviceSlug;
   const missingRating = triedSave && draft.rating === null;
 
-  // Names for the sticky-bar summary (catalog + personal entries).
+  // Required-fields checklist for the sticky bar — visible before any save
+  // attempt, destructive only after one.
+  const checklist = [
+    { done: draft.strainSlug !== null, label: t("sections.strain") },
+    { done: draft.deviceSlug !== null, label: t("sections.device") },
+    { done: draft.rating !== null, label: t("sections.rating") },
+  ];
+  const missingLabel = !draft.strainSlug
+    ? t("sticky.pickStrain")
+    : !draft.deviceSlug
+      ? t("sticky.pickDevice")
+      : draft.rating === null
+        ? t("sticky.pickRating")
+        : null;
+
+  // Strain display name for the save toast (catalog + personal entries).
   const strainName = useMemo(() => {
     if (!draft.strainSlug) return null;
     return (
@@ -225,28 +298,86 @@ export default function LogSession() {
     );
   }, [draft.strainSlug, catalog]);
 
-  const deviceName = useMemo(() => {
-    if (!draft.deviceSlug) return null;
+  // Chip options: controlled vocab first, personal tags after (deduped
+  // case-insensitively against the controlled vocab), then reordered by
+  // how often each tag appears in the user's own past sessions — the
+  // collapsed first page of each ChipGroup is "your usual tags".
+  const tagCounts = useMemo(() => {
+    const counts = Object.fromEntries(
+      VOCAB_CATEGORIES.map((c) => [c, new Map<string, number>()]),
+    ) as Record<VocabCategory, Map<string, number>>;
+    for (const session of mySessions) {
+      for (const category of VOCAB_CATEGORIES) {
+        for (const tag of session[category]) {
+          const key = tag.toLowerCase();
+          const map = counts[category];
+          map.set(key, (map.get(key) ?? 0) + 1);
+        }
+      }
+    }
+    return counts;
+  }, [mySessions]);
+
+  const aromaOptions = orderByFrequency(
+    mergeVocabOptions(vocab.aromas, personalVocab.aromas),
+    tagCounts.aromas,
+  );
+  const flavorOptions = orderByFrequency(
+    mergeVocabOptions(vocab.flavors, personalVocab.flavors),
+    tagCounts.flavors,
+  );
+  const moodOptions = orderByFrequency(
+    mergeVocabOptions(vocab.moods, personalVocab.moods),
+    tagCounts.moods,
+  );
+  const activityOptions = orderByFrequency(
+    mergeVocabOptions(vocab.activities, personalVocab.activities),
+    tagCounts.activities,
+  );
+  const unwantedEffectOptions = orderByFrequency(
+    mergeVocabOptions(vocab.unwantedEffects, personalVocab.unwantedEffects),
+    tagCounts.unwantedEffects,
+  );
+
+  // "Same as last time" — the newest own session, once the cache hydrates.
+  const lastSession = mySessions[0] ?? null;
+  const lastStrainName = useMemo(() => {
+    if (!lastSession?.strainSlug) return null;
     return (
-      devices.find((d) => d.slug === draft.deviceSlug)?.name ??
-      getPersonalDevices().find((d) => d.slug === draft.deviceSlug)?.name ??
+      catalog.find((s) => s.slug === lastSession.strainSlug)?.name ??
+      getPersonalStrains().find((s) => s.slug === lastSession.strainSlug)
+        ?.name ??
       null
     );
-  }, [draft.deviceSlug, devices]);
+  }, [lastSession, catalog]);
+  const lastDeviceName = useMemo(() => {
+    if (!lastSession?.deviceSlug) return null;
+    return (
+      devices.find((d) => d.slug === lastSession.deviceSlug)?.name ??
+      getPersonalDevices().find((d) => d.slug === lastSession.deviceSlug)
+        ?.name ??
+      null
+    );
+  }, [lastSession, devices]);
 
-  // Chip options: controlled vocab first, personal tags after (deduped
-  // case-insensitively against the controlled vocab).
-  const aromaOptions = mergeVocabOptions(vocab.aromas, personalVocab.aromas);
-  const flavorOptions = mergeVocabOptions(vocab.flavors, personalVocab.flavors);
-  const moodOptions = mergeVocabOptions(vocab.moods, personalVocab.moods);
-  const activityOptions = mergeVocabOptions(
-    vocab.activities,
-    personalVocab.activities,
-  );
-  const unwantedEffectOptions = mergeVocabOptions(
-    vocab.unwantedEffects,
-    personalVocab.unwantedEffects,
-  );
+  const showLastBanner =
+    canSuggestLast &&
+    !bannerDismissed &&
+    lastSession !== null &&
+    draft.strainSlug === null &&
+    draft.deviceSlug === null &&
+    draft.temperatureC === null;
+
+  function applyLastSession() {
+    if (!lastSession) return;
+    setDraft((d) => ({
+      ...d,
+      strainSlug: lastSession.strainSlug || d.strainSlug,
+      deviceSlug: lastSession.deviceSlug || d.deviceSlug,
+      temperatureC: lastSession.temperatureC ?? d.temperatureC,
+    }));
+    setBannerDismissed(true);
+  }
 
   async function handleSave() {
     if (saving) return;
@@ -317,6 +448,43 @@ export default function LogSession() {
         </p>
       </header>
 
+      {showLastBanner ? (
+        <div className="mb-9 flex items-center gap-3 rounded-xl border border-border bg-secondary/60 px-4 py-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-sm font-semibold">
+              {t("lastSession.title")}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              {[
+                lastStrainName,
+                lastDeviceName,
+                lastSession?.temperatureC !== null &&
+                lastSession?.temperatureC !== undefined
+                  ? `${lastSession.temperatureC}°C`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={applyLastSession}
+            className="pressable herb-hover min-h-10 shrink-0 rounded-lg bg-herb px-4 text-sm font-semibold text-herb-foreground"
+          >
+            {t("lastSession.apply")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setBannerDismissed(true)}
+            aria-label={t("lastSession.dismissAria")}
+            className="pressable flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-9">
         <div ref={strainRef}>
           <Section step={1} title={t("sections.strain")}>
@@ -378,6 +546,24 @@ export default function LogSession() {
                 }}
                 className="h-12 text-base tabular-nums"
               />
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {[5, 10, 15, 20].map((min) => (
+                  <button
+                    key={min}
+                    type="button"
+                    onClick={() => update("durationMin", min)}
+                    aria-label={t("details.quickDurationAria", { min })}
+                    className={cn(
+                      "pressable min-h-8 rounded-full border px-3 text-xs font-medium tabular-nums transition-colors duration-150",
+                      draft.durationMin === min
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {min}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="amount" className="text-xs text-muted-foreground">
@@ -400,6 +586,24 @@ export default function LogSession() {
                 }}
                 className="h-12 text-base tabular-nums"
               />
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {[0.1, 0.15, 0.2, 0.3].map((grams) => (
+                  <button
+                    key={grams}
+                    type="button"
+                    onClick={() => update("amountG", grams)}
+                    aria-label={t("details.quickAmountAria", { grams })}
+                    className={cn(
+                      "pressable min-h-8 rounded-full border px-3 text-xs font-medium tabular-nums transition-colors duration-150",
+                      draft.amountG === grams
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {grams}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </Section>
@@ -507,30 +711,55 @@ export default function LogSession() {
           title={t("sections.unwantedEffects")}
           hint={t("optional")}
         >
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">
-              {t("unwantedEffects.description")}
-            </p>
-            <ChipGroup
-              options={unwantedEffectOptions}
-              selected={draft.unwantedEffects}
-              custom={visibleCustomTags(
-                draft.customUnwantedEffects,
-                unwantedEffectOptions,
-              )}
-              onToggle={(tag) =>
-                update("unwantedEffects", toggleInList(draft.unwantedEffects, tag))
-              }
-              onAddCustom={(tag) => {
-                rememberCustomTag("unwantedEffects", tag);
-                setDraft((d) => ({
-                  ...d,
-                  customUnwantedEffects: [...d.customUnwantedEffects, tag],
-                  unwantedEffects: [...d.unwantedEffects, tag],
-                }));
-              }}
-              addLabel={t("unwantedEffects.add")}
-            />
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+              <span className="text-sm font-semibold">
+                {t("unwantedEffects.toggle")}
+              </span>
+              <Switch
+                checked={unwantedOpen}
+                onCheckedChange={(checked) => {
+                  setUnwantedOpen(checked);
+                  if (!checked) {
+                    setDraft((d) => ({
+                      ...d,
+                      unwantedEffects: [],
+                      unwantedEffectsPublic: false,
+                    }));
+                  }
+                }}
+                aria-label={t("unwantedEffects.toggle")}
+                className="shrink-0 scale-125"
+              />
+            </div>
+
+            {unwantedOpen ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {t("unwantedEffects.description")}
+                </p>
+                <ChipGroup
+                  options={unwantedEffectOptions}
+                  selected={draft.unwantedEffects}
+                  custom={visibleCustomTags(
+                    draft.customUnwantedEffects,
+                    unwantedEffectOptions,
+                  )}
+                  onToggle={(tag) =>
+                    update("unwantedEffects", toggleInList(draft.unwantedEffects, tag))
+                  }
+                  onAddCustom={(tag) => {
+                    rememberCustomTag("unwantedEffects", tag);
+                    setDraft((d) => ({
+                      ...d,
+                      customUnwantedEffects: [...d.customUnwantedEffects, tag],
+                      unwantedEffects: [...d.unwantedEffects, tag],
+                    }));
+                  }}
+                  addLabel={t("unwantedEffects.add")}
+                />
+              </div>
+            ) : null}
           </div>
         </Section>
 
@@ -598,22 +827,34 @@ export default function LogSession() {
       {/* Sticky save bar — always one thumb-stretch away. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
-          <p className="hidden min-w-0 flex-1 truncate text-sm text-muted-foreground sm:block">
-            {strainName || deviceName
-              ? [strainName, deviceName, draft.temperatureC !== null ? `${draft.temperatureC}°C` : null]
-                  .filter(Boolean)
-                  .join(" · ")
-              : t("sticky.autosave")}
-          </p>
-          {triedSave && (!draft.strainSlug || !draft.deviceSlug || draft.rating === null) ? (
-            <p className="min-w-0 flex-1 truncate text-sm font-medium text-destructive sm:hidden">
-              {!draft.strainSlug
-                ? t("sticky.pickStrain")
-                : !draft.deviceSlug
-                  ? t("sticky.pickDevice")
-                  : t("sticky.pickRating")}
-            </p>
-          ) : null}
+          <div className="flex min-w-0 flex-1 items-center gap-x-3 overflow-x-auto text-xs sm:text-sm">
+            {checklist.map((item) => (
+              <span
+                key={item.label}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 whitespace-nowrap",
+                  item.done
+                    ? "text-muted-foreground"
+                    : triedSave
+                      ? "font-medium text-destructive"
+                      : "text-foreground",
+                )}
+              >
+                {item.done ? (
+                  <Check className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "inline-block size-3 rounded-full border",
+                      triedSave ? "border-destructive" : "border-foreground/40",
+                    )}
+                  />
+                )}
+                {item.label}
+              </span>
+            ))}
+          </div>
           <button
             type="button"
             onClick={handleSave}
@@ -624,7 +865,7 @@ export default function LogSession() {
               saving && "cursor-wait opacity-70",
             )}
           >
-            {saving ? t("sticky.saving") : t("sticky.save")}
+            {saving ? t("sticky.saving") : (missingLabel ?? t("sticky.save"))}
           </button>
         </div>
       </div>

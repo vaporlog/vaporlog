@@ -15,7 +15,9 @@
   },
   "details": {
     "duration": "Duration (min)",
-    "amount": "Amount (g)"
+    "amount": "Amount (g)",
+    "quickDurationAria": "Set duration to {{min}} minutes",
+    "quickAmountAria": "Set amount to {{grams}} grams"
   },
   "experience": {
     "aromas": "Aromas",
@@ -33,8 +35,14 @@
     "no": "No"
   },
   "unwantedEffects": {
+    "toggle": "Did anything feel off?",
     "description": "Anything that detracted from the experience — optional.",
     "add": "Add your own unwanted effect"
+  },
+  "lastSession": {
+    "title": "Same as last time?",
+    "apply": "Apply",
+    "dismissAria": "Dismiss suggestion"
   },
   "validation": {
     "pickStrain": "Pick a strain — or add your own.",
@@ -52,7 +60,6 @@
     "includeUnwantedEffectsDescription": "If on, your unwanted-effects tags also show on the public session card."
   },
   "sticky": {
-    "autosave": "Your draft autosaves as you go.",
     "pickStrain": "Pick a strain",
     "pickDevice": "Pick a device",
     "pickRating": "Pick a rating",
@@ -129,7 +136,9 @@
     }
   },
   "chipGroup": {
-    "addAria": "Add custom tag"
+    "addAria": "Add custom tag",
+    "showAll": "Show all ({{count}})",
+    "showLess": "Show less"
   },
   "rating": {
     "groupAria": "Rating from 1 to 10",

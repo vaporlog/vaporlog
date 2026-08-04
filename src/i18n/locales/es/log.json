@@ -15,7 +15,9 @@
   },
   "details": {
     "duration": "Duración (min)",
-    "amount": "Cantidad (g)"
+    "amount": "Cantidad (g)",
+    "quickDurationAria": "Fijar duración en {{min}} minutos",
+    "quickAmountAria": "Fijar cantidad en {{grams}} gramos"
   },
   "experience": {
     "aromas": "Aromas",
@@ -33,8 +35,14 @@
     "no": "No"
   },
   "unwantedEffects": {
+    "toggle": "¿Algo salió mal?",
     "description": "Cualquier cosa que restó a la experiencia — opcional.",
     "add": "Agrega tu propio efecto no deseado"
+  },
+  "lastSession": {
+    "title": "¿Igual que la última vez?",
+    "apply": "Aplicar",
+    "dismissAria": "Descartar sugerencia"
   },
   "validation": {
     "pickStrain": "Elige un strain, o agrega el tuyo.",
@@ -52,7 +60,6 @@
     "includeUnwantedEffectsDescription": "Si está activo, tus etiquetas de efectos no deseados también aparecerán en la tarjeta pública."
   },
   "sticky": {
-    "autosave": "Tu borrador se guarda automáticamente.",
     "pickStrain": "Elige un strain",
     "pickDevice": "Elige un vaporizador",
     "pickRating": "Elige una calificación",
@@ -129,7 +136,9 @@
     }
   },
   "chipGroup": {
-    "addAria": "Agregar etiqueta personalizada"
+    "addAria": "Agregar etiqueta personalizada",
+    "showAll": "Ver todos ({{count}})",
+    "showLess": "Ver menos"
   },
   "rating": {
     "groupAria": "Calificación del 1 al 10",
