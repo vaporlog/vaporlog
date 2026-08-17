@@ -44,7 +44,9 @@
     "mood": "Mood",
     "aromaFlavor": "Aroma · Flavor",
     "liked": "Liked",
-    "unwantedEffects": "Unwanted effects"
+    "unwantedEffects": "Unwanted effects",
+    "detoxBadge_one": "after {{count}} clean day",
+    "detoxBadge_other": "after {{count}} clean days"
   },
   "share": {
     "text": "{{author}}'s {{strain}} session on vaporlog — {{rating}}/10",

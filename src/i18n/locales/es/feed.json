@@ -50,6 +50,8 @@
     "by": "por",
     "ariaLabel": "Sesión de {{strain}} por {{author}}, calificada con {{rating}} de 10",
     "authorProfileAria": "Ver el perfil público de @{{author}}",
-    "liked": "Te gustó"
+    "liked": "Te gustó",
+    "detoxBadge_one": "tras {{count}} día limpio",
+    "detoxBadge_other": "tras {{count}} días limpio"
   }
 }

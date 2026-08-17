@@ -81,6 +81,10 @@ export interface LogDraft {
   isPublic: boolean;
   /** Whether unwanted effects are included when publishing this session. */
   unwantedEffectsPublic: boolean;
+  /** Whether the detox streak + review show on the public card. */
+  detoxDaysPublic: boolean;
+  /** Dedicated post-detox experience text (only meaningful with a streak). */
+  detoxReview: string;
 }
 
 export const EMPTY_DRAFT: LogDraft = {
@@ -104,6 +108,8 @@ export const EMPTY_DRAFT: LogDraft = {
   notes: "",
   isPublic: false,
   unwantedEffectsPublic: false,
+  detoxDaysPublic: false,
+  detoxReview: "",
 };
 
 /** Turns a display name into a collision-safe personal slug. */

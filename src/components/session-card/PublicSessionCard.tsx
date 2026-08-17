@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Scale, Thermometer, ThumbsUp, Wind } from "lucide-react";
+import { Clock, Flame, Scale, Thermometer, ThumbsUp, Wind } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -227,6 +227,26 @@ export default function PublicSessionCard({
               </Badge>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Post-detox return — the badge only ships on public payloads when
+          the author opted in (detoxDaysPublic); the dedicated review is a
+          quote of its own, above the general notes. */}
+      {session.detoxDays !== null && session.detoxDays >= 1 && (
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <Badge
+            variant="outline"
+            className="border-herb/40 text-herb"
+          >
+            <Flame className="size-3" aria-hidden="true" />
+            {t("card.detoxBadge", { count: session.detoxDays })}
+          </Badge>
+          {session.detoxReview.trim() !== "" && (
+            <blockquote className="mx-auto max-w-md text-balance text-base italic leading-relaxed text-muted-foreground">
+              “{session.detoxReview.trim()}”
+            </blockquote>
+          )}
         </div>
       )}
 

@@ -50,6 +50,8 @@
     "by": "by",
     "ariaLabel": "{{strain}} session by {{author}}, rated {{rating}} out of 10",
     "authorProfileAria": "View @{{author}}'s public profile",
-    "liked": "Liked"
+    "liked": "Liked",
+    "detoxBadge_one": "after {{count}} clean day",
+    "detoxBadge_other": "after {{count}} clean days"
   }
 }

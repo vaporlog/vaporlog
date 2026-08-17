@@ -56,6 +56,7 @@ const SESSION_COLUMNS = `
   s.id, s.user_id, s.strain_slug, s.device_slug, s.temperature_c,
   s.duration_min, s.amount_g, s.rating, s.aromas, s.flavors, s.moods,
   s.activities, s.unwanted_effects, s.liked, s.unwanted_effects_public,
+  s.detox_days, s.detox_days_public, s.detox_review,
   s.notes, s.is_public, s.author, s.created_at
 `;
 
@@ -499,6 +500,8 @@ export default async function profileRoutes(app) {
         unwantedEffects: session.unwantedEffectsPublic
           ? session.unwantedEffects
           : [],
+        detoxDays: session.detoxDaysPublic ? session.detoxDays : null,
+        detoxReview: session.detoxDaysPublic ? session.detoxReview : "",
       })),
     };
     if (favoriteDevice !== null) payload.favoriteDevice = favoriteDevice;

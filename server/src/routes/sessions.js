@@ -27,6 +27,7 @@ const SESSION_COLUMNS = `
   s.id, s.user_id, s.strain_slug, s.device_slug, s.temperature_c,
   s.duration_min, s.amount_g, s.rating, s.aromas, s.flavors, s.moods,
   s.activities, s.unwanted_effects, s.liked, s.unwanted_effects_public,
+  s.detox_days, s.detox_days_public, s.detox_review,
   s.notes, s.is_public, s.author, s.created_at
 `;
 
@@ -74,8 +75,11 @@ export default async function sessionRoutes(app) {
     );
     const sessions = rows.map(rowToSession).map((session) => ({
       ...session,
-      // Unwanted effects are only visible publicly when explicitly opted in.
+      // Unwanted effects and detox data are only visible publicly when
+      // explicitly opted in (per-session flags).
       unwantedEffects: session.unwantedEffectsPublic ? session.unwantedEffects : [],
+      detoxDays: session.detoxDaysPublic ? session.detoxDays : null,
+      detoxReview: session.detoxDaysPublic ? session.detoxReview : "",
     }));
     return { sessions };
   });
@@ -127,12 +131,25 @@ export default async function sessionRoutes(app) {
       const liked = asBooleanOrNull(body.liked);
       const unwantedEffects = asStringArray(body.unwantedEffects);
       const unwantedEffectsPublic = body.unwantedEffectsPublic === true;
+      // Post-detox data: the streak this session ended (null for ordinary
+      // sessions), the opt-in public flag and the capped dedicated review.
+      const detoxDays =
+        Number.isInteger(body.detoxDays) && body.detoxDays >= 1
+          ? body.detoxDays
+          : null;
+      const detoxDaysPublic =
+        body.detoxDaysPublic === true && detoxDays !== null;
+      const detoxReview =
+        typeof body.detoxReview === "string"
+          ? body.detoxReview.slice(0, 500)
+          : "";
       const { rows } = await pool.query(
         `insert into sessions (
            id, user_id, strain_slug, device_slug, temperature_c, duration_min,
            amount_g, rating, aromas, flavors, moods, activities, unwanted_effects,
-           liked, unwanted_effects_public, notes, is_public, author, created_at
-         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+           liked, unwanted_effects_public, detox_days, detox_days_public,
+           detox_review, notes, is_public, author, created_at
+         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
          on conflict (id) do update set
            strain_slug   = excluded.strain_slug,
            device_slug   = excluded.device_slug,
@@ -147,6 +164,9 @@ export default async function sessionRoutes(app) {
            unwanted_effects         = excluded.unwanted_effects,
            liked                    = excluded.liked,
            unwanted_effects_public  = excluded.unwanted_effects_public,
+           detox_days          = excluded.detox_days,
+           detox_days_public   = excluded.detox_days_public,
+           detox_review        = excluded.detox_review,
            notes         = excluded.notes,
            is_public     = excluded.is_public,
            author        = excluded.author,
@@ -168,6 +188,9 @@ export default async function sessionRoutes(app) {
           unwantedEffects,
           liked,
           unwantedEffectsPublic,
+          detoxDays,
+          detoxDaysPublic,
+          detoxReview,
           typeof body.notes === "string" ? body.notes : "",
           body.isPublic === true,
           request.account.username, // author stamped from the caller's handle

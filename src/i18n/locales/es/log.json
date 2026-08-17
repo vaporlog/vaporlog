@@ -39,6 +39,16 @@
     "description": "Cualquier cosa que restó a la experiencia — opcional.",
     "add": "Agrega tu propio efecto no deseado"
   },
+  "detox": {
+    "bannerTitle_one": "{{count}} día limpio — esta sesión cuenta doble",
+    "bannerTitle_other": "{{count}} días limpio — esta sesión cuenta doble",
+    "bannerBody": "Tolerancia reseteada, los efectos se sienten más. Volver es una victoria — cuéntanos cómo se siente.",
+    "shareLabel_one": "Compartir mi regreso — {{count}} día limpio",
+    "shareLabel_other": "Compartir mi regreso — {{count}} días limpio",
+    "shareDescription": "Muestra el badge de días limpio en tu tarjeta pública y abre un espacio para contar cómo fue el regreso.",
+    "reviewLabel": "Tu regreso",
+    "reviewPlaceholder": "¿Cómo estuvo volver? ¿Sabor, intensidad, efectos…?"
+  },
   "lastSession": {
     "title": "¿Igual que la última vez?",
     "apply": "Aplicar",

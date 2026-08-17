@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { ThumbsDown, ThumbsUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,6 +90,19 @@ export function DiarySessionCard({
           </p>
           <p className="text-xs">{formatSessionDate(session.createdAt)}</p>
         </div>
+
+        {/* Post-detox badge — private, always visible to the owner */}
+        {session.detoxDays !== null && session.detoxDays >= 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            <Badge
+              variant="outline"
+              className="border-herb/40 font-normal text-herb"
+            >
+              <Flame className="size-3" aria-hidden />
+              {t("card.detoxBadge", { count: session.detoxDays })}
+            </Badge>
+          </div>
+        )}
 
         {/* Moods */}
         {session.moods.length > 0 && (

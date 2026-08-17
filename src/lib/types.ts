@@ -59,6 +59,16 @@ export interface SessionLog {
   liked: boolean | null;
   /** Whether unwantedEffects are included when the session is published. */
   unwantedEffectsPublic: boolean;
+  /**
+   * Clean-day streak this session ended (≥1), null for ordinary sessions.
+   * Always present on own payloads; stripped from public payloads unless
+   * detoxDaysPublic is on.
+   */
+  detoxDays: number | null;
+  /** Whether the detox streak + review show on the public card. */
+  detoxDaysPublic: boolean;
+  /** Dedicated post-detox experience text (≤500 chars). */
+  detoxReview: string;
   notes: string;
   isPublic: boolean;
   /** Pseudonym — never a real name or email. */

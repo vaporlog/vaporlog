@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Star, ThumbsUp } from "lucide-react";
+import { Star, ThumbsUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getStrain } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
@@ -114,6 +114,20 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
         )}
         {dateLabel !== "" && <span className="text-xs">{dateLabel}</span>}
       </div>
+
+      {/* Post-detox badge — only present on the payload when the author
+          opted in; kept quiet (herb is spent on the rating). */}
+      {session.detoxDays !== null && session.detoxDays >= 1 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <Badge
+            variant="outline"
+            className="font-normal text-muted-foreground"
+          >
+            <Flame className="size-3 text-herb" aria-hidden="true" />
+            {t("card.detoxBadge", { count: session.detoxDays })}
+          </Badge>
+        </div>
+      )}
 
       {/* Moods */}
       {session.moods.length > 0 && (

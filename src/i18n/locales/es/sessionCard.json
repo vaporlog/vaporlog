@@ -44,7 +44,9 @@
     "mood": "Ánimo",
     "aromaFlavor": "Aroma · Sabor",
     "liked": "Te gustó",
-    "unwantedEffects": "Efectos no deseados"
+    "unwantedEffects": "Efectos no deseados",
+    "detoxBadge_one": "tras {{count}} día limpio",
+    "detoxBadge_other": "tras {{count}} días limpio"
   },
   "share": {
     "text": "La sesión de {{strain}} de {{author}} en vaporlog — {{rating}}/10",

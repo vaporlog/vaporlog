@@ -39,6 +39,16 @@
     "description": "Anything that detracted from the experience — optional.",
     "add": "Add your own unwanted effect"
   },
+  "detox": {
+    "bannerTitle_one": "{{count}} clean day — this session counts double",
+    "bannerTitle_other": "{{count}} clean days — this session counts double",
+    "bannerBody": "Tolerance reset, effects land deeper. Coming back is a win — tell us how it feels.",
+    "shareLabel_one": "Share my comeback — {{count}} clean day",
+    "shareLabel_other": "Share my comeback — {{count}} clean days",
+    "shareDescription": "Shows the clean-days badge on your public card and opens a space to tell how the return went.",
+    "reviewLabel": "Your comeback",
+    "reviewPlaceholder": "How was coming back? Flavor, intensity, effects…"
+  },
   "lastSession": {
     "title": "Same as last time?",
     "apply": "Apply",

@@ -50,7 +50,34 @@
     },
     "includeUnwantedEffectsAria": "Incluir efectos no deseados en la tarjeta pública de “{{strain}}”",
     "unwantedEffectsPublic": "Efectos no deseados visibles",
-    "unwantedEffectsPrivate": "Efectos no deseados ocultos"
+    "unwantedEffectsPrivate": "Efectos no deseados ocultos",
+    "detoxBadge_one": "tras {{count}} día limpio",
+    "detoxBadge_other": "tras {{count}} días limpio"
+  },
+  "detox": {
+    "title": "Detox",
+    "streakUnit_one": "día limpio",
+    "streakUnit_other": "días limpio",
+    "markToday": "Marcar hoy",
+    "todayClean": "Hoy limpio",
+    "sessionToday": "Sesión registrada hoy",
+    "calendar": "Abrir el calendario de días limpio",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "cleanDay": "día limpio",
+    "sessionDay": "Día con sesión — la sesión siempre gana sobre la marca",
+    "legend": "Los días con sesión llevan un punto. Toca cualquier día pasado para marcarlo limpio."
+  },
+  "highlights": {
+    "thisWeek": "Esta semana",
+    "liked": "Te gustaron"
+  },
+  "search": {
+    "placeholder": "Busca en tus sesiones…",
+    "ariaLabel": "Buscar en tus sesiones",
+    "clearAria": "Limpiar búsqueda",
+    "results": "{{shown}} de {{total}} sesiones",
+    "noResults": "Nada coincide con “{{query}}”."
   },
   "toggle": {
     "nowPublic": "La sesión ahora es pública — cualquiera con el enlace puede ver su tarjeta.",

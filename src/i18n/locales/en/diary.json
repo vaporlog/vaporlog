@@ -50,7 +50,34 @@
     },
     "includeUnwantedEffectsAria": "Include unwanted effects on the public card for “{{strain}}”",
     "unwantedEffectsPublic": "Unwanted effects visible",
-    "unwantedEffectsPrivate": "Unwanted effects hidden"
+    "unwantedEffectsPrivate": "Unwanted effects hidden",
+    "detoxBadge_one": "after {{count}} clean day",
+    "detoxBadge_other": "after {{count}} clean days"
+  },
+  "detox": {
+    "title": "Detox",
+    "streakUnit_one": "clean day",
+    "streakUnit_other": "clean days",
+    "markToday": "Mark today",
+    "todayClean": "Clean today",
+    "sessionToday": "Session logged today",
+    "calendar": "Open the clean-days calendar",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "cleanDay": "clean day",
+    "sessionDay": "Session day — sessions always win over marks",
+    "legend": "Days with a session carry a dot. Tap any past day to mark it clean."
+  },
+  "highlights": {
+    "thisWeek": "This week",
+    "liked": "Liked"
+  },
+  "search": {
+    "placeholder": "Search your sessions…",
+    "ariaLabel": "Search your sessions",
+    "clearAria": "Clear search",
+    "results": "{{shown}} of {{total}} sessions",
+    "noResults": "Nothing matches “{{query}}”."
   },
   "toggle": {
     "nowPublic": "Session is now public — anyone with the link can view its card.",

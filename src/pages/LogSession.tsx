@@ -4,6 +4,12 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, X } from "lucide-react";
 import { getDevices, getProfile, getStrains, getVocab, saveSession, useDevices, useMySessions, useStrains } from "@/lib/data";
+import {
+  currentStreak,
+  localDayKey,
+  unmarkDay,
+  useDetoxMarks,
+} from "@/lib/detox";
 import type { SessionLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -163,6 +169,20 @@ export default function LogSession() {
   // Own past sessions power two conveniences: chip options ordered by
   // personal frequency, and the "same as last time" banner.
   const { sessions: mySessions } = useMySessions();
+
+  // Detox streak: a live streak (≥1 clean day) reframes this whole page —
+  // the banner celebrates the return and the session records the streak it
+  // caps. A session already logged today means the streak ended there.
+  const { days: markedDays } = useDetoxMarks();
+  const [todayKey] = useState(() => localDayKey());
+  const hasSessionToday = useMemo(
+    () =>
+      mySessions.some(
+        (s) => localDayKey(new Date(s.createdAt)) === todayKey,
+      ),
+    [mySessions, todayKey],
+  );
+  const streak = currentStreak(markedDays, hasSessionToday, todayKey);
 
   // The banner is only offered on a genuinely fresh form: no meaningful
   // restored draft content and no query-param prefill in flight.
@@ -408,6 +428,9 @@ export default function LogSession() {
       activities: draft.activities,
       unwantedEffects: draft.unwantedEffects,
       unwantedEffectsPublic: draft.unwantedEffectsPublic,
+      detoxDays: streak >= 1 ? streak : null,
+      detoxDaysPublic: streak >= 1 && draft.detoxDaysPublic,
+      detoxReview: draft.detoxReview.trim(),
       notes: draft.notes.trim(),
       isPublic: draft.isPublic,
       author: getProfile()?.username ?? "anonymous",
@@ -425,6 +448,8 @@ export default function LogSession() {
       setSaving(false);
       return;
     }
+    // The session always wins: today's clean mark (if any) ends here.
+    void unmarkDay(todayKey);
     clearDraft();
     toast.success(t("toasts.saved.title"), {
       description: t("toasts.saved.description", {
@@ -448,7 +473,18 @@ export default function LogSession() {
         </p>
       </header>
 
-      {showLastBanner ? (
+      {streak >= 1 ? (
+        <div className="mb-9 flex flex-col gap-1.5 rounded-xl border border-herb/40 bg-herb/5 px-4 py-3.5">
+          <span className="text-sm font-semibold text-foreground">
+            {t("detox.bannerTitle", { count: streak })}
+          </span>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {t("detox.bannerBody")}
+          </p>
+        </div>
+      ) : null}
+
+      {streak === 0 && showLastBanner ? (
         <div className="mb-9 flex items-center gap-3 rounded-xl border border-border bg-secondary/60 px-4 py-3">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-sm font-semibold">
@@ -793,6 +829,7 @@ export default function LogSession() {
                     unwantedEffectsPublic: checked
                       ? d.unwantedEffectsPublic
                       : false,
+                    detoxDaysPublic: checked ? d.detoxDaysPublic : false,
                   }))
                 }
                 aria-label={t("publish.switchLabel")}
@@ -818,6 +855,40 @@ export default function LogSession() {
                   aria-label={t("publish.includeUnwantedEffects")}
                   className="shrink-0 scale-125"
                 />
+              </div>
+            )}
+
+            {draft.isPublic && streak >= 1 && (
+              <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="text-sm font-semibold">
+                      {t("detox.shareLabel", { count: streak })}
+                    </span>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {t("detox.shareDescription")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={draft.detoxDaysPublic}
+                    onCheckedChange={(checked) =>
+                      update("detoxDaysPublic", checked)
+                    }
+                    aria-label={t("detox.shareLabel", { count: streak })}
+                    className="shrink-0 scale-125"
+                  />
+                </div>
+                {draft.detoxDaysPublic && (
+                  <Textarea
+                    value={draft.detoxReview}
+                    onChange={(e) => update("detoxReview", e.target.value)}
+                    placeholder={t("detox.reviewPlaceholder")}
+                    maxLength={500}
+                    rows={3}
+                    aria-label={t("detox.reviewLabel")}
+                    className="resize-none text-base leading-relaxed"
+                  />
+                )}
               </div>
             )}
           </div>

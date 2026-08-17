@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
+import { Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { ActivityChart } from "@/components/diary/ActivityChart";
+import { HighlightsRow } from "@/components/diary/HighlightsRow";
 import { DiaryHeader } from "@/components/diary/DiaryHeader";
 import { EmptyDiary } from "@/components/diary/EmptyDiary";
 import { FavoriteStrains } from "@/components/diary/FavoriteStrains";
@@ -13,6 +15,8 @@ import {
   computeFavorites,
   computeStats,
   computeWeeklyActivity,
+  displayDeviceName,
+  displayStrainName,
 } from "@/components/diary/diary-utils";
 import {
   getProfile,
@@ -38,6 +42,31 @@ export default function Diary() {
   const stats = useMemo(() => computeStats(sessions), [sessions]);
   const favorites = useMemo(() => computeFavorites(sessions), [sessions]);
   const weekly = useMemo(() => computeWeeklyActivity(sessions), [sessions]);
+
+  // Diary search — free text over everything the user can see on a card:
+  // strain and device display names, notes and every tag list. Client-side
+  // against the in-memory sessions, live on every keystroke.
+  const [query, setQuery] = useState("");
+  const filteredSessions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q === "") return sessions;
+    return sessions.filter((session) =>
+      [
+        displayStrainName(session.strainSlug),
+        displayDeviceName(session.deviceSlug),
+        session.notes,
+        ...session.aromas,
+        ...session.flavors,
+        ...session.moods,
+        ...session.activities,
+        ...session.unwantedEffects,
+      ]
+        .join("\n")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [sessions, query]);
+  const searching = query.trim() !== "";
 
   // Missing or unreadable profile → the age gate owns this user first.
   if (!profile) {
@@ -91,6 +120,11 @@ export default function Diary() {
     <div className="space-y-10">
       <DiaryHeader username={profile.username} />
 
+      {/* Highlights row: detox streak + this-week + liked-ratio tiles.
+          Lives outside the sessions branches on purpose — the detox tile's
+          natural audience has FEW recent sessions. */}
+      <HighlightsRow sessions={sessions} />
+
       {loading ? (
         <div
           className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-6 py-16 text-center"
@@ -108,12 +142,55 @@ export default function Diary() {
           <StatsStrip stats={stats} />
           <FavoriteStrains favorites={favorites} />
           <ActivityChart weeks={weekly} />
-          <SessionList
-            sessions={sessions}
-            onTogglePublic={handleTogglePublic}
-            onToggleUnwantedEffectsPublic={handleToggleUnwantedEffectsPublic}
-            pendingToggleId={pendingToggleId}
-          />
+
+          {/* Search — filters the list live; stats stay global. */}
+          <div className="flex flex-col gap-1.5">
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t("search.placeholder")}
+                aria-label={t("search.ariaLabel")}
+                className="h-11 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-base outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-foreground/40"
+              />
+              {searching ? (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label={t("search.clearAria")}
+                  className="pressable absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+            {searching ? (
+              <p className="text-xs text-muted-foreground" role="status">
+                {t("search.results", {
+                  shown: filteredSessions.length,
+                  total: sessions.length,
+                })}
+              </p>
+            ) : null}
+          </div>
+
+          {searching && filteredSessions.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
+              {t("search.noResults", { query: query.trim() })}
+            </p>
+          ) : (
+            <SessionList
+              sessions={filteredSessions}
+              onTogglePublic={handleTogglePublic}
+              onToggleUnwantedEffectsPublic={handleToggleUnwantedEffectsPublic}
+              pendingToggleId={pendingToggleId}
+            />
+          )}
         </>
       )}
 

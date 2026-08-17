@@ -69,6 +69,9 @@ export function rowToSession(row) {
     liked:
       typeof row.liked === "boolean" ? row.liked : (row.liked ?? null),
     unwantedEffectsPublic: row.unwanted_effects_public === true,
+    detoxDays: Number.isInteger(row.detox_days) ? row.detox_days : null,
+    detoxDaysPublic: row.detox_days_public === true,
+    detoxReview: row.detox_review ?? "",
     notes: row.notes ?? "",
     isPublic: row.is_public,
     author:
