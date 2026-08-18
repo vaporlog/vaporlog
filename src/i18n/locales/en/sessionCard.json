@@ -45,8 +45,15 @@
     "aromaFlavor": "Aroma · Flavor",
     "liked": "Liked",
     "unwantedEffects": "Unwanted effects",
+    "effectIntensity": "Effect intensity",
+    "energyCalm": "Calm / energy",
     "detoxBadge_one": "after {{count}} clean day",
     "detoxBadge_other": "after {{count}} clean days"
+  },
+  "energyCalm": {
+    "calm": "Calm",
+    "neutral": "Neutral",
+    "energized": "Energized"
   },
   "share": {
     "text": "{{author}}'s {{strain}} session on vaporlog — {{rating}}/10",
@@ -54,9 +61,16 @@
     "templates": {
       "split": "Classic",
       "minimal": "Minimal",
-      "stats": "Stats"
+      "stats": "Stats",
+      "story": "Story",
+      "story-minimal": "Story minimal",
+      "story-stats": "Story stats"
     },
     "copyLink": "Copy link",
+    "download": "Download image",
+    "downloading": "Downloading…",
+    "downloadAria": "Download the current card as PNG",
+    "downloadError": "Couldn't download that image",
     "toX": "Share to X",
     "toReddit": "Share to Reddit",
     "copySuccess": "Link copied — pass it on.",

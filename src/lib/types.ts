@@ -69,6 +69,14 @@ export interface SessionLog {
   detoxDaysPublic: boolean;
   /** Dedicated post-detox experience text (≤500 chars). */
   detoxReview: string;
+  /**
+   * Per-effect intensity (1-10) for moods and unwanted effects. Keys are the
+   * tag strings; only effects present in moods/unwantedEffects should appear.
+   * Public payloads strip unwanted-effect intensities unless opted in.
+   */
+  effectIntensities: Record<string, number>;
+  /** Bipolar -5..+5: -5 very calm, 0 neutral, +5 very energized. null = skipped. */
+  energyCalmScore: number | null;
   notes: string;
   isPublic: boolean;
   /** Pseudonym — never a real name or email. */

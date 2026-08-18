@@ -112,7 +112,14 @@ function esc(value) {
  * shared /s/:id link and the card.png it points at. og-image.js imports
  * this list to validate the param on its side.
  */
-export const OG_TEMPLATES = ["split", "minimal", "stats"];
+export const OG_TEMPLATES = [
+  "split",
+  "minimal",
+  "stats",
+  "story",
+  "story-minimal",
+  "story-stats",
+];
 
 /** Validates the ?t= share param; anything unknown falls back to "split". */
 export function normalizeTemplate(value) {

@@ -10,6 +10,8 @@
     "experience": "Experiencia",
     "rating": "Calificación",
     "unwantedEffects": "Efectos no deseados",
+    "effectIntensity": "Intensidad de efectos",
+    "energyCalm": "Calma / energía",
     "notes": "Notas",
     "publish": "Publicar"
   },
@@ -38,6 +40,17 @@
     "toggle": "¿Algo salió mal?",
     "description": "Cualquier cosa que restó a la experiencia — opcional.",
     "add": "Agrega tu propio efecto no deseado"
+  },
+  "effectIntensity": {
+    "empty": "Elige moods o efectos no deseados arriba para calificar su intensidad.",
+    "sliderAria": "Intensidad de {{effect}}"
+  },
+  "energyCalm": {
+    "calm": "Calma",
+    "neutral": "Neutral",
+    "energized": "Energía",
+    "sliderAria": "Energía versus calma",
+    "skip": "Omitir"
   },
   "detox": {
     "bannerTitle_one": "{{count}} día limpio — esta sesión cuenta doble",

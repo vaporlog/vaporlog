@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import DeleteSessionButton from "@/components/DeleteSessionButton";
+import EffectRadarChart from "@/components/EffectRadarChart";
+import EnergyCalmBar from "@/components/EnergyCalmBar";
 import type { SessionLog } from "@/lib/types";
 import {
   displayDeviceName,
@@ -135,6 +137,23 @@ export function DiarySessionCard({
           <p className="line-clamp-2 text-sm leading-relaxed text-foreground/80">
             {session.notes}
           </p>
+        )}
+
+        {/* Effect intensity radar — private, every intensity the owner set. */}
+        {Object.keys(session.effectIntensities).length > 0 && (
+          <EffectRadarChart
+            intensities={session.effectIntensities}
+            unwantedEffects={session.unwantedEffects}
+            title={t("card.effectIntensity")}
+          />
+        )}
+
+        {/* Energy / calm bipolar bar */}
+        {session.energyCalmScore !== null && (
+          <EnergyCalmBar
+            score={session.energyCalmScore}
+            title={t("card.energyCalm")}
+          />
         )}
 
         <Separator />

@@ -51,6 +51,8 @@
     "includeUnwantedEffectsAria": "Include unwanted effects on the public card for “{{strain}}”",
     "unwantedEffectsPublic": "Unwanted effects visible",
     "unwantedEffectsPrivate": "Unwanted effects hidden",
+    "effectIntensity": "Effect intensity",
+    "energyCalm": "Calm / energy",
     "detoxBadge_one": "after {{count}} clean day",
     "detoxBadge_other": "after {{count}} clean days"
   },

@@ -85,6 +85,10 @@ export interface LogDraft {
   detoxDaysPublic: boolean;
   /** Dedicated post-detox experience text (only meaningful with a streak). */
   detoxReview: string;
+  /** Per-effect intensity (1-10) for selected moods and unwanted effects. */
+  effectIntensities: Record<string, number>;
+  /** Bipolar energy/calm score: -5 very calm, 0 neutral, +5 very energized. */
+  energyCalmScore: number | null;
 }
 
 export const EMPTY_DRAFT: LogDraft = {
@@ -110,6 +114,8 @@ export const EMPTY_DRAFT: LogDraft = {
   unwantedEffectsPublic: false,
   detoxDaysPublic: false,
   detoxReview: "",
+  effectIntensities: {},
+  energyCalmScore: null,
 };
 
 /** Turns a display name into a collision-safe personal slug. */

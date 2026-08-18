@@ -13,6 +13,8 @@ import {
   isCatalogStrain,
 } from "./display";
 import { tempZone, tempZoneLabel } from "./temperature";
+import EffectRadarChart from "@/components/EffectRadarChart";
+import EnergyCalmBar from "@/components/EnergyCalmBar";
 
 /*
  * ============================================================================
@@ -227,6 +229,28 @@ export default function PublicSessionCard({
               </Badge>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Effect intensity radar — moods always public; unwanted-effect
+          intensities only arrive on the payload when the author opted in. */}
+      {Object.keys(session.effectIntensities).length > 0 && (
+        <div className="mt-8">
+          <EffectRadarChart
+            intensities={session.effectIntensities}
+            unwantedEffects={session.unwantedEffects}
+            title={t("card.effectIntensity")}
+          />
+        </div>
+      )}
+
+      {/* Energy / calm bipolar bar */}
+      {session.energyCalmScore !== null && (
+        <div className="mt-8">
+          <EnergyCalmBar
+            score={session.energyCalmScore}
+            title={t("card.energyCalm")}
+          />
         </div>
       )}
 

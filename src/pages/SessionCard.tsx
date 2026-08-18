@@ -168,13 +168,15 @@ export default function SessionCard() {
             </Button>
             <p className="text-sm text-muted-foreground">{t("cta.subtext")}</p>
           </div>
-
-          {/* 4 · SHARE ROW — copy link, X, Reddit */}
-          <div className="vl-enter" style={{ animationDelay: "210ms" }}>
-            <ShareRow session={session} strainName={strainName} />
-          </div>
         </>
       )}
+
+      {/* Share row — copy link, download image, X, Reddit. The owner gets it
+          even on private sessions (download works with their token); public
+          sessions get it for everyone. */}
+      <div className="vl-enter" style={{ animationDelay: "210ms" }}>
+        <ShareRow session={session} strainName={strainName} />
+      </div>
 
       {/* 5 · Legal line (spec decision 5) */}
       <p

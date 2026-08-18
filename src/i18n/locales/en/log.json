@@ -10,6 +10,8 @@
     "experience": "Experience",
     "rating": "Rating",
     "unwantedEffects": "Unwanted effects",
+    "effectIntensity": "Effect intensity",
+    "energyCalm": "Calm / energy",
     "notes": "Notes",
     "publish": "Publish"
   },
@@ -38,6 +40,17 @@
     "toggle": "Did anything feel off?",
     "description": "Anything that detracted from the experience — optional.",
     "add": "Add your own unwanted effect"
+  },
+  "effectIntensity": {
+    "empty": "Pick moods or unwanted effects above to rate their intensity.",
+    "sliderAria": "Intensity of {{effect}}"
+  },
+  "energyCalm": {
+    "calm": "Calm",
+    "neutral": "Neutral",
+    "energized": "Energized",
+    "sliderAria": "Energy versus calm",
+    "skip": "Skip this"
   },
   "detox": {
     "bannerTitle_one": "{{count}} clean day — this session counts double",

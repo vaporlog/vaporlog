@@ -24,6 +24,8 @@ import TemperatureSlider from "@/components/log/TemperatureSlider";
 import ChipGroup from "@/components/log/ChipGroup";
 import RatingScale from "@/components/log/RatingScale";
 import LikeDislike from "@/components/log/LikeDislike";
+import EffectIntensityList from "@/components/log/EffectIntensityList";
+import EnergyCalmSlider from "@/components/log/EnergyCalmSlider";
 import {
   addPersonalVocab,
   clearDraft,
@@ -253,6 +255,21 @@ export default function LogSession() {
     saveDraft(draft);
   }, [draft]);
 
+  // Keep intensities in sync with the selected effects: deselecting a tag
+  // drops its intensity so the payload never carries stale keys.
+  useEffect(() => {
+    const selected = new Set([...draft.moods, ...draft.unwantedEffects]);
+    const stale = Object.keys(draft.effectIntensities).filter(
+      (tag) => !selected.has(tag),
+    );
+    if (stale.length === 0) return;
+    setDraft((d) => {
+      const next = { ...d.effectIntensities };
+      for (const tag of stale) delete next[tag];
+      return { ...d, effectIntensities: next };
+    });
+  }, [draft.moods, draft.unwantedEffects, draft.effectIntensities]);
+
   // Announce a restored draft once — reassurance, not noise.
   const announcedRestore = useRef(false);
   useEffect(() => {
@@ -431,6 +448,8 @@ export default function LogSession() {
       detoxDays: streak >= 1 ? streak : null,
       detoxDaysPublic: streak >= 1 && draft.detoxDaysPublic,
       detoxReview: draft.detoxReview.trim(),
+      effectIntensities: draft.effectIntensities,
+      energyCalmScore: draft.energyCalmScore,
       notes: draft.notes.trim(),
       isPublic: draft.isPublic,
       author: getProfile()?.username ?? "anonymous",
@@ -799,7 +818,32 @@ export default function LogSession() {
           </div>
         </Section>
 
-        <Section step={8} title={t("sections.notes")} hint={t("optional")}>
+        <Section
+          step={8}
+          title={t("sections.effectIntensity")}
+          hint={t("optional")}
+        >
+          <EffectIntensityList
+            effects={[...draft.moods, ...draft.unwantedEffects]}
+            unwantedEffects={draft.unwantedEffects}
+            intensities={draft.effectIntensities}
+            onIntensityChange={(effect, intensity) =>
+              setDraft((d) => ({
+                ...d,
+                effectIntensities: { ...d.effectIntensities, [effect]: intensity },
+              }))
+            }
+          />
+        </Section>
+
+        <Section step={9} title={t("sections.energyCalm")} hint={t("optional")}>
+          <EnergyCalmSlider
+            value={draft.energyCalmScore}
+            onChange={(value) => update("energyCalmScore", value)}
+          />
+        </Section>
+
+        <Section step={10} title={t("sections.notes")} hint={t("optional")}>
           <Textarea
             value={draft.notes}
             onChange={(e) => update("notes", e.target.value)}
@@ -809,7 +853,7 @@ export default function LogSession() {
           />
         </Section>
 
-        <Section step={9} title={t("sections.publish")}>
+        <Section step={11} title={t("sections.publish")}>
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
               <div className="flex min-w-0 flex-col gap-1">

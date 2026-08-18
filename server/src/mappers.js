@@ -72,6 +72,15 @@ export function rowToSession(row) {
     detoxDays: Number.isInteger(row.detox_days) ? row.detox_days : null,
     detoxDaysPublic: row.detox_days_public === true,
     detoxReview: row.detox_review ?? "",
+    effectIntensities:
+      row.effect_intensities && typeof row.effect_intensities === "object"
+        ? row.effect_intensities
+        : typeof row.effect_intensities === "string"
+          ? JSON.parse(row.effect_intensities)
+          : {},
+    energyCalmScore: Number.isInteger(row.energy_calm_score)
+      ? row.energy_calm_score
+      : null,
     notes: row.notes ?? "",
     isPublic: row.is_public,
     author:

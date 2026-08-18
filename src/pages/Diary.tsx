@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
-import { Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { SearchInput } from "@/components/ui/search-input";
 import { ActivityChart } from "@/components/diary/ActivityChart";
 import { HighlightsRow } from "@/components/diary/HighlightsRow";
 import { DiaryHeader } from "@/components/diary/DiaryHeader";
@@ -145,30 +145,14 @@ export default function Diary() {
 
           {/* Search — filters the list live; stats stay global. */}
           <div className="flex flex-col gap-1.5">
-            <div className="relative">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t("search.placeholder")}
-                aria-label={t("search.ariaLabel")}
-                className="h-11 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-base outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-foreground/40"
-              />
-              {searching ? (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label={t("search.clearAria")}
-                  className="pressable absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <X className="size-4" aria-hidden="true" />
-                </button>
-              ) : null}
-            </div>
+            <SearchInput
+              value={query}
+              onChange={setQuery}
+              placeholder={t("search.placeholder")}
+              aria-label={t("search.ariaLabel")}
+              onClear={() => setQuery("")}
+              clearAriaLabel={t("search.clearAria")}
+            />
             {searching ? (
               <p className="text-xs text-muted-foreground" role="status">
                 {t("search.results", {

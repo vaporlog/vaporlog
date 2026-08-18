@@ -7,6 +7,11 @@
     "title": "Cargando la comunidad…",
     "subtitle": "Las sesiones públicas de todos los miembros están en camino."
   },
+  "search": {
+    "placeholder": "Busca en la comunidad…",
+    "ariaLabel": "Buscar en la comunidad",
+    "clearAria": "Limpiar búsqueda"
+  },
   "filters": {
     "byZone": "Filtrar por zona de temperatura",
     "byDevice": "Filtrar por vaporizador",

@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/empty";
 import { usePublicSessions, useStrains } from "@/lib/data";
 import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
+import { SearchInput } from "@/components/ui/search-input";
 import FeedFilters from "@/components/feed/FeedFilters";
 import FeedSessionCard from "@/components/feed/FeedSessionCard";
+import { displayDeviceName, displayStrainName } from "@/components/feed/feed-utils";
 import {
   ALL_DEVICES,
   ALL_MOODS,
@@ -49,6 +51,7 @@ export default function Feed() {
   // whenever a session is published/unpublished.
   const { sessions, loading } = usePublicSessions();
   const [filters, setFilters] = useState<FeedFilterState>(INITIAL_FILTERS);
+  const [query, setQuery] = useState("");
 
   // The empty feed's call to action depends on auth state; re-read it on
   // sign-in / sign-out events so the page reacts without a remount.
@@ -68,11 +71,30 @@ export default function Feed() {
 
   const devices = useMemo(() => deviceOptions(sessions), [sessions]);
   const moods = useMemo(() => moodOptions(sessions), [sessions]);
+
+  // Free-text search over what a feed card shows: strain, device, moods,
+  // author handle. Combined with the structured filters below (AND).
+  const searched = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q === "") return sessions;
+    return sessions.filter((session) =>
+      [
+        displayStrainName(session.strainSlug),
+        displayDeviceName(session.deviceSlug),
+        session.author,
+        ...session.moods,
+      ]
+        .join("\n")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [sessions, query]);
+
   const visible = useMemo(
-    () => sessions.filter((session) => sessionMatchesFilters(session, filters)),
-    [sessions, filters],
+    () => searched.filter((session) => sessionMatchesFilters(session, filters)),
+    [searched, filters],
   );
-  const filtering = hasActiveFilters(filters);
+  const filtering = hasActiveFilters(filters) || query.trim() !== "";
 
   const countLine = filtering
     ? t("count.filtered", { count: sessions.length, visible: visible.length })
@@ -101,6 +123,15 @@ export default function Feed() {
         </div>
       ) : sessions.length > 0 ? (
         <>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder={t("search.placeholder")}
+            aria-label={t("search.ariaLabel")}
+            onClear={() => setQuery("")}
+            clearAriaLabel={t("search.clearAria")}
+          />
+
           <div className="flex flex-wrap items-center gap-2">
             <FeedFilters
               devices={devices}
@@ -117,7 +148,10 @@ export default function Feed() {
             {filtering && (
               <button
                 type="button"
-                onClick={() => setFilters(INITIAL_FILTERS)}
+                onClick={() => {
+                  setFilters(INITIAL_FILTERS);
+                  setQuery("");
+                }}
                 className="pressable rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
               >
                 {t("filters.clear")}
@@ -145,7 +179,10 @@ export default function Feed() {
               </p>
               <button
                 type="button"
-                onClick={() => setFilters(INITIAL_FILTERS)}
+                onClick={() => {
+                  setFilters(INITIAL_FILTERS);
+                  setQuery("");
+                }}
                 className="pressable mt-1 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
               >
                 {t("filters.clear")}

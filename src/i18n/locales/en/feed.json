@@ -7,6 +7,11 @@
     "title": "Loading the feed…",
     "subtitle": "Public sessions from every member are on their way."
   },
+  "search": {
+    "placeholder": "Search the community feed…",
+    "ariaLabel": "Search the community feed",
+    "clearAria": "Clear search"
+  },
   "filters": {
     "byZone": "Filter by temperature zone",
     "byDevice": "Filter by device",

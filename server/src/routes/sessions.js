@@ -28,6 +28,7 @@ const SESSION_COLUMNS = `
   s.duration_min, s.amount_g, s.rating, s.aromas, s.flavors, s.moods,
   s.activities, s.unwanted_effects, s.liked, s.unwanted_effects_public,
   s.detox_days, s.detox_days_public, s.detox_review,
+  s.effect_intensities, s.energy_calm_score,
   s.notes, s.is_public, s.author, s.created_at
 `;
 
@@ -36,6 +37,29 @@ function asBooleanOrNull(value) {
   if (value === true) return true;
   if (value === false) return false;
   return null;
+}
+
+/** Validates the per-effect intensity map: keys are tags, values 1-10. */
+function asEffectIntensities(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  const out = {};
+  for (const [tag, intensity] of Object.entries(value)) {
+    if (typeof tag !== "string" || tag.trim() === "") continue;
+    const n = Number(intensity);
+    if (Number.isInteger(n) && n >= 1 && n <= 10) {
+      out[tag] = n;
+    }
+  }
+  return out;
+}
+
+/** Validates the bipolar energy/calm score: int -5..5 or null. */
+function asEnergyCalmScore(value) {
+  if (value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= -5 && n <= 5 ? n : null;
 }
 
 /** Coerces an arbitrary JSON value to a clean string[]. */
@@ -80,6 +104,14 @@ export default async function sessionRoutes(app) {
       unwantedEffects: session.unwantedEffectsPublic ? session.unwantedEffects : [],
       detoxDays: session.detoxDaysPublic ? session.detoxDays : null,
       detoxReview: session.detoxDaysPublic ? session.detoxReview : "",
+      // Effect intensities follow the same rule: mood intensities are public;
+      // unwanted-effect intensities only when the author opted in.
+      effectIntensities: Object.fromEntries(
+        Object.entries(session.effectIntensities).filter(([tag]) => {
+          if (session.moods.includes(tag)) return true;
+          return session.unwantedEffectsPublic && session.unwantedEffects.includes(tag);
+        }),
+      ),
     }));
     return { sessions };
   });
@@ -143,13 +175,16 @@ export default async function sessionRoutes(app) {
         typeof body.detoxReview === "string"
           ? body.detoxReview.slice(0, 500)
           : "";
+      const effectIntensities = asEffectIntensities(body.effectIntensities);
+      const energyCalmScore = asEnergyCalmScore(body.energyCalmScore);
       const { rows } = await pool.query(
         `insert into sessions (
            id, user_id, strain_slug, device_slug, temperature_c, duration_min,
            amount_g, rating, aromas, flavors, moods, activities, unwanted_effects,
            liked, unwanted_effects_public, detox_days, detox_days_public,
-           detox_review, notes, is_public, author, created_at
-         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+           detox_review, effect_intensities, energy_calm_score, notes, is_public,
+           author, created_at
+         ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
          on conflict (id) do update set
            strain_slug   = excluded.strain_slug,
            device_slug   = excluded.device_slug,
@@ -167,6 +202,8 @@ export default async function sessionRoutes(app) {
            detox_days          = excluded.detox_days,
            detox_days_public   = excluded.detox_days_public,
            detox_review        = excluded.detox_review,
+           effect_intensities  = excluded.effect_intensities,
+           energy_calm_score   = excluded.energy_calm_score,
            notes         = excluded.notes,
            is_public     = excluded.is_public,
            author        = excluded.author,
@@ -191,6 +228,8 @@ export default async function sessionRoutes(app) {
           detoxDays,
           detoxDaysPublic,
           detoxReview,
+          effectIntensities,
+          energyCalmScore,
           typeof body.notes === "string" ? body.notes : "",
           body.isPublic === true,
           request.account.username, // author stamped from the caller's handle
