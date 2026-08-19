@@ -61,7 +61,7 @@ export default function Diary() {
         ...session.aromas.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
         ...session.flavors.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
         ...session.moods.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
-        ...session.activities,
+        ...session.activities.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
         ...session.unwantedEffects.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
       ]
         .join("\n")
