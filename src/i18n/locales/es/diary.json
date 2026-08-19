@@ -40,6 +40,9 @@
   "card": {
     "public": "Pública",
     "private": "Privada",
+    "publicLink": "Enlace público",
+    "inFeed": "Mostrar en comunidad",
+    "inFeedAria": "Mostrar la sesión de “{{strain}}” en la comunidad",
     "viewPublicCard": "Ver tarjeta pública",
     "viewCard": "Ver tarjeta",
     "logAgain": "Registrar de nuevo",
@@ -51,6 +54,9 @@
     "includeUnwantedEffectsAria": "Incluir efectos no deseados en la tarjeta pública de “{{strain}}”",
     "unwantedEffectsPublic": "Efectos no deseados visibles",
     "unwantedEffectsPrivate": "Efectos no deseados ocultos",
+    "includeActivitiesAria": "Incluir actividades en la tarjeta pública de “{{strain}}”",
+    "activitiesPublic": "Actividades visibles",
+    "activitiesPrivate": "Actividades ocultas",
     "effectIntensity": "Intensidad de efectos",
     "energyCalm": "Calma / energía",
     "detoxBadge_one": "tras {{count}} día limpio",
@@ -84,8 +90,12 @@
   "toggle": {
     "nowPublic": "La sesión ahora es pública — cualquiera con el enlace puede ver su tarjeta.",
     "nowPrivate": "La sesión vuelve a ser privada.",
+    "nowInFeed": "La sesión ahora aparece en la comunidad.",
+    "nowOutOfFeed": "La sesión ya no aparece en la comunidad.",
     "unwantedEffectsNowPublic": "Los efectos no deseados ahora son visibles en la tarjeta pública.",
     "unwantedEffectsNowPrivate": "Los efectos no deseados ahora están ocultos en la tarjeta pública.",
+    "activitiesNowPublic": "Las actividades ahora son visibles en la tarjeta pública.",
+    "activitiesNowPrivate": "Las actividades ahora están ocultas en la tarjeta pública.",
     "error": "No se pudo actualizar esa sesión",
     "errorDescription": "Revisa tu conexión e inténtalo de nuevo."
   },

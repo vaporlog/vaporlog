@@ -15,6 +15,23 @@
   "legal": "Solo mayores de 21 años, donde sea legal. Las calificaciones y los efectos son la experiencia de una persona, no un consejo médico.",
   "tagline": "Toda gran sesión merece un testigo.",
   "privateNote": "Sesión privada — solo tú puedes ver esta página.",
+  "owner": {
+    "publicLink": "Enlace público",
+    "showInFeed": "Mostrar en comunidad",
+    "includeUnwantedEffects": "Incluir efectos no deseados",
+    "includeActivities": "Incluir actividades"
+  },
+  "toggle": {
+    "nowPublic": "La sesión ahora es pública — cualquiera con el enlace puede ver su tarjeta.",
+    "nowPrivate": "La sesión vuelve a ser privada.",
+    "nowInFeed": "La sesión ahora aparece en la comunidad.",
+    "nowOutOfFeed": "La sesión ya no aparece en la comunidad.",
+    "unwantedEffectsNowPublic": "Los efectos no deseados ahora son visibles en la tarjeta pública.",
+    "unwantedEffectsNowPrivate": "Los efectos no deseados ahora están ocultos en la tarjeta pública.",
+    "activitiesNowPublic": "Las actividades ahora son visibles en la tarjeta pública.",
+    "activitiesNowPrivate": "Las actividades ahora están ocultas en la tarjeta pública.",
+    "error": "No se pudo actualizar esa sesión"
+  },
   "learn": {
     "ariaLabel": "Qué significa esta temperatura",
     "title": "Leyendo el ritual",
@@ -45,6 +62,7 @@
     "aromaFlavor": "Aroma · Sabor",
     "liked": "Te gustó",
     "unwantedEffects": "Efectos no deseados",
+    "activities": "Actividades",
     "effectIntensity": "Intensidad de efectos",
     "energyCalm": "Calma / energía",
     "detoxBadge_one": "tras {{count}} día limpio",

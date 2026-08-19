@@ -230,22 +230,33 @@ function buildEffectChartSvg(
     })
     .join("");
 
-  // Data polygon.
-  const dataPoints = entries.map(([tag, intensity], i) => {
+  // Data polygons: one for moods (herb), one for unwanted effects (red).
+  // Zero-radius points keep the polygon closed without distorting the shape.
+  const moodPoints = entries.map(([tag, intensity], i) => {
     const angle = startAngle + i * angleStep;
-    const r = (Math.min(Math.max(Number(intensity) || 0, 0), 10) / 10) * chartRadius;
-    return {
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-      isUnwanted: unwanted.has(tag),
-    };
+    const r = unwanted.has(tag)
+      ? 0
+      : (Math.min(Math.max(Number(intensity) || 0, 0), 10) / 10) * chartRadius;
+    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
   });
-  const polygon = `<polygon points="${dataPoints.map((p) => `${p.x},${p.y}`).join(" ")}" fill="${herb}" fill-opacity="0.22" stroke="${herb}" stroke-width="2" />`;
-  const dots = dataPoints
-    .map(
-      (p) =>
-        `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${p.isUnwanted ? red : herb}" />`,
-    )
+  const unwantedPoints = entries.map(([tag, intensity], i) => {
+    const angle = startAngle + i * angleStep;
+    const r = unwanted.has(tag)
+      ? (Math.min(Math.max(Number(intensity) || 0, 0), 10) / 10) * chartRadius
+      : 0;
+    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+  });
+  const moodPolygon = `<polygon points="${moodPoints.join(" ")}" fill="${herb}" fill-opacity="0.22" stroke="${herb}" stroke-width="2" />`;
+  const unwantedPolygon = `<polygon points="${unwantedPoints.join(" ")}" fill="${red}" fill-opacity="0.22" stroke="${red}" stroke-width="2" />`;
+  const dots = entries
+    .map(([tag, intensity], i) => {
+      const angle = startAngle + i * angleStep;
+      const r = (Math.min(Math.max(Number(intensity) || 0, 0), 10) / 10) * chartRadius;
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+      const color = unwanted.has(tag) ? red : herb;
+      return `<circle cx="${x}" cy="${y}" r="4" fill="${color}" />`;
+    })
     .join("");
 
   // Effect labels around the rim.
@@ -264,7 +275,7 @@ function buildEffectChartSvg(
     })
     .join("");
 
-  return `${grid}${axes}${polygon}${dots}${labels}`;
+  return `${grid}${axes}${moodPolygon}${unwantedPolygon}${dots}${labels}`;
 }
 
 /** Truncates text with an ellipsis until it fits `maxWidth` at `fontSize`. */
@@ -992,11 +1003,9 @@ export default async function ogImageRoutes(app) {
       // The share UI picks the card design via ?t= (see OG_TEMPLATES in
       // og.js); unknown values fall back to the default split layout.
       const template = normalizeTemplate(request.query?.t);
-      // The owner may include unwanted effects on a private card even when
-      // they are hidden from public payloads; ?includeUnwanted=0 hides them.
-      const includeAllEffects = isOwner
-        ? request.query?.includeUnwanted !== "0"
-        : session.unwanted_effects_public === true;
+      // Content flags live on the session row: the owner's own toggles
+      // decide what the card shows, same rule for public and private views.
+      const includeAllEffects = session.unwanted_effects_public === true;
       // sessions has no updated_at; the rendered content itself is the key,
       // so editing the session changes the key and invalidates naturally.
       const cacheKey = `${id}:${template}:${includeAllEffects}:${JSON.stringify(session)}`;

@@ -53,6 +53,8 @@ export interface SessionLog {
   flavors: string[];
   moods: string[];
   activities: string[];
+  /** Whether activities are included when the session is published. */
+  activitiesPublic: boolean;
   /** Tags from the controlled unwanted-effects vocabulary + custom additions. */
   unwantedEffects: string[];
   /** Optional thumbs-up / thumbs-down sentiment. null = not answered. */
@@ -78,7 +80,10 @@ export interface SessionLog {
   /** Bipolar -5..+5: -5 very calm, 0 neutral, +5 very energized. null = skipped. */
   energyCalmScore: number | null;
   notes: string;
+  /** Whether the /s/:id link is viewable by anyone. */
   isPublic: boolean;
+  /** Whether the session appears in the community feed. */
+  inFeed: boolean;
   /** Pseudonym — never a real name or email. */
   author: string;
   /**

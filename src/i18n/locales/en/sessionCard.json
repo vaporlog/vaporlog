@@ -15,6 +15,23 @@
   "legal": "21+ only, where legal. Ratings and effects are one person's experience, not medical advice.",
   "tagline": "Every great session deserves a witness.",
   "privateNote": "Private session — only you can see this page.",
+  "owner": {
+    "publicLink": "Public link",
+    "showInFeed": "Show in feed",
+    "includeUnwantedEffects": "Include unwanted effects",
+    "includeActivities": "Include activities"
+  },
+  "toggle": {
+    "nowPublic": "Session is now public — anyone with the link can view its card.",
+    "nowPrivate": "Session is now private again.",
+    "nowInFeed": "Session is now in the community feed.",
+    "nowOutOfFeed": "Session is no longer in the community feed.",
+    "unwantedEffectsNowPublic": "Unwanted effects are now visible on the public card.",
+    "unwantedEffectsNowPrivate": "Unwanted effects are now hidden from the public card.",
+    "activitiesNowPublic": "Activities are now visible on the public card.",
+    "activitiesNowPrivate": "Activities are now hidden from the public card.",
+    "error": "Couldn't update that session"
+  },
   "learn": {
     "ariaLabel": "What this temperature means",
     "title": "Reading the ritual",
@@ -45,6 +62,7 @@
     "aromaFlavor": "Aroma · Flavor",
     "liked": "Liked",
     "unwantedEffects": "Unwanted effects",
+    "activities": "Activities",
     "effectIntensity": "Effect intensity",
     "energyCalm": "Calm / energy",
     "detoxBadge_one": "after {{count}} clean day",

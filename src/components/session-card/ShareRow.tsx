@@ -102,15 +102,11 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /** Fetches an OG card with the owner's Bearer token; returns a blob URL. */
-async function fetchCardBlobUrl(
-  sessionId: string,
-  template: OgTemplate,
-  includeUnwanted: boolean,
-) {
+async function fetchCardBlobUrl(sessionId: string, template: OgTemplate) {
   const token = getToken();
   if (!token) return null;
   const response = await fetch(
-    `/api/og/s/${sessionId}/card.png?t=${template}&includeUnwanted=${includeUnwanted ? "1" : "0"}`,
+    `/api/og/s/${sessionId}/card.png?t=${template}`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!response.ok) return null;
@@ -126,7 +122,6 @@ function TemplateThumbnail({
   sessionId,
   template,
   isPublic,
-  includeUnwanted,
   active,
   onSelect,
   label,
@@ -134,7 +129,6 @@ function TemplateThumbnail({
   sessionId: string;
   template: OgTemplate;
   isPublic: boolean;
-  includeUnwanted: boolean;
   active: boolean;
   onSelect: () => void;
   label: string;
@@ -146,7 +140,7 @@ function TemplateThumbnail({
     if (isPublic) return;
     let cancelled = false;
     let objectUrl: string | null = null;
-    void fetchCardBlobUrl(sessionId, template, includeUnwanted).then((url) => {
+    void fetchCardBlobUrl(sessionId, template).then((url) => {
       if (cancelled) {
         if (url) URL.revokeObjectURL(url);
         return;
@@ -158,7 +152,7 @@ function TemplateThumbnail({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [sessionId, template, isPublic, includeUnwanted]);
+  }, [sessionId, template, isPublic]);
 
   const src = isPublic
     ? `/api/og/s/${sessionId}/card.png?t=${template}`
@@ -210,8 +204,6 @@ export default function ShareRow({
   const { t } = useTranslation("sessionCard");
   const [template, setTemplate] = useState<OgTemplate>(readPreferredTemplate);
   const [downloading, setDownloading] = useState(false);
-  // Private sessions: owner picks whether unwanted effects show on the card.
-  const [showUnwanted, setShowUnwanted] = useState(true);
   const url = canonicalUrl(session.id, template);
   const text = shareText(session, strainName);
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
@@ -245,7 +237,7 @@ export default function ShareRow({
     try {
       const blobUrl = session.isPublic
         ? `/api/og/s/${session.id}/card.png?t=${template}`
-        : await fetchCardBlobUrl(session.id, template, showUnwanted);
+        : await fetchCardBlobUrl(session.id, template);
       if (!blobUrl) {
         toast.error(t("share.downloadError"));
         return;
@@ -288,7 +280,6 @@ export default function ShareRow({
                 sessionId={session.id}
                 template={tp}
                 isPublic={session.isPublic}
-                includeUnwanted={showUnwanted}
                 active={template === tp}
                 onSelect={() => selectTemplate(tp)}
                 label={t(`share.templates.${tp}`)}
@@ -297,20 +288,6 @@ export default function ShareRow({
           </div>
         ))}
       </div>
-
-      {/* Private sessions: let the owner strip unwanted effects from the
-          downloaded card without touching the session's public flag. */}
-      {!session.isPublic && session.unwantedEffects.length > 0 ? (
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={showUnwanted}
-            onChange={(event) => setShowUnwanted(event.target.checked)}
-            className="size-4 accent-herb"
-          />
-          {t("share.includeUnwanted")}
-        </label>
-      ) : null}
 
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
         <Button

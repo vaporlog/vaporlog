@@ -5,7 +5,9 @@ import { DiarySessionCard } from "./DiarySessionCard";
 interface SessionListProps {
   sessions: SessionLog[];
   onTogglePublic: (id: string) => void;
+  onToggleInFeed: (id: string) => void;
   onToggleUnwantedEffectsPublic: (id: string) => void;
+  onToggleActivitiesPublic: (id: string) => void;
   /** Session id whose publish toggle is currently awaiting the cloud. */
   pendingToggleId?: string | null;
 }
@@ -14,7 +16,9 @@ interface SessionListProps {
 export function SessionList({
   sessions,
   onTogglePublic,
+  onToggleInFeed,
   onToggleUnwantedEffectsPublic,
+  onToggleActivitiesPublic,
   pendingToggleId = null,
 }: SessionListProps) {
   const { t } = useTranslation("diary");
@@ -32,7 +36,9 @@ export function SessionList({
             key={session.id}
             session={session}
             onTogglePublic={onTogglePublic}
+            onToggleInFeed={onToggleInFeed}
             onToggleUnwantedEffectsPublic={onToggleUnwantedEffectsPublic}
+            onToggleActivitiesPublic={onToggleActivitiesPublic}
             pending={session.id === pendingToggleId}
           />
         ))}

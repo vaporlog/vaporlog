@@ -75,12 +75,14 @@
     "placeholder": "¿Cómo estuvo? Terpenos, efectos, contexto — ¿la primera del día? — ¿qué harías diferente…?"
   },
   "publish": {
-    "public": "Pública",
-    "private": "Privada",
-    "description": "Privada por defecto. Las sesiones públicas aparecen como tarjetas de las que otros pueden aprender; solo se muestra tu seudónimo.",
-    "switchLabel": "Hacer pública esta sesión",
+    "publicLink": "Enlace público",
+    "publicLinkDescription": "Cualquiera con el enlace puede ver la tarjeta de esta sesión.",
+    "showInFeed": "Mostrar en la comunidad",
+    "showInFeedDescription": "La sesión aparece en el feed público de la comunidad.",
     "includeUnwantedEffects": "Incluir efectos no deseados",
-    "includeUnwantedEffectsDescription": "Si está activo, tus etiquetas de efectos no deseados también aparecerán en la tarjeta pública."
+    "includeUnwantedEffectsDescription": "Si está activo, tus etiquetas de efectos no deseados también aparecerán en la tarjeta pública.",
+    "includeActivities": "Incluir actividades",
+    "includeActivitiesDescription": "Si está activo, tus etiquetas de actividades también aparecerán en la tarjeta pública."
   },
   "sticky": {
     "pickStrain": "Elige un strain",

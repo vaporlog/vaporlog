@@ -24,7 +24,9 @@ import {
 interface DiarySessionCardProps {
   session: SessionLog;
   onTogglePublic: (id: string) => void;
+  onToggleInFeed: (id: string) => void;
   onToggleUnwantedEffectsPublic: (id: string) => void;
+  onToggleActivitiesPublic: (id: string) => void;
   /** True while this card's publish/unpublish request is in flight. */
   pending?: boolean;
 }
@@ -36,7 +38,9 @@ interface DiarySessionCardProps {
 export function DiarySessionCard({
   session,
   onTogglePublic,
+  onToggleInFeed,
   onToggleUnwantedEffectsPublic,
+  onToggleActivitiesPublic,
   pending = false,
 }: DiarySessionCardProps) {
   const { t } = useTranslation("diary");
@@ -134,6 +138,21 @@ export function DiarySessionCard({
           </div>
         )}
 
+        {/* Activities — private by default; owner can publish per session */}
+        {session.activities.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {session.activities.map((activity) => (
+              <Badge
+                key={activity}
+                variant="outline"
+                className="font-normal text-muted-foreground"
+              >
+                {translateTag(activity, i18n.language)}
+              </Badge>
+            ))}
+          </div>
+        )}
+
         {/* Notes excerpt */}
         {session.notes.trim().length > 0 && (
           <p className="line-clamp-2 text-sm leading-relaxed text-foreground/80">
@@ -163,6 +182,7 @@ export function DiarySessionCard({
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex flex-col gap-3">
+            {/* Public link */}
             <div className="flex items-center gap-2">
               <Switch
                 id={`public-${session.id}`}
@@ -175,10 +195,8 @@ export function DiarySessionCard({
                 htmlFor={`public-${session.id}`}
                 className="cursor-pointer text-sm text-muted-foreground"
               >
-                {session.isPublic ? t("card.public") : t("card.private")}
+                {t("card.publicLink")}
               </Label>
-              {/* The card link works for private sessions too: /s/:id falls
-                  back to the owner's own sessions, so only they can open it. */}
               <Link
                 to={`/s/${encodeURIComponent(session.id)}`}
                 className="pressable text-sm font-medium text-herb underline-offset-4 transition-colors duration-150 hover:underline"
@@ -187,26 +205,66 @@ export function DiarySessionCard({
               </Link>
             </div>
 
-            {session.isPublic && (
+            {/* Community feed */}
+            <div className="flex items-center gap-2">
+              <Switch
+                id={`in-feed-${session.id}`}
+                checked={session.inFeed}
+                onCheckedChange={() => onToggleInFeed(session.id)}
+                disabled={pending}
+                aria-label={t("card.inFeedAria", { strain: strainName })}
+              />
+              <Label
+                htmlFor={`in-feed-${session.id}`}
+                className="cursor-pointer text-sm text-muted-foreground"
+              >
+                {t("card.inFeed")}
+              </Label>
+            </div>
+
+            {/* Content flags — always editable */}
+            <div className="flex items-center gap-2">
+              <Switch
+                id={`unwanted-effects-public-${session.id}`}
+                checked={session.unwantedEffectsPublic}
+                onCheckedChange={() =>
+                  onToggleUnwantedEffectsPublic(session.id)
+                }
+                disabled={pending}
+                aria-label={t("card.includeUnwantedEffectsAria", {
+                  strain: strainName,
+                })}
+              />
+              <Label
+                htmlFor={`unwanted-effects-public-${session.id}`}
+                className="cursor-pointer text-sm text-muted-foreground"
+              >
+                {session.unwantedEffectsPublic
+                  ? t("card.unwantedEffectsPublic")
+                  : t("card.unwantedEffectsPrivate")}
+              </Label>
+            </div>
+
+            {session.activities.length > 0 && (
               <div className="flex items-center gap-2">
                 <Switch
-                  id={`unwanted-effects-public-${session.id}`}
-                  checked={session.unwantedEffectsPublic}
+                  id={`activities-public-${session.id}`}
+                  checked={session.activitiesPublic}
                   onCheckedChange={() =>
-                    onToggleUnwantedEffectsPublic(session.id)
+                    onToggleActivitiesPublic(session.id)
                   }
                   disabled={pending}
-                  aria-label={t("card.includeUnwantedEffectsAria", {
+                  aria-label={t("card.includeActivitiesAria", {
                     strain: strainName,
                   })}
                 />
                 <Label
-                  htmlFor={`unwanted-effects-public-${session.id}`}
+                  htmlFor={`activities-public-${session.id}`}
                   className="cursor-pointer text-sm text-muted-foreground"
                 >
-                  {session.unwantedEffectsPublic
-                    ? t("card.unwantedEffectsPublic")
-                    : t("card.unwantedEffectsPrivate")}
+                  {session.activitiesPublic
+                    ? t("card.activitiesPublic")
+                    : t("card.activitiesPrivate")}
                 </Label>
               </div>
             )}

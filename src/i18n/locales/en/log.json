@@ -75,12 +75,14 @@
     "placeholder": "How was it? Terps, effects, context — first of the day? — what you'd do differently…"
   },
   "publish": {
-    "public": "Public",
-    "private": "Private",
-    "description": "Private by default. Public sessions appear as cards others can learn from — only your pseudonym shows.",
-    "switchLabel": "Make this session public",
+    "publicLink": "Public link",
+    "publicLinkDescription": "Anyone with the link can view this session's card.",
+    "showInFeed": "Show in community feed",
+    "showInFeedDescription": "The session appears in the public community feed.",
     "includeUnwantedEffects": "Include unwanted effects",
-    "includeUnwantedEffectsDescription": "If on, your unwanted-effects tags also show on the public session card."
+    "includeUnwantedEffectsDescription": "If on, your unwanted-effects tags also show on the public session card.",
+    "includeActivities": "Include activities",
+    "includeActivitiesDescription": "If on, your activity tags also show on the public session card."
   },
   "sticky": {
     "pickStrain": "Pick a strain",

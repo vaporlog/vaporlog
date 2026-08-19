@@ -842,6 +842,100 @@ export async function toggleSessionUnwantedEffectsPublic(
   return updated;
 }
 
+/**
+ * Toggles `activitiesPublic` on one of the current account's own sessions
+ * (optimistic, with rollback + rethrow on failure). Returns the updated
+ * session, or `undefined` when the id does not belong to a personal session.
+ * Rejects when signed out.
+ */
+export async function toggleSessionActivitiesPublic(
+  id: string,
+): Promise<SessionLog | undefined> {
+  const account = getCurrentAccount();
+  if (!account) {
+    throw new Error("Sign in to update session privacy.");
+  }
+  const existing = mySessionsCache.find((s) => s.id === id);
+  if (!existing) return undefined;
+  const updated: SessionLog = {
+    ...existing,
+    activitiesPublic: !existing.activitiesPublic,
+  };
+  const snapshot = snapshotCaches();
+  setMyCache(
+    mySessionsCache.map((s) => (s.id === id ? updated : s)),
+    myState.loading,
+  );
+  if (updated.isPublic) {
+    upsertPublicCache(updated);
+  }
+  try {
+    await apiFetch<{ session: SessionLog }>(
+      `/sessions/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        body: { activitiesPublic: updated.activitiesPublic },
+        auth: true,
+      },
+    );
+  } catch (error) {
+    restoreCaches(snapshot);
+    throw error;
+  }
+  return updated;
+}
+
+/**
+ * Toggles `inFeed` on one of the current account's own sessions (optimistic,
+ * with rollback + rethrow on failure). Turning the feed listing on also
+ * turns the public link on; turning the public link off clears the feed
+ * listing. Returns the updated session, or `undefined` when the id does not
+ * belong to a personal session. Rejects when signed out.
+ */
+export async function toggleSessionInFeed(
+  id: string,
+): Promise<SessionLog | undefined> {
+  const account = getCurrentAccount();
+  if (!account) {
+    throw new Error("Sign in to update session privacy.");
+  }
+  const existing = mySessionsCache.find((s) => s.id === id);
+  if (!existing) return undefined;
+  const nextInFeed = !existing.inFeed;
+  const updated: SessionLog = {
+    ...existing,
+    inFeed: nextInFeed,
+    isPublic: nextInFeed ? true : existing.isPublic,
+  };
+  const snapshot = snapshotCaches();
+  setMyCache(
+    mySessionsCache.map((s) => (s.id === id ? updated : s)),
+    myState.loading,
+  );
+  if (updated.inFeed) {
+    upsertPublicCache(updated);
+  } else {
+    setPublicCloudCache(
+      publicCloudCache.filter((s) => s.id !== id),
+      publicReady,
+    );
+  }
+  try {
+    await apiFetch<{ session: SessionLog }>(
+      `/sessions/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        body: { inFeed: updated.inFeed },
+        auth: true,
+      },
+    );
+  } catch (error) {
+    restoreCaches(snapshot);
+    throw error;
+  }
+  return updated;
+}
+
 /* ------------------------------------------------------------------ */
 /* Public sessions (cross-account)                                     */
 /* ------------------------------------------------------------------ */

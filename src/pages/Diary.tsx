@@ -23,7 +23,9 @@ import {
 import {
   getProfile,
   toggleSessionPublic,
+  toggleSessionInFeed,
   toggleSessionUnwantedEffectsPublic,
+  toggleSessionActivitiesPublic,
   useMySessions,
   useStrains,
 } from "@/lib/data";
@@ -96,6 +98,24 @@ export default function Diary() {
     }
   };
 
+  const handleToggleInFeed = async (id: string) => {
+    if (pendingToggleId !== null) return;
+    setPendingToggleId(id);
+    try {
+      const updated = await toggleSessionInFeed(id);
+      if (!updated) return;
+      toast.success(
+        updated.inFeed ? t("toggle.nowInFeed") : t("toggle.nowOutOfFeed"),
+      );
+    } catch {
+      toast.error(t("toggle.error"), {
+        description: t("toggle.errorDescription"),
+      });
+    } finally {
+      setPendingToggleId(null);
+    }
+  };
+
    
   const handleToggleUnwantedEffectsPublic = async (id: string) => {
     if (pendingToggleId !== null) return;
@@ -107,6 +127,26 @@ export default function Diary() {
         updated.unwantedEffectsPublic
           ? t("toggle.unwantedEffectsNowPublic")
           : t("toggle.unwantedEffectsNowPrivate"),
+      );
+    } catch {
+      toast.error(t("toggle.error"), {
+        description: t("toggle.errorDescription"),
+      });
+    } finally {
+      setPendingToggleId(null);
+    }
+  };
+
+  const handleToggleActivitiesPublic = async (id: string) => {
+    if (pendingToggleId !== null) return;
+    setPendingToggleId(id);
+    try {
+      const updated = await toggleSessionActivitiesPublic(id);
+      if (!updated) return;
+      toast.success(
+        updated.activitiesPublic
+          ? t("toggle.activitiesNowPublic")
+          : t("toggle.activitiesNowPrivate"),
       );
     } catch {
       toast.error(t("toggle.error"), {
@@ -174,7 +214,9 @@ export default function Diary() {
             <SessionList
               sessions={filteredSessions}
               onTogglePublic={handleTogglePublic}
+              onToggleInFeed={handleToggleInFeed}
               onToggleUnwantedEffectsPublic={handleToggleUnwantedEffectsPublic}
+              onToggleActivitiesPublic={handleToggleActivitiesPublic}
               pendingToggleId={pendingToggleId}
             />
           )}

@@ -70,6 +70,8 @@ export interface LogDraft {
   flavors: string[];
   moods: string[];
   activities: string[];
+  /** Whether activities are included when publishing this session. */
+  activitiesPublic: boolean;
   unwantedEffects: string[];
   /** Custom tags the user appended per list (rendered after the vocab chips). */
   customAromas: string[];
@@ -78,7 +80,10 @@ export interface LogDraft {
   customActivities: string[];
   customUnwantedEffects: string[];
   notes: string;
+  /** Whether the /s/:id link is viewable by anyone. */
   isPublic: boolean;
+  /** Whether the session appears in the community feed. */
+  inFeed: boolean;
   /** Whether unwanted effects are included when publishing this session. */
   unwantedEffectsPublic: boolean;
   /** Whether the detox streak + review show on the public card. */
@@ -103,6 +108,7 @@ export const EMPTY_DRAFT: LogDraft = {
   flavors: [],
   moods: [],
   activities: [],
+  activitiesPublic: false,
   unwantedEffects: [],
   customAromas: [],
   customFlavors: [],
@@ -111,6 +117,7 @@ export const EMPTY_DRAFT: LogDraft = {
   customUnwantedEffects: [],
   notes: "",
   isPublic: false,
+  inFeed: false,
   unwantedEffectsPublic: false,
   detoxDaysPublic: false,
   detoxReview: "",

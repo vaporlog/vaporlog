@@ -21,9 +21,9 @@ interface EffectChartProps {
 /**
  * Effect intensity chart. Three or more effects render as a spider/radar;
  * one or two render as horizontal 0-10 bars (same slice style as the
- * energy/calm bar), which read clearer with so few axes. Unwanted-effect
- * labels and marks use destructive red; moods use herb. The card surface
- * follows the active theme (light/dark).
+ * energy/calm bar), which read clearer with so few axes. Unwanted effects
+ * render in destructive red; moods use herb. The card surface follows the
+ * active theme (light/dark).
  */
 export default function EffectChart({
   intensities,
@@ -36,7 +36,8 @@ export default function EffectChart({
   const unwanted = new Set(unwantedEffects);
   const data = entries.map(([effect, intensity]) => ({
     effect: translateTag(effect, i18n.language),
-    intensity,
+    moodIntensity: unwanted.has(effect) ? 0 : intensity,
+    unwantedIntensity: unwanted.has(effect) ? intensity : 0,
     isUnwanted: unwanted.has(effect),
   }));
 
@@ -82,24 +83,18 @@ export default function EffectChart({
                 axisLine={false}
               />
               <Radar
-                name="intensity"
-                dataKey="intensity"
+                name="mood"
+                dataKey="moodIntensity"
                 stroke="hsl(var(--herb))"
                 fill="hsl(var(--herb))"
-                fillOpacity={0.25}
-                dot={({ cx, cy, payload }) => (
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={3}
-                    fill={
-                      payload.isUnwanted
-                        ? "hsl(var(--destructive))"
-                        : "hsl(var(--herb))"
-                    }
-                    stroke="none"
-                  />
-                )}
+                fillOpacity={0.2}
+              />
+              <Radar
+                name="unwanted"
+                dataKey="unwantedIntensity"
+                stroke="hsl(var(--destructive))"
+                fill="hsl(var(--destructive))"
+                fillOpacity={0.2}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -107,7 +102,10 @@ export default function EffectChart({
       ) : (
         <div className="flex w-full max-w-sm flex-col gap-4">
           {data.map((entry) => {
-            const pct = (entry.intensity / 10) * 100;
+            const intensity = entry.isUnwanted
+              ? entry.unwantedIntensity
+              : entry.moodIntensity;
+            const pct = (intensity / 10) * 100;
             const colorClass = entry.isUnwanted
               ? "bg-destructive"
               : "bg-herb";
@@ -129,7 +127,7 @@ export default function EffectChart({
                   <span
                     className={`text-sm font-semibold tabular-nums ${textClass}`}
                   >
-                    {entry.intensity}/10
+                    {intensity}/10
                   </span>
                 </div>
                 <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">

@@ -233,6 +233,22 @@ export default function PublicSessionCard({
         </div>
       )}
 
+      {/* Activities — only when explicitly published */}
+      {session.activitiesPublic && session.activities.length > 0 && (
+        <div className="mt-8 flex flex-col gap-2">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+            {t("card.activities")}
+          </p>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {session.activities.map((activity) => (
+              <Badge key={activity} variant="outline">
+                {translateTag(activity, i18n.language)}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Effect intensity radar — moods always public; unwanted-effect
           intensities only arrive on the payload when the author opted in. */}
       {Object.keys(session.effectIntensities).length > 0 && (

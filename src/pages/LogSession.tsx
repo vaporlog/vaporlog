@@ -443,6 +443,7 @@ export default function LogSession() {
       flavors: draft.flavors,
       moods: draft.moods,
       activities: draft.activities,
+      activitiesPublic: draft.activitiesPublic,
       unwantedEffects: draft.unwantedEffects,
       unwantedEffectsPublic: draft.unwantedEffectsPublic,
       detoxDays: streak >= 1 ? streak : null,
@@ -452,6 +453,7 @@ export default function LogSession() {
       energyCalmScore: draft.energyCalmScore,
       notes: draft.notes.trim(),
       isPublic: draft.isPublic,
+      inFeed: draft.inFeed,
       author: getProfile()?.username ?? "anonymous",
       createdAt: "", // saveSession stamps the current time
     };
@@ -855,13 +857,14 @@ export default function LogSession() {
 
         <Section step={11} title={t("sections.publish")}>
           <div className="flex flex-col gap-3">
+            {/* Public link — anyone with /s/:id can view the card. */}
             <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
               <div className="flex min-w-0 flex-col gap-1">
                 <span className="text-sm font-semibold">
-                  {draft.isPublic ? t("publish.public") : t("publish.private")}
+                  {t("publish.publicLink")}
                 </span>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  {t("publish.description")}
+                  {t("publish.publicLinkDescription")}
                 </p>
               </div>
               <Switch
@@ -870,39 +873,80 @@ export default function LogSession() {
                   setDraft((d) => ({
                     ...d,
                     isPublic: checked,
-                    unwantedEffectsPublic: checked
-                      ? d.unwantedEffectsPublic
-                      : false,
-                    detoxDaysPublic: checked ? d.detoxDaysPublic : false,
+                    inFeed: checked ? d.inFeed : false,
                   }))
                 }
-                aria-label={t("publish.switchLabel")}
+                aria-label={t("publish.publicLink")}
                 className="shrink-0 scale-125"
               />
             </div>
 
-            {draft.isPublic && (
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="text-sm font-semibold">
-                    {t("publish.includeUnwantedEffects")}
-                  </span>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {t("publish.includeUnwantedEffectsDescription")}
-                  </p>
-                </div>
-                <Switch
-                  checked={draft.unwantedEffectsPublic}
-                  onCheckedChange={(checked) =>
-                    update("unwantedEffectsPublic", checked)
-                  }
-                  aria-label={t("publish.includeUnwantedEffects")}
-                  className="shrink-0 scale-125"
-                />
+            {/* Community feed — the session appears in /feed. Requires the
+                public link so visitors can open it. */}
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm font-semibold">
+                  {t("publish.showInFeed")}
+                </span>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("publish.showInFeedDescription")}
+                </p>
               </div>
-            )}
+              <Switch
+                checked={draft.inFeed}
+                onCheckedChange={(checked) =>
+                  setDraft((d) => ({
+                    ...d,
+                    inFeed: checked,
+                    isPublic: checked ? true : d.isPublic,
+                  }))
+                }
+                aria-label={t("publish.showInFeed")}
+                className="shrink-0 scale-125"
+              />
+            </div>
 
-            {draft.isPublic && streak >= 1 && (
+            {/* Content flags — always editable; they decide what shows when
+                the session is visible (feed or public link). */}
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm font-semibold">
+                  {t("publish.includeUnwantedEffects")}
+                </span>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("publish.includeUnwantedEffectsDescription")}
+                </p>
+              </div>
+              <Switch
+                checked={draft.unwantedEffectsPublic}
+                onCheckedChange={(checked) =>
+                  update("unwantedEffectsPublic", checked)
+                }
+                aria-label={t("publish.includeUnwantedEffects")}
+                className="shrink-0 scale-125"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm font-semibold">
+                  {t("publish.includeActivities")}
+                </span>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("publish.includeActivitiesDescription")}
+                </p>
+              </div>
+              <Switch
+                checked={draft.activitiesPublic}
+                onCheckedChange={(checked) =>
+                  update("activitiesPublic", checked)
+                }
+                aria-label={t("publish.includeActivities")}
+                className="shrink-0 scale-125"
+              />
+            </div>
+
+            {streak >= 1 && (
               <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 flex-col gap-1">

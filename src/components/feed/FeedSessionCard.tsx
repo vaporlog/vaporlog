@@ -145,6 +145,21 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
           ))}
         </div>
       )}
+
+      {/* Activities — only when explicitly published */}
+      {session.activitiesPublic && session.activities.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {session.activities.map((activity) => (
+            <Badge
+              key={activity}
+              variant="outline"
+              className="font-normal text-muted-foreground"
+            >
+              {translateTag(activity, i18n.language)}
+            </Badge>
+          ))}
+        </div>
+      )}
     </Link>
   );
 }

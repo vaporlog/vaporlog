@@ -1,15 +1,28 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Compass } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
-import { useMySessions, usePublicSessions, useStrains } from "@/lib/data";
+import {
+  useMySessions,
+  usePublicSessions,
+  useStrains,
+  toggleSessionPublic,
+  toggleSessionInFeed,
+  toggleSessionUnwantedEffectsPublic,
+  toggleSessionActivitiesPublic,
+} from "@/lib/data";
 import { displayStrainName } from "@/components/session-card/display";
 import DeleteSessionButton from "@/components/DeleteSessionButton";
 import LearnBlock from "@/components/session-card/LearnBlock";
 import PublicSessionCard from "@/components/session-card/PublicSessionCard";
 import ShareRow from "@/components/session-card/ShareRow";
+import type { SessionLog } from "@/lib/types";
 
 /*
  * /s/:id — the public session card (spec decision 8, the virality engine).
@@ -58,6 +71,100 @@ function SessionNotFound() {
         </Link>
       </Button>
     </section>
+  );
+}
+
+/** Owner-only privacy switches: they update the session and the downloaded
+ *  card picks the change up on the next render. */
+function OwnerSessionControls({ session }: { session: SessionLog }) {
+  const { t } = useTranslation("sessionCard");
+  const [pending, setPending] = useState(false);
+
+  async function runToggle(
+    fn: (id: string) => Promise<SessionLog | undefined>,
+    success: (updated: SessionLog) => string,
+  ) {
+    if (pending) return;
+    setPending(true);
+    try {
+      const updated = await fn(session.id);
+      if (updated) toast.success(success(updated));
+    } catch {
+      toast.error(t("toggle.error"));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="vl-enter flex w-full max-w-xl flex-col gap-3 rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-4">
+        <Label htmlFor="owner-public" className="text-sm font-medium">
+          {t("owner.publicLink")}
+        </Label>
+        <Switch
+          id="owner-public"
+          checked={session.isPublic}
+          onCheckedChange={() =>
+            void runToggle(toggleSessionPublic, (u) =>
+              u.isPublic ? t("toggle.nowPublic") : t("toggle.nowPrivate"),
+            )
+          }
+          disabled={pending}
+        />
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <Label htmlFor="owner-feed" className="text-sm font-medium">
+          {t("owner.showInFeed")}
+        </Label>
+        <Switch
+          id="owner-feed"
+          checked={session.inFeed}
+          onCheckedChange={() =>
+            void runToggle(toggleSessionInFeed, (u) =>
+              u.inFeed ? t("toggle.nowInFeed") : t("toggle.nowOutOfFeed"),
+            )
+          }
+          disabled={pending}
+        />
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <Label htmlFor="owner-unwanted" className="text-sm font-medium">
+          {t("owner.includeUnwantedEffects")}
+        </Label>
+        <Switch
+          id="owner-unwanted"
+          checked={session.unwantedEffectsPublic}
+          onCheckedChange={() =>
+            void runToggle(toggleSessionUnwantedEffectsPublic, (u) =>
+              u.unwantedEffectsPublic
+                ? t("toggle.unwantedEffectsNowPublic")
+                : t("toggle.unwantedEffectsNowPrivate"),
+            )
+          }
+          disabled={pending}
+        />
+      </div>
+      {session.activities.length > 0 ? (
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="owner-activities" className="text-sm font-medium">
+            {t("owner.includeActivities")}
+          </Label>
+          <Switch
+            id="owner-activities"
+            checked={session.activitiesPublic}
+            onCheckedChange={() =>
+              void runToggle(toggleSessionActivitiesPublic, (u) =>
+                u.activitiesPublic
+                  ? t("toggle.activitiesNowPublic")
+                  : t("toggle.activitiesNowPrivate"),
+              )
+            }
+            disabled={pending}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -140,6 +247,12 @@ export default function SessionCard() {
             onDeleted={() => navigate("/diary")}
           />
         </div>
+      ) : null}
+
+      {/* Owner-only privacy switches — they update the session and the
+          downloaded card picks the change up on the next render. */}
+      {isOwner ? (
+        <OwnerSessionControls session={session} />
       ) : null}
 
       {/* 2 · LEARN BLOCK — what this temperature means, for beginners */}
