@@ -64,13 +64,15 @@
       "stats": "Stats",
       "story": "Historia",
       "story-minimal": "Historia minimal",
-      "story-stats": "Historia stats"
+      "story-stats": "Historia stats",
+      "story-journal": "Historia libreta"
     },
     "copyLink": "Copiar enlace",
     "download": "Descargar imagen",
     "downloading": "Descargando…",
     "downloadAria": "Descargar la tarjeta actual como PNG",
     "downloadError": "No se pudo descargar esa imagen",
+    "includeUnwanted": "Incluir efectos no deseados en la tarjeta",
     "toX": "Compartir en X",
     "toReddit": "Compartir en Reddit",
     "copySuccess": "Enlace copiado — pásalo.",

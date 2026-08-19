@@ -151,8 +151,25 @@ function wordmarkSvg(x, y, size) {
  * spider/radar; one or two render as vertical bars, which read clearer at
  * thumbnail size. Moods in the brand accent, unwanted effects in red. No
  * text labels on the radar — the silhouette is the signal.
+ *
+ * `colors` overrides the palette for light-background templates (journal).
  */
-function buildEffectChartSvg(intensities, unwantedEffects, cx, cy, radius) {
+function buildEffectChartSvg(
+  intensities,
+  unwantedEffects,
+  cx,
+  cy,
+  radius,
+  colors = {},
+) {
+  const {
+    grid: gridColor = GRAY,
+    axis = GRAY,
+    herb = ACCENT,
+    red = "#E11D48",
+    label = GRAY,
+    track = PANEL,
+  } = colors;
   const entries = Object.entries(intensities);
   if (entries.length === 0) return "";
 
@@ -171,10 +188,10 @@ function buildEffectChartSvg(intensities, unwantedEffects, cx, cy, radius) {
         const value = Math.min(Math.max(Number(intensity) || 0, 0), 10);
         const y = startY + i * rowHeight;
         const markerX = startX + (value / 10) * barWidth;
-        const color = unwanted.has(tag) ? "#E11D48" : ACCENT;
+        const color = unwanted.has(tag) ? red : herb;
         return [
-          `<text x="${startX}" y="${y - 12}" font-family="DejaVu Sans" font-size="20" fill="${GRAY}">${esc(fitLine(tag, 20, 140))}</text>`,
-          `<rect x="${startX}" y="${y}" width="${barWidth}" height="${barHeight}" rx="9" fill="${PANEL}" stroke="${GRAY}" stroke-width="1" />`,
+          `<text x="${startX}" y="${y - 12}" font-family="DejaVu Sans" font-size="20" fill="${label}">${esc(fitLine(tag, 20, 140))}</text>`,
+          `<rect x="${startX}" y="${y}" width="${barWidth}" height="${barHeight}" rx="9" fill="${track}" stroke="${axis}" stroke-width="1" />`,
           `<rect x="${markerX - 4}" y="${y - 4}" width="8" height="${barHeight + 8}" rx="4" fill="${color}" />`,
           `<text x="${startX + barWidth + 16}" y="${y + 16}" font-family="DejaVu Sans" font-weight="bold" font-size="22" fill="${color}">${value}</text>`,
         ].join("");
@@ -199,7 +216,7 @@ function buildEffectChartSvg(intensities, unwantedEffects, cx, cy, radius) {
         const angle = startAngle + i * angleStep;
         points.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
       }
-      return `<polygon points="${points.join(" ")}" fill="none" stroke="${GRAY}" stroke-width="1" opacity="0.35" />`;
+      return `<polygon points="${points.join(" ")}" fill="none" stroke="${gridColor}" stroke-width="1" opacity="0.35" />`;
     })
     .join("");
 
@@ -209,7 +226,7 @@ function buildEffectChartSvg(intensities, unwantedEffects, cx, cy, radius) {
       const angle = startAngle + i * angleStep;
       const x = cx + chartRadius * Math.cos(angle);
       const y = cy + chartRadius * Math.sin(angle);
-      return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${GRAY}" stroke-width="1" opacity="0.45" />`;
+      return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${axis}" stroke-width="1" opacity="0.45" />`;
     })
     .join("");
 
@@ -223,11 +240,11 @@ function buildEffectChartSvg(intensities, unwantedEffects, cx, cy, radius) {
       isUnwanted: unwanted.has(tag),
     };
   });
-  const polygon = `<polygon points="${dataPoints.map((p) => `${p.x},${p.y}`).join(" ")}" fill="${ACCENT}" fill-opacity="0.22" stroke="${ACCENT}" stroke-width="2" />`;
+  const polygon = `<polygon points="${dataPoints.map((p) => `${p.x},${p.y}`).join(" ")}" fill="${herb}" fill-opacity="0.22" stroke="${herb}" stroke-width="2" />`;
   const dots = dataPoints
     .map(
       (p) =>
-        `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${p.isUnwanted ? "#E11D48" : ACCENT}" />`,
+        `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${p.isUnwanted ? red : herb}" />`,
     )
     .join("");
 
@@ -242,7 +259,7 @@ function buildEffectChartSvg(intensities, unwantedEffects, cx, cy, radius) {
       if (sin > 0.3) y += 14;
       else if (sin < -0.3) y -= 6;
       const anchor = cos > 0.3 ? "start" : cos < -0.3 ? "end" : "middle";
-      const color = unwanted.has(tag) ? "#E11D48" : GRAY;
+      const color = unwanted.has(tag) ? red : label;
       return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="DejaVu Sans" font-size="18" fill="${color}">${esc(fitLine(tag, 18, 140))}</text>`;
     })
     .join("");
@@ -279,7 +296,7 @@ const GLOW_DEFS = `<defs>
     </radialGradient>
   </defs>`;
 
-function buildSplitSvg(session) {
+function buildSplitSvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -344,7 +361,7 @@ function buildSplitSvg(session) {
     session.effect_intensities && typeof session.effect_intensities === "object"
       ? session.effect_intensities
       : {};
-  const unwantedPublic = session.unwanted_effects_public === true;
+  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
   const publicIntensities = Object.fromEntries(
     Object.entries(rawIntensities).filter(([tag]) => {
       if (moods.includes(tag)) return true;
@@ -397,7 +414,7 @@ function buildSplitSvg(session) {
  * Template "minimal": typography only. The strain carries the whole card
  * edge-to-edge, rating as the single accent, no mascot, no panels.
  */
-function buildMinimalSvg(session) {
+function buildMinimalSvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -446,7 +463,7 @@ function buildMinimalSvg(session) {
  * big number panels (rating, temperature, duration). Missing values show
  * an em dash rather than a fake zero.
  */
-function buildStatsSvg(session) {
+function buildStatsSvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -530,10 +547,11 @@ const STORY_GLOW_DEFS = `<defs>
   </defs>`;
 
 /**
- * Template "story": vertical split. Strain top, rating, ritual, mood chips,
- * effect chart when present, author bottom.
+ * Template "story": vertical split. Strain top, rating, ritual, aroma/flavor
+ * chips, effect chart (moods/unwanted effects live there — no duplicate
+ * chips), author bottom.
  */
-function buildStorySvg(session) {
+function buildStorySvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -552,40 +570,53 @@ function buildStorySvg(session) {
 
   const { lines, size } = layoutStrain(strain, 920, [96, 84, 72, 60], 52);
   const lineHeight = size * 1.12;
-  const strainY0 = lines.length === 1 ? 320 : 260;
+  const strainY0 = lines.length === 1 ? 300 : 250;
   const strainTspans = lines
     .map(
       (line, i) =>
         `<text x="80" y="${strainY0 + i * lineHeight}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}" fill="#FFFFFF">${esc(line)}</text>`,
     )
     .join("");
-  const ratingY = strainY0 + (lines.length - 1) * lineHeight + 130;
-  const ritualY = ratingY + 84;
+  const ratingY = strainY0 + (lines.length - 1) * lineHeight + 120;
+  const ritualY = ratingY + 78;
 
-  const moods = Array.isArray(session.moods) ? session.moods : [];
-  const chipsTop = ritualY + 60;
-  let chipX = 80;
+  // Aroma and flavor chips — two separate rows so each group reads on its
+  // own. Moods already show up as radar labels, so repeating them as chips
+  // would duplicate information.
+  const aromas = Array.isArray(session.aromas) ? session.aromas : [];
+  const flavors = Array.isArray(session.flavors) ? session.flavors : [];
+  const chipRows = [
+    { label: "Aromas", values: aromas },
+    { label: "Sabores", values: flavors },
+  ];
   const chipSvgs = [];
-  for (const mood of moods.slice(0, 5)) {
-    const label = String(mood);
-    const chipW = Math.ceil(label.length * 30 * 0.58) + 52;
-    if (chipX + chipW > 1000) break;
-    chipSvgs.push(
-      `<rect x="${chipX}" y="${chipsTop}" width="${chipW}" height="64" rx="32" fill="none" stroke="${ACCENT}" stroke-width="2" />`,
-      `<text x="${chipX + 26}" y="${chipsTop + 41}" font-family="DejaVu Sans" font-size="30" fill="${ACCENT}">${esc(label)}</text>`,
-    );
-    chipX += chipW + 22;
+  let chipRowY = ritualY + 56;
+  for (const row of chipRows) {
+    if (row.values.length === 0) continue;
+    let chipX = 80;
+    for (const note of row.values.slice(0, 4)) {
+      const label = String(note);
+      const chipW = Math.ceil(label.length * 30 * 0.58) + 52;
+      if (chipX + chipW > 1000) break;
+      chipSvgs.push(
+        `<rect x="${chipX}" y="${chipRowY}" width="${chipW}" height="64" rx="32" fill="none" stroke="${GRAY}" stroke-width="2" />`,
+        `<text x="${chipX + 26}" y="${chipRowY + 41}" font-family="DejaVu Sans" font-size="30" fill="${GRAY}">${esc(label)}</text>`,
+      );
+      chipX += chipW + 22;
+    }
+    chipRowY += 84;
   }
 
-  // Effect chart: reuse the same radar/bars logic, centered.
+  // Effect chart: reuse the same radar/bars logic, centered and larger to
+  // fill the vertical space.
   const rawIntensities =
     session.effect_intensities && typeof session.effect_intensities === "object"
       ? session.effect_intensities
       : {};
-  const unwantedPublic = session.unwanted_effects_public === true;
+  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
   const publicIntensities = Object.fromEntries(
     Object.entries(rawIntensities).filter(([tag]) => {
-      if (moods.includes(tag)) return true;
+      if (Array.isArray(session.moods) && session.moods.includes(tag)) return true;
       return unwantedPublic && Array.isArray(session.unwanted_effects)
         ? session.unwanted_effects.includes(tag)
         : false;
@@ -595,8 +626,8 @@ function buildStorySvg(session) {
     publicIntensities,
     unwantedPublic ? session.unwanted_effects ?? [] : [],
     STORY_WIDTH / 2,
-    980,
-    220,
+    1120,
+    300,
   );
 
   const authorLabel = fitAuthor(author, 38, 800);
@@ -622,7 +653,7 @@ function buildStorySvg(session) {
  * Template "story-minimal": vertical typography only. Strain carries the
  * whole card, rating as the single accent, author at the bottom.
  */
-function buildStoryMinimalSvg(session) {
+function buildStoryMinimalSvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -657,7 +688,7 @@ function buildStoryMinimalSvg(session) {
     session.effect_intensities && typeof session.effect_intensities === "object"
       ? session.effect_intensities
       : {};
-  const unwantedPublic = session.unwanted_effects_public === true;
+  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
   const publicIntensities = Object.fromEntries(
     Object.entries(rawIntensities).filter(([tag]) => {
       if (session.moods?.includes(tag)) return true;
@@ -694,7 +725,7 @@ function buildStoryMinimalSvg(session) {
  * number panels (rating, temperature, duration). Missing values show an em
  * dash rather than a fake zero.
  */
-function buildStoryStatsSvg(session) {
+function buildStoryStatsSvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -748,7 +779,7 @@ function buildStoryStatsSvg(session) {
     session.effect_intensities && typeof session.effect_intensities === "object"
       ? session.effect_intensities
       : {};
-  const unwantedPublic = session.unwanted_effects_public === true;
+  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
   const publicIntensities = Object.fromEntries(
     Object.entries(rawIntensities).filter(([tag]) => {
       if (session.moods?.includes(tag)) return true;
@@ -779,6 +810,109 @@ function buildStoryStatsSvg(session) {
 </svg>`;
 }
 
+/**
+ * Template "story-journal": notebook-paper look. Every session field except
+ * activities — strain, rating, ritual, aromas, flavors, effect chart, notes,
+ * date, author — on lined paper with a red margin.
+ */
+function buildStoryJournalSvg(session, options = {}) {
+  const strain = humanizeSlug(session.strain_slug || "session");
+  const rating = Number(session.rating);
+  const author = session.owner_handle || session.author || "anonymous";
+  const device = session.device_name || humanizeSlug(session.device_slug || "");
+  const date = session.created_at
+    ? new Date(session.created_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+
+  const paper = "#F5F0E6";
+  const ink = "#1A1A1A";
+  const line = "#D8D2C4";
+  const margin = "#E11D48";
+  const herb = "#2D6A4F";
+  const red = "#DC2626";
+
+  // Lined paper: horizontal rules every 56px, red margin at x=96.
+  const rules = [];
+  for (let y = 120; y < STORY_HEIGHT; y += 56) {
+    rules.push(
+      `<line x1="0" y1="${y}" x2="${STORY_WIDTH}" y2="${y}" stroke="${line}" stroke-width="1" />`,
+    );
+  }
+
+  const ritual = [
+    device,
+    fmtNumber(session.temperature_c) !== null
+      ? `${fmtNumber(session.temperature_c)}°C`
+      : null,
+    fmtNumber(session.duration_min) !== null
+      ? `${fmtNumber(session.duration_min)} min`
+      : null,
+    fmtNumber(session.amount_g) !== null
+      ? `${fmtNumber(session.amount_g)} g`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+
+  const aromas = Array.isArray(session.aromas) ? session.aromas : [];
+  const flavors = Array.isArray(session.flavors) ? session.flavors : [];
+
+  // Effect chart on paper: same data, paper-safe colors.
+  const rawIntensities =
+    session.effect_intensities && typeof session.effect_intensities === "object"
+      ? session.effect_intensities
+      : {};
+  const unwantedPublic =
+    options.includeAllEffects === true ||
+    session.unwanted_effects_public === true;
+  const publicIntensities = Object.fromEntries(
+    Object.entries(rawIntensities).filter(([tag]) => {
+      if (Array.isArray(session.moods) && session.moods.includes(tag)) return true;
+      return unwantedPublic && Array.isArray(session.unwanted_effects)
+        ? session.unwanted_effects.includes(tag)
+        : false;
+    }),
+  );
+  const chart = buildEffectChartSvg(
+    publicIntensities,
+    unwantedPublic ? session.unwanted_effects ?? [] : [],
+    STORY_WIDTH / 2 + 40,
+    1150,
+    240,
+    { grid: line, axis: line, herb, red, label: ink },
+  );
+
+  const notes = typeof session.notes === "string" ? session.notes.trim() : "";
+  const noteLines = notes ? wrapTwoLines(notes, 26, 820) : [];
+
+  const likedSuffix = session.liked === true ? " — liked" : "";
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${STORY_WIDTH}" height="${STORY_HEIGHT}" viewBox="0 0 ${STORY_WIDTH} ${STORY_HEIGHT}">
+  <rect width="${STORY_WIDTH}" height="${STORY_HEIGHT}" fill="${paper}" />
+  ${rules.join("\n  ")}
+  <line x1="96" y1="0" x2="96" y2="${STORY_HEIGHT}" stroke="${margin}" stroke-width="3" />
+
+  <text x="140" y="90" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(date)}</text>
+  <text x="140" y="180" font-family="DejaVu Sans" font-weight="bold" font-size="72" fill="${ink}">${esc(fitLine(strain, 72, 860))}</text>
+  <text x="140" y="270" font-family="DejaVu Sans" font-weight="bold" font-size="56" fill="${herb}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
+  <text x="140" y="340" font-family="DejaVu Sans" font-size="32" fill="${ink}">${esc(fitLine(ritual, 32, 860))}</text>
+
+  ${aromas.length > 0 ? `<text x="140" y="430" font-family="DejaVu Sans" font-size="28" fill="${ink}">Aromas: ${esc(aromas.slice(0, 5).join(", "))}</text>` : ""}
+  ${flavors.length > 0 ? `<text x="140" y="490" font-family="DejaVu Sans" font-size="28" fill="${ink}">Sabores: ${esc(flavors.slice(0, 5).join(", "))}</text>` : ""}
+
+  ${chart}
+
+  ${noteLines.length > 0 ? noteLines.map((line, i) => `<text x="140" y="${1520 + i * 44}" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(line)}</text>`).join("\n  ") : ""}
+
+  <text x="140" y="1760" font-family="DejaVu Sans" font-size="30" fill="${ink}">${esc(fitAuthor(author, 30, 500))}</text>
+  <text x="140" y="1820" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog — the journal of the art of vaporizing</text>
+</svg>`;
+}
+
 const TEMPLATE_BUILDERS = {
   split: buildSplitSvg,
   minimal: buildMinimalSvg,
@@ -786,6 +920,7 @@ const TEMPLATE_BUILDERS = {
   story: buildStorySvg,
   "story-minimal": buildStoryMinimalSvg,
   "story-stats": buildStoryStatsSvg,
+  "story-journal": buildStoryJournalSvg,
 };
 
 /** Canvas size per template: horizontal cards for link previews, vertical for stories/TikTok. */
@@ -796,8 +931,8 @@ function templateSize(template) {
 }
 
 /** Renders one session card in the requested template (validated caller-side). */
-function buildCardSvg(session, template = "split") {
-  return (TEMPLATE_BUILDERS[template] ?? buildSplitSvg)(session);
+function buildCardSvg(session, template = "split", options = {}) {
+  return (TEMPLATE_BUILDERS[template] ?? buildSplitSvg)(session, options);
 }
 
 /** Bounded LRU-ish card cache (oldest key evicted past MAX_ENTRIES). */
@@ -814,8 +949,8 @@ export default async function ogImageRoutes(app) {
     const { rows } = await pool.query(
       `select s.user_id, s.is_public, s.strain_slug, s.device_slug,
               s.temperature_c, s.duration_min, s.rating, s.author, s.liked,
-              s.moods, s.effect_intensities, s.unwanted_effects,
-              s.unwanted_effects_public,
+              s.moods, s.aromas, s.flavors, s.effect_intensities,
+              s.unwanted_effects, s.unwanted_effects_public,
               p.handle as owner_handle,
               d.name   as device_name
          from sessions s
@@ -830,6 +965,7 @@ export default async function ogImageRoutes(app) {
     }
 
     const session = rows[0];
+    let isOwner = false;
     if (!session.is_public) {
       // Private session: only the owner may render/download the card. A
       // missing or foreign Bearer token gets the same fallback as unknown.
@@ -849,23 +985,32 @@ export default async function ogImageRoutes(app) {
       if (authRows.length === 0 || authRows[0].user_id !== session.user_id) {
         return reply.redirect(FALLBACK_IMAGE, 302);
       }
+      isOwner = true;
     }
 
     try {
       // The share UI picks the card design via ?t= (see OG_TEMPLATES in
       // og.js); unknown values fall back to the default split layout.
       const template = normalizeTemplate(request.query?.t);
+      // The owner may include unwanted effects on a private card even when
+      // they are hidden from public payloads; ?includeUnwanted=0 hides them.
+      const includeAllEffects = isOwner
+        ? request.query?.includeUnwanted !== "0"
+        : session.unwanted_effects_public === true;
       // sessions has no updated_at; the rendered content itself is the key,
       // so editing the session changes the key and invalidates naturally.
-      const cacheKey = `${id}:${template}:${JSON.stringify(session)}`;
+      const cacheKey = `${id}:${template}:${includeAllEffects}:${JSON.stringify(session)}`;
       let png = cardCache.get(cacheKey);
       if (png === undefined) {
         const { width, height } = templateSize(template);
-        const resvg = new Resvg(buildCardSvg(session, template), {
-          fitTo: { mode: "width", value: width },
-          font: { fontFiles: FONT_FILES, loadSystemFonts: false },
-          background: "#000000",
-        });
+        const resvg = new Resvg(
+          buildCardSvg(session, template, { includeAllEffects }),
+          {
+            fitTo: { mode: "width", value: width },
+            font: { fontFiles: FONT_FILES, loadSystemFonts: false },
+            background: "#000000",
+          },
+        );
         png = Buffer.from(resvg.render().asPng());
         if (cardCache.size >= MAX_ENTRIES) {
           cardCache.delete(cardCache.keys().next().value);

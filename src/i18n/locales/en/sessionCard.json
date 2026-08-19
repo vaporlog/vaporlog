@@ -64,13 +64,15 @@
       "stats": "Stats",
       "story": "Story",
       "story-minimal": "Story minimal",
-      "story-stats": "Story stats"
+      "story-stats": "Story stats",
+      "story-journal": "Story journal"
     },
     "copyLink": "Copy link",
     "download": "Download image",
     "downloading": "Downloading…",
     "downloadAria": "Download the current card as PNG",
     "downloadError": "Couldn't download that image",
+    "includeUnwanted": "Include unwanted effects on the card",
     "toX": "Share to X",
     "toReddit": "Share to Reddit",
     "copySuccess": "Link copied — pass it on.",

@@ -119,6 +119,7 @@ export const OG_TEMPLATES = [
   "story",
   "story-minimal",
   "story-stats",
+  "story-journal",
 ];
 
 /** Validates the ?t= share param; anything unknown falls back to "split". */
