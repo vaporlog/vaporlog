@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Star, ThumbsUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getStrain } from "@/lib/data";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 import type { SessionLog } from "@/lib/types";
 import {
   displayDeviceName,
@@ -138,7 +140,7 @@ export default function FeedSessionCard({ session }: FeedSessionCardProps) {
               variant="secondary"
               className="font-normal text-muted-foreground"
             >
-              {mood}
+              {translateTag(mood, i18n.language)}
             </Badge>
           ))}
         </div>

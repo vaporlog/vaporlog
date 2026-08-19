@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 import DeleteSessionButton from "@/components/DeleteSessionButton";
 import EffectRadarChart from "@/components/EffectRadarChart";
 import EnergyCalmBar from "@/components/EnergyCalmBar";
@@ -111,7 +113,7 @@ export function DiarySessionCard({
           <div className="flex flex-wrap gap-1.5">
             {session.moods.map((mood) => (
               <Badge key={mood} variant="secondary" className="font-normal">
-                {mood}
+                {translateTag(mood, i18n.language)}
               </Badge>
             ))}
           </div>
@@ -126,7 +128,7 @@ export function DiarySessionCard({
                 variant="outline"
                 className="border-destructive/30 font-normal text-destructive"
               >
-                {effect}
+                {translateTag(effect, i18n.language)}
               </Badge>
             ))}
           </div>

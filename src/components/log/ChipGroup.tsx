@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 
 interface ChipGroupProps {
   /** Controlled vocabulary options (Title Case, from getVocab()). */
@@ -94,7 +96,7 @@ export default function ChipGroup({
         {visibleOptions.map((tag) => (
           <Chip
             key={tag}
-            label={tag}
+            label={translateTag(tag, i18n.language)}
             active={selectedSet.has(tag)}
             onClick={() => onToggle(tag)}
           />

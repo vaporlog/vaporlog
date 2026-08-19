@@ -14,6 +14,8 @@ import {
 import { usePublicSessions, useStrains } from "@/lib/data";
 import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
 import { SearchInput } from "@/components/ui/search-input";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 import FeedFilters from "@/components/feed/FeedFilters";
 import FeedSessionCard from "@/components/feed/FeedSessionCard";
 import { displayDeviceName, displayStrainName } from "@/components/feed/feed-utils";
@@ -73,7 +75,8 @@ export default function Feed() {
   const moods = useMemo(() => moodOptions(sessions), [sessions]);
 
   // Free-text search over what a feed card shows: strain, device, moods,
-  // author handle. Combined with the structured filters below (AND).
+  // author handle. Controlled tags match in both English and Spanish.
+  // Combined with the structured filters below (AND).
   const searched = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q === "") return sessions;
@@ -82,7 +85,7 @@ export default function Feed() {
         displayStrainName(session.strainSlug),
         displayDeviceName(session.deviceSlug),
         session.author,
-        ...session.moods,
+        ...session.moods.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
       ]
         .join("\n")
         .toLowerCase()

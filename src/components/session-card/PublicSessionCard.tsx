@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 import { getStrain } from "@/lib/data";
 import type { SessionLog } from "@/lib/types";
 import {
@@ -189,7 +190,7 @@ export default function PublicSessionCard({
               <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                 {session.moods.map((mood) => (
                   <Badge key={mood} variant="secondary">
-                    {mood}
+                    {translateTag(mood, i18n.language)}
                   </Badge>
                 ))}
               </div>
@@ -203,7 +204,7 @@ export default function PublicSessionCard({
               <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                 {[...session.aromas, ...session.flavors].map((note) => (
                   <Badge key={note} variant="outline">
-                    {note}
+                    {translateTag(note, i18n.language)}
                   </Badge>
                 ))}
               </div>
@@ -225,7 +226,7 @@ export default function PublicSessionCard({
                 variant="outline"
                 className="border-destructive/30 text-destructive"
               >
-                {effect}
+                {translateTag(effect, i18n.language)}
               </Badge>
             ))}
           </div>

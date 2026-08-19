@@ -7,6 +7,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 import {
   ALL_DEVICES,
   ALL_MOODS,
@@ -94,7 +96,7 @@ export default function FeedFilters({
           <SelectItem value={ALL_MOODS}>{t("filters.allMoods")}</SelectItem>
           {moods.map((option) => (
             <SelectItem key={option} value={option}>
-              {option}
+              {translateTag(option, i18n.language)}
             </SelectItem>
           ))}
         </SelectContent>

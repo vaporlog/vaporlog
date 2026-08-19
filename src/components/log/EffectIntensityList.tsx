@@ -1,6 +1,8 @@
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 
 interface EffectIntensityListProps {
   /** Selected effect tags (moods + unwanted effects). */
@@ -50,7 +52,7 @@ export default function EffectIntensityList({
                     : "text-sm font-medium"
                 }
               >
-                {effect}
+                {translateTag(effect, i18n.language)}
               </Label>
               <span
                 className={

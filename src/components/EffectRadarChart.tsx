@@ -6,6 +6,8 @@ import {
   RadarChart,
   ResponsiveContainer,
 } from "recharts";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 
 interface EffectChartProps {
   /** Map of effect tag → intensity (1-10). */
@@ -33,7 +35,7 @@ export default function EffectChart({
 
   const unwanted = new Set(unwantedEffects);
   const data = entries.map(([effect, intensity]) => ({
-    effect,
+    effect: translateTag(effect, i18n.language),
     intensity,
     isUnwanted: unwanted.has(effect),
   }));

@@ -4,6 +4,8 @@ import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { SearchInput } from "@/components/ui/search-input";
+import i18n from "@/i18n";
+import { translateTag } from "@/i18n/vocab-translations";
 import { ActivityChart } from "@/components/diary/ActivityChart";
 import { HighlightsRow } from "@/components/diary/HighlightsRow";
 import { DiaryHeader } from "@/components/diary/DiaryHeader";
@@ -45,7 +47,8 @@ export default function Diary() {
 
   // Diary search — free text over everything the user can see on a card:
   // strain and device display names, notes and every tag list. Client-side
-  // against the in-memory sessions, live on every keystroke.
+  // against the in-memory sessions, live on every keystroke. Controlled tags
+  // match in both English and Spanish so "pino" finds "Pine".
   const [query, setQuery] = useState("");
   const filteredSessions = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -55,11 +58,11 @@ export default function Diary() {
         displayStrainName(session.strainSlug),
         displayDeviceName(session.deviceSlug),
         session.notes,
-        ...session.aromas,
-        ...session.flavors,
-        ...session.moods,
+        ...session.aromas.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
+        ...session.flavors.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
+        ...session.moods.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
         ...session.activities,
-        ...session.unwantedEffects,
+        ...session.unwantedEffects.flatMap((tag) => [tag, translateTag(tag, i18n.language)]),
       ]
         .join("\n")
         .toLowerCase()
