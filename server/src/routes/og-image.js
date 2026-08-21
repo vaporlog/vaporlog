@@ -36,6 +36,7 @@ const WIDTH = 1200;
 const HEIGHT = 630;
 const ACCENT = "#74C69D";
 const GRAY = "#9BA3A0";
+const BLACKAGSIS = "#030303";
 const PANEL = "#0E2418";
 
 const serverRoot = path.dirname(
@@ -164,7 +165,7 @@ function buildEffectChartSvg(
 ) {
   const {
     grid: gridColor = GRAY,
-    axis = GRAY,
+    axis = "#000000",
     herb = ACCENT,
     red = "#E11D48",
     label = GRAY,
@@ -841,7 +842,7 @@ function buildStoryJournalSvg(session, options = {}) {
 
   const paper = "#F5F0E6";
   const ink = "#1A1A1A";
-  const line = "#D8D2C4";
+  const line = "#333333";
   const margin = "#E11D48";
   const herb = "#2D6A4F";
   const red = "#DC2626";
@@ -897,6 +898,13 @@ function buildStoryJournalSvg(session, options = {}) {
     { grid: line, axis: line, herb, red, label: ink },
   );
 
+  const energyBar = buildEnergyCalmBarSvg(
+    session.energy_calm_score,
+    STORY_WIDTH / 2 + 80,
+    1480,
+    400,
+  );
+
   const notes = typeof session.notes === "string" ? session.notes.trim() : "";
   const noteLines = notes ? wrapTwoLines(notes, 26, 820) : [];
 
@@ -916,11 +924,13 @@ function buildStoryJournalSvg(session, options = {}) {
   ${flavors.length > 0 ? `<text x="140" y="490" font-family="DejaVu Sans" font-size="28" fill="${ink}">Sabores: ${esc(flavors.slice(0, 5).join(", "))}</text>` : ""}
 
   ${chart}
+  ${energyBar}
 
-  ${noteLines.length > 0 ? noteLines.map((line, i) => `<text x="140" y="${1520 + i * 44}" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(line)}</text>`).join("\n  ") : ""}
+  ${noteLines.length > 0 ? noteLines.map((line, i) => `<text x="140" y="${1560 + i * 44}" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(line)}</text>`).join("\n  ") : ""}
 
   <text x="140" y="1760" font-family="DejaVu Sans" font-size="30" fill="${ink}">${esc(fitAuthor(author, 30, 500))}</text>
-  <text x="140" y="1820" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog — the journal of the art of vaporizing</text>
+  <text x="140" y="1820" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog.online</text>
+  <text x="940" y="1820" text-anchor="end" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog — the journal of the art of vaporizing</text>
 </svg>`;
 }
 
@@ -950,6 +960,25 @@ function buildCardSvg(session, template = "split", options = {}) {
 const MAX_ENTRIES = 200;
 const cardCache = new Map();
 
+/**
+ * Bipolar calm/energy bar for the journal card. -5 very calm, 0 neutral,
+ * +5 very energized. Track is a muted line, marker is herb.
+ */
+function buildEnergyCalmBarSvg(score, cx, y, width) {
+  if (score === null || score === undefined) return "";
+  const pct = (Math.min(Math.max(Number(score) || 0, -5), 5) + 5) / 10;
+  const x = cx - width / 2 + pct * width;
+  const herb = "#2D6A4F";
+  const ink = "#1A1A1A";
+  const track = "#D8D2C4";
+  return `
+  <text x="${cx - width / 2}" y="${y - 14}" font-family="DejaVu Sans" font-size="20" fill="${ink}">Calm</text>
+  <text x="${cx + width / 2}" y="${y - 14}" text-anchor="end" font-family="DejaVu Sans" font-size="20" fill="${ink}">Energized</text>
+  <rect x="${cx - width / 2}" y="${y}" width="${width}" height="12" rx="6" fill="${track}" />
+  <rect x="${x - 5}" y="${y - 4}" width="10" height="20" rx="5" fill="${herb}" />
+  <text x="${cx}" y="${y + 42}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="24" fill="${herb}">${score > 0 ? `+${score}` : score}</text>`;
+}
+
 export default async function ogImageRoutes(app) {
   app.get("/api/og/s/:id/card.png", async (request, reply) => {
     const { id } = request.params;
@@ -962,6 +991,7 @@ export default async function ogImageRoutes(app) {
               s.temperature_c, s.duration_min, s.rating, s.author, s.liked,
               s.moods, s.aromas, s.flavors, s.effect_intensities,
               s.unwanted_effects, s.unwanted_effects_public,
+              s.energy_calm_score, s.created_at,
               p.handle as owner_handle,
               d.name   as device_name
          from sessions s
