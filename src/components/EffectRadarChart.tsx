@@ -12,6 +12,11 @@ import { translateTag } from "@/i18n/vocab-translations";
 interface EffectChartProps {
   /** Map of effect tag → intensity (1-10). */
   intensities: Record<string, number>;
+  /**
+   * Effect tags the user selected. Any tag missing from `intensities`
+   * renders at 5 — the slider's resting value in the log form.
+   */
+  defaultEffects?: string[];
   /** Tags that are unwanted effects (rendered in red). */
   unwantedEffects?: string[];
   /** Optional title shown above the chart. */
@@ -27,10 +32,15 @@ interface EffectChartProps {
  */
 export default function EffectChart({
   intensities,
+  defaultEffects = [],
   unwantedEffects = [],
   title,
 }: EffectChartProps) {
-  const entries = Object.entries(intensities);
+  const merged: Record<string, number> = { ...intensities };
+  for (const tag of defaultEffects) {
+    if (merged[tag] === undefined) merged[tag] = 5;
+  }
+  const entries = Object.entries(merged);
   if (entries.length === 0) return null;
 
   const unwanted = new Set(unwantedEffects);
@@ -100,7 +110,7 @@ export default function EffectChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex w-full max-w-sm flex-col gap-4">
+        <div className="flex w-full flex-col gap-4">
           {data.map((entry) => {
             const intensity = entry.isUnwanted
               ? entry.unwantedIntensity

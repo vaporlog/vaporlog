@@ -160,22 +160,25 @@ export function DiarySessionCard({
           </p>
         )}
 
-        {/* Effect intensity radar — private, every intensity the owner set. */}
-        {Object.keys(session.effectIntensities).length > 0 && (
+        {/* Effect intensity radar — private. Effects the owner selected but
+            never slid render at 5, the slider's resting value. */}
+        {(session.moods.length > 0 ||
+          session.unwantedEffects.length > 0 ||
+          Object.keys(session.effectIntensities).length > 0) && (
           <EffectRadarChart
             intensities={session.effectIntensities}
+            defaultEffects={[...session.moods, ...session.unwantedEffects]}
             unwantedEffects={session.unwantedEffects}
             title={t("card.effectIntensity")}
           />
         )}
 
-        {/* Energy / calm bipolar bar */}
-        {session.energyCalmScore !== null && (
-          <EnergyCalmBar
-            score={session.energyCalmScore}
-            title={t("card.energyCalm")}
-          />
-        )}
+        {/* Energy / calm bipolar bar — a null score means the slider was
+            left at rest: render neutral (0). */}
+        <EnergyCalmBar
+          score={session.energyCalmScore ?? 0}
+          title={t("card.energyCalm")}
+        />
 
         <Separator />
 

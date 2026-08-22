@@ -66,6 +66,47 @@ function canonicalUrl(sessionId: string, template: OgTemplate): string {
   return template === "split" ? base : `${base}?t=${template}`;
 }
 
+/**
+ * Small content hash over every session field that reaches the OG card
+ * (privacy switches included). The API serves cards with max-age=300, so
+ * without this the browser keeps showing the old PNG after a toggle —
+ * appending it as &v= busts the cache whenever the content changes.
+ */
+function cardVersion(session: SessionLog): string {
+  const payload = JSON.stringify([
+    session.strainSlug,
+    session.deviceSlug,
+    session.temperatureC,
+    session.durationMin,
+    session.amountG,
+    session.rating,
+    session.liked,
+    session.aromas,
+    session.flavors,
+    session.moods,
+    session.unwantedEffects,
+    session.unwantedEffectsPublic,
+    session.effectIntensities,
+    session.energyCalmScore,
+    session.notes,
+    session.author,
+  ]);
+  let hash = 0;
+  for (let i = 0; i < payload.length; i++) {
+    hash = (hash * 31 + payload.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+/** OG card URL with the cache-busting content version. */
+function cardPngUrl(
+  sessionId: string,
+  template: OgTemplate,
+  version: string,
+): string {
+  return `/api/og/s/${sessionId}/card.png?t=${template}&v=${version}`;
+}
+
 function shareText(session: SessionLog, strainName: string): string {
   return i18n.t("sessionCard:share.text", {
     author: session.author,
@@ -102,13 +143,16 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /** Fetches an OG card with the owner's Bearer token; returns a blob URL. */
-async function fetchCardBlobUrl(sessionId: string, template: OgTemplate) {
+async function fetchCardBlobUrl(
+  sessionId: string,
+  template: OgTemplate,
+  version: string,
+) {
   const token = getToken();
   if (!token) return null;
-  const response = await fetch(
-    `/api/og/s/${sessionId}/card.png?t=${template}`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
+  const response = await fetch(cardPngUrl(sessionId, template, version), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!response.ok) return null;
   const blob = await response.blob();
   return URL.createObjectURL(blob);
@@ -121,6 +165,7 @@ async function fetchCardBlobUrl(sessionId: string, template: OgTemplate) {
 function TemplateThumbnail({
   sessionId,
   template,
+  version,
   isPublic,
   active,
   onSelect,
@@ -128,6 +173,8 @@ function TemplateThumbnail({
 }: {
   sessionId: string;
   template: OgTemplate;
+  /** Content hash — changes re-fetch the card (busts browser cache). */
+  version: string;
   isPublic: boolean;
   active: boolean;
   onSelect: () => void;
@@ -140,7 +187,7 @@ function TemplateThumbnail({
     if (isPublic) return;
     let cancelled = false;
     let objectUrl: string | null = null;
-    void fetchCardBlobUrl(sessionId, template).then((url) => {
+    void fetchCardBlobUrl(sessionId, template, version).then((url) => {
       if (cancelled) {
         if (url) URL.revokeObjectURL(url);
         return;
@@ -152,11 +199,9 @@ function TemplateThumbnail({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [sessionId, template, isPublic]);
+  }, [sessionId, template, version, isPublic]);
 
-  const src = isPublic
-    ? `/api/og/s/${sessionId}/card.png?t=${template}`
-    : blobUrl;
+  const src = isPublic ? cardPngUrl(sessionId, template, version) : blobUrl;
 
   return (
     <button
@@ -204,6 +249,7 @@ export default function ShareRow({
   const { t } = useTranslation("sessionCard");
   const [template, setTemplate] = useState<OgTemplate>(readPreferredTemplate);
   const [downloading, setDownloading] = useState(false);
+  const version = cardVersion(session);
   const url = canonicalUrl(session.id, template);
   const text = shareText(session, strainName);
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
@@ -236,8 +282,8 @@ export default function ShareRow({
     setDownloading(true);
     try {
       const blobUrl = session.isPublic
-        ? `/api/og/s/${session.id}/card.png?t=${template}`
-        : await fetchCardBlobUrl(session.id, template);
+        ? cardPngUrl(session.id, template, version)
+        : await fetchCardBlobUrl(session.id, template, version);
       if (!blobUrl) {
         toast.error(t("share.downloadError"));
         return;
@@ -279,6 +325,7 @@ export default function ShareRow({
                 key={tp}
                 sessionId={session.id}
                 template={tp}
+                version={version}
                 isPublic={session.isPublic}
                 active={template === tp}
                 onSelect={() => selectTemplate(tp)}

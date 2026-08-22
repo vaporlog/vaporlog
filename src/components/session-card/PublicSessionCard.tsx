@@ -249,27 +249,30 @@ export default function PublicSessionCard({
         </div>
       )}
 
-      {/* Effect intensity radar — moods always public; unwanted-effect
-          intensities only arrive on the payload when the author opted in. */}
-      {Object.keys(session.effectIntensities).length > 0 && (
+      {/* Effect intensity radar — moods always public; unwanted effects only
+          arrive on the payload when the author opted in. Effects selected
+          but never slid render at 5, the slider's resting value. */}
+      {(session.moods.length > 0 ||
+        session.unwantedEffects.length > 0 ||
+        Object.keys(session.effectIntensities).length > 0) && (
         <div className="mt-8">
           <EffectRadarChart
             intensities={session.effectIntensities}
+            defaultEffects={[...session.moods, ...session.unwantedEffects]}
             unwantedEffects={session.unwantedEffects}
             title={t("card.effectIntensity")}
           />
         </div>
       )}
 
-      {/* Energy / calm bipolar bar */}
-      {session.energyCalmScore !== null && (
-        <div className="mt-8">
-          <EnergyCalmBar
-            score={session.energyCalmScore}
-            title={t("card.energyCalm")}
-          />
-        </div>
-      )}
+      {/* Energy / calm bipolar bar — a null score means the slider was
+          left at rest: render neutral (0). */}
+      <div className="mt-8">
+        <EnergyCalmBar
+          score={session.energyCalmScore ?? 0}
+          title={t("card.energyCalm")}
+        />
+      </div>
 
       {/* Post-detox return — the badge only ships on public payloads when
           the author opted in (detoxDaysPublic); the dedicated review is a

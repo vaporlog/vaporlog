@@ -148,6 +148,38 @@ function wordmarkSvg(x, y, size) {
 }
 
 /**
+ * Public effect intensities for the card templates, with the privacy rule
+ * used everywhere: mood intensities are public; unwanted-effect intensities
+ * only when the author opted in (or `includeAllEffects`). Effects the author
+ * selected but never slid default to 5 — the slider's resting value in the
+ * log form, same as the web cards. Returns the intensities map plus the
+ * unwanted-effect tags that are allowed to show.
+ */
+function publicIntensitiesWithDefaults(session, options = {}) {
+  const raw =
+    session.effect_intensities && typeof session.effect_intensities === "object"
+      ? session.effect_intensities
+      : {};
+  const moods = Array.isArray(session.moods) ? session.moods : [];
+  const unwantedPublic =
+    options.includeAllEffects === true ||
+    session.unwanted_effects_public === true;
+  const unwanted =
+    unwantedPublic && Array.isArray(session.unwanted_effects)
+      ? session.unwanted_effects
+      : [];
+  const intensities = Object.fromEntries(
+    Object.entries(raw).filter(
+      ([tag]) => moods.includes(tag) || unwanted.includes(tag),
+    ),
+  );
+  for (const tag of [...moods, ...unwanted]) {
+    if (intensities[tag] === undefined) intensities[tag] = 5;
+  }
+  return { intensities, unwanted };
+}
+
+/**
  * Tiny effect chart for the split card. Three or more effects render as a
  * spider/radar; one or two render as vertical bars, which read clearer at
  * thumbnail size. Moods in the brand accent, unwanted effects in red. No
@@ -177,10 +209,11 @@ function buildEffectChartSvg(
   const unwanted = new Set(unwantedEffects);
 
   // 1-2 effects: horizontal bars, same slice style as the energy/calm bar.
-  // Centered in the brand panel, each bar reads label + 0-10 marker.
+  // Width scales with the template's radius budget so the bars read wider
+  // than the energy/calm bar; centered, each bar reads label + 0-10 marker.
   if (entries.length < 3) {
-    const barWidth = 260;
-    const barHeight = 18;
+    const barWidth = Math.round(radius * 2.2);
+    const barHeight = 22;
     const rowHeight = 72;
     const startX = cx - barWidth / 2;
     const startY = cy - ((entries.length - 1) * rowHeight) / 2;
@@ -366,25 +399,14 @@ function buildSplitSvg(session, options = {}) {
     chipX += chipW + 18;
   }
 
-  // Effect radar on the brand panel: mood intensities are public; unwanted
-  // ones only when the author opted in. With too few axes the panel falls
-  // back to the mascot.
-  const rawIntensities =
-    session.effect_intensities && typeof session.effect_intensities === "object"
-      ? session.effect_intensities
-      : {};
-  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
-  const publicIntensities = Object.fromEntries(
-    Object.entries(rawIntensities).filter(([tag]) => {
-      if (moods.includes(tag)) return true;
-      return unwantedPublic && Array.isArray(session.unwanted_effects)
-        ? session.unwanted_effects.includes(tag)
-        : false;
-    }),
-  );
+  // Effect radar on the brand panel: public intensities with default 5 for
+  // effects the author selected but never slid. With no effects at all the
+  // panel falls back to the mascot.
+  const { intensities: publicIntensities, unwanted: publicUnwanted } =
+    publicIntensitiesWithDefaults(session, options);
   const radar = buildEffectChartSvg(
     publicIntensities,
-    unwantedPublic ? session.unwanted_effects ?? [] : [],
+    publicUnwanted,
     970,
     270,
     150,
@@ -620,23 +642,12 @@ function buildStorySvg(session, options = {}) {
   }
 
   // Effect chart: reuse the same radar/bars logic, centered and larger to
-  // fill the vertical space.
-  const rawIntensities =
-    session.effect_intensities && typeof session.effect_intensities === "object"
-      ? session.effect_intensities
-      : {};
-  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
-  const publicIntensities = Object.fromEntries(
-    Object.entries(rawIntensities).filter(([tag]) => {
-      if (Array.isArray(session.moods) && session.moods.includes(tag)) return true;
-      return unwantedPublic && Array.isArray(session.unwanted_effects)
-        ? session.unwanted_effects.includes(tag)
-        : false;
-    }),
-  );
+  // fill the vertical space. Defaults selected-but-unslid effects to 5.
+  const { intensities: publicIntensities, unwanted: publicUnwanted } =
+    publicIntensitiesWithDefaults(session, options);
   const chart = buildEffectChartSvg(
     publicIntensities,
-    unwantedPublic ? session.unwanted_effects ?? [] : [],
+    publicUnwanted,
     STORY_WIDTH / 2,
     1120,
     300,
@@ -696,22 +707,12 @@ function buildStoryMinimalSvg(session, options = {}) {
   const detailY = deviceY + 50;
 
   // Effect chart: same radar/bars logic as the other story templates.
-  const rawIntensities =
-    session.effect_intensities && typeof session.effect_intensities === "object"
-      ? session.effect_intensities
-      : {};
-  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
-  const publicIntensities = Object.fromEntries(
-    Object.entries(rawIntensities).filter(([tag]) => {
-      if (session.moods?.includes(tag)) return true;
-      return unwantedPublic && Array.isArray(session.unwanted_effects)
-        ? session.unwanted_effects.includes(tag)
-        : false;
-    }),
-  );
+  // Defaults selected-but-unslid effects to 5.
+  const { intensities: publicIntensities, unwanted: publicUnwanted } =
+    publicIntensitiesWithDefaults(session, options);
   const chart = buildEffectChartSvg(
     publicIntensities,
-    unwantedPublic ? session.unwanted_effects ?? [] : [],
+    publicUnwanted,
     STORY_WIDTH / 2,
     1150,
     200,
@@ -786,23 +787,13 @@ function buildStoryStatsSvg(session, options = {}) {
     })
     .join("\n  ");
 
-  // Effect chart under the stat panels.
-  const rawIntensities =
-    session.effect_intensities && typeof session.effect_intensities === "object"
-      ? session.effect_intensities
-      : {};
-  const unwantedPublic = options.includeAllEffects === true || session.unwanted_effects_public === true;
-  const publicIntensities = Object.fromEntries(
-    Object.entries(rawIntensities).filter(([tag]) => {
-      if (session.moods?.includes(tag)) return true;
-      return unwantedPublic && Array.isArray(session.unwanted_effects)
-        ? session.unwanted_effects.includes(tag)
-        : false;
-    }),
-  );
+  // Effect chart under the stat panels. Defaults selected-but-unslid
+  // effects to 5.
+  const { intensities: publicIntensities, unwanted: publicUnwanted } =
+    publicIntensitiesWithDefaults(session, options);
   const chart = buildEffectChartSvg(
     publicIntensities,
-    unwantedPublic ? session.unwanted_effects ?? [] : [],
+    publicUnwanted,
     STORY_WIDTH / 2,
     1620,
     160,
@@ -842,10 +833,11 @@ function buildStoryJournalSvg(session, options = {}) {
 
   const paper = "#F5F0E6";
   const ink = "#1A1A1A";
-  const line = "#333333";
+  const line = "#E8E4D8";
   const margin = "#E11D48";
   const herb = "#2D6A4F";
   const red = "#DC2626";
+  const black = "#000000";
 
   // Lined paper: horizontal rules every 56px, red margin at x=96.
   const rules = [];
@@ -873,36 +865,24 @@ function buildStoryJournalSvg(session, options = {}) {
   const aromas = Array.isArray(session.aromas) ? session.aromas : [];
   const flavors = Array.isArray(session.flavors) ? session.flavors : [];
 
-  // Effect chart on paper: same data, paper-safe colors.
-  const rawIntensities =
-    session.effect_intensities && typeof session.effect_intensities === "object"
-      ? session.effect_intensities
-      : {};
-  const unwantedPublic =
-    options.includeAllEffects === true ||
-    session.unwanted_effects_public === true;
-  const publicIntensities = Object.fromEntries(
-    Object.entries(rawIntensities).filter(([tag]) => {
-      if (Array.isArray(session.moods) && session.moods.includes(tag)) return true;
-      return unwantedPublic && Array.isArray(session.unwanted_effects)
-        ? session.unwanted_effects.includes(tag)
-        : false;
-    }),
-  );
+  // Effect chart on paper: same data, paper-safe colors. Defaults
+  // selected-but-unslid effects to 5.
+  const { intensities: publicIntensities, unwanted: publicUnwanted } =
+    publicIntensitiesWithDefaults(session, options);
   const chart = buildEffectChartSvg(
     publicIntensities,
-    unwantedPublic ? session.unwanted_effects ?? [] : [],
+    publicUnwanted,
     STORY_WIDTH / 2 + 40,
     1150,
     240,
-    { grid: line, axis: line, herb, red, label: ink },
+    { grid: black, axis: black, herb, red, label: ink },
   );
 
   const energyBar = buildEnergyCalmBarSvg(
     session.energy_calm_score,
-    STORY_WIDTH / 2 + 80,
+    STORY_WIDTH / 2 + 40,
     1480,
-    400,
+    720,
   );
 
   const notes = typeof session.notes === "string" ? session.notes.trim() : "";
@@ -915,7 +895,7 @@ function buildStoryJournalSvg(session, options = {}) {
   ${rules.join("\n  ")}
   <line x1="96" y1="0" x2="96" y2="${STORY_HEIGHT}" stroke="${margin}" stroke-width="3" />
 
-  <text x="140" y="90" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(date)}</text>
+  <text x="940" y="90" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(date)}</text>
   <text x="140" y="180" font-family="DejaVu Sans" font-weight="bold" font-size="72" fill="${ink}">${esc(fitLine(strain, 72, 860))}</text>
   <text x="140" y="270" font-family="DejaVu Sans" font-weight="bold" font-size="56" fill="${herb}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
   <text x="140" y="340" font-family="DejaVu Sans" font-size="32" fill="${ink}">${esc(fitLine(ritual, 32, 860))}</text>
@@ -962,21 +942,24 @@ const cardCache = new Map();
 
 /**
  * Bipolar calm/energy bar for the journal card. -5 very calm, 0 neutral,
- * +5 very energized. Track is a muted line, marker is herb.
+ * +5 very energized. Track is a muted line, marker is herb. A null score
+ * means the log slider was left at rest: render neutral (0), same as the
+ * web cards.
  */
 function buildEnergyCalmBarSvg(score, cx, y, width) {
-  if (score === null || score === undefined) return "";
-  const pct = (Math.min(Math.max(Number(score) || 0, -5), 5) + 5) / 10;
+  const value = Math.min(Math.max(Number(score) || 0, -5), 5);
+  const pct = (value + 5) / 10;
   const x = cx - width / 2 + pct * width;
   const herb = "#2D6A4F";
   const ink = "#1A1A1A";
-  const track = "#D8D2C4";
+  const track = "#E8E4D8";
+  const label = value === 0 ? "Neutral" : value > 0 ? `+${value}` : value;
   return `
-  <text x="${cx - width / 2}" y="${y - 14}" font-family="DejaVu Sans" font-size="20" fill="${ink}">Calm</text>
-  <text x="${cx + width / 2}" y="${y - 14}" text-anchor="end" font-family="DejaVu Sans" font-size="20" fill="${ink}">Energized</text>
-  <rect x="${cx - width / 2}" y="${y}" width="${width}" height="12" rx="6" fill="${track}" />
-  <rect x="${x - 5}" y="${y - 4}" width="10" height="20" rx="5" fill="${herb}" />
-  <text x="${cx}" y="${y + 42}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="24" fill="${herb}">${score > 0 ? `+${score}` : score}</text>`;
+  <text x="${cx - width / 2}" y="${y - 18}" font-family="DejaVu Sans" font-size="26" fill="${ink}">Calm</text>
+  <text x="${cx + width / 2}" y="${y - 18}" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${ink}">Energized</text>
+  <rect x="${cx - width / 2}" y="${y}" width="${width}" height="16" rx="8" fill="${track}" />
+  <rect x="${x - 6}" y="${y - 5}" width="12" height="26" rx="6" fill="${herb}" />
+  <text x="${cx}" y="${y + 56}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="30" fill="${herb}">${label}</text>`;
 }
 
 export default async function ogImageRoutes(app) {
