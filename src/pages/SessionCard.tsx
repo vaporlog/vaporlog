@@ -249,18 +249,18 @@ export default function SessionCard() {
         </div>
       ) : null}
 
-      {/* Owner-only privacy switches — they update the session and the
-          downloaded card picks the change up on the next render. */}
-      {isOwner ? (
-        <OwnerSessionControls session={session} />
-      ) : null}
-
       {/* 2 · LEARN BLOCK — what this temperature means, for beginners */}
       {session.temperatureC !== null && (
         <div className="vl-enter w-full" style={{ animationDelay: "70ms" }}>
           <LearnBlock temperatureC={session.temperatureC} />
         </div>
       )}
+
+      {/* Owner-only privacy switches — they update the session and the
+          downloaded card picks the change up on the next render. */}
+      {isOwner ? (
+        <OwnerSessionControls session={session} />
+      ) : null}
 
       {!isPrivateView && (
         <>
