@@ -17,8 +17,9 @@
  *   GET  /api/auth/me       (Bearer) → 200 { account } | 401
  *   POST /api/auth/signout  (Bearer) → 204 (deletes the bearer token)
  *
- * Tokens are opaque: crypto.randomBytes(32).hex, stored in auth_tokens with
- * the table's default 30-day expiry.
+ * Tokens are opaque: crypto.randomBytes(32).hex. Only their SHA-256 hash is
+ * stored (auth_tokens.token_hash, migration 013) — a DB dump cannot be used
+ * to replay live sessions. Tokens carry the table's default 30-day expiry.
  */
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
@@ -26,10 +27,12 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { pool } from "../db.js";
 import { rowToAccount } from "../mappers.js";
 import { authenticate } from "../authenticate.js";
+import { hashToken } from "../lib/tokens.js";
 
 const HANDLE_RE = /^[a-z0-9_-]{3,20}$/i;
 const BIRTHDATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const PASSWORD_MIN_LENGTH = 6;
+const BCRYPT_ROUNDS = 12;
 
 const HANDLE_TAKEN_ERROR = "That handle is taken.";
 const GENERIC_CREDENTIAL_ERROR = "Incorrect handle or password.";
@@ -50,16 +53,20 @@ const GOOGLE_JWKS = GOOGLE_CLIENT_ID
  * Precomputed dummy bcrypt hash. Sign-in always runs one bcrypt.compare —
  * against the real hash when the handle exists, against this dummy when it
  * does not — so the response time does not reveal whether a handle exists.
+ * Same cost factor as real hashes, so the timing stays identical.
  */
-const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(16).toString("hex"), 10);
+const DUMMY_HASH = bcrypt.hashSync(
+  crypto.randomBytes(16).toString("hex"),
+  BCRYPT_ROUNDS,
+);
 
 /** Issues a new opaque token for the account and returns it. */
 async function issueToken(userId) {
   const token = crypto.randomBytes(32).toString("hex");
-  await pool.query("insert into auth_tokens (token, user_id) values ($1, $2)", [
-    token,
-    userId,
-  ]);
+  await pool.query(
+    "insert into auth_tokens (token_hash, user_id) values ($1, $2)",
+    [hashToken(token), userId],
+  );
   return token;
 }
 
@@ -99,7 +106,10 @@ async function deriveHandle(email, sub) {
 }
 
 export default async function authRoutes(app) {
-  app.post("/api/auth/signup", async (request, reply) => {
+  app.post(
+    "/api/auth/signup",
+    { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } },
+    async (request, reply) => {
     const { handle, password, birthdate } = request.body ?? {};
 
     if (typeof handle !== "string" || !HANDLE_RE.test(handle.trim())) {
@@ -117,7 +127,7 @@ export default async function authRoutes(app) {
     }
 
     const normalizedHandle = handle.trim().toLowerCase();
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     let profile;
     try {
@@ -142,9 +152,13 @@ export default async function authRoutes(app) {
 
     const token = await issueToken(profile.id);
     return reply.code(201).send({ token, account: rowToAccount(profile) });
-  });
+    },
+  );
 
-  app.post("/api/auth/signin", async (request, reply) => {
+  app.post(
+    "/api/auth/signin",
+    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    async (request, reply) => {
     const { handle, password } = request.body ?? {};
     if (typeof handle !== "string" || typeof password !== "string") {
       return reply.code(401).send({ error: GENERIC_CREDENTIAL_ERROR });
@@ -173,9 +187,23 @@ export default async function authRoutes(app) {
       return reply.code(401).send({ error: GENERIC_CREDENTIAL_ERROR });
     }
 
+    // Progressive rehash: hashes created at a lower cost factor are upgraded
+    // on the next successful sign-in (fire-and-forget — never block login).
+    if (bcrypt.getRounds(profile.password_hash) < BCRYPT_ROUNDS) {
+      bcrypt.hash(password, BCRYPT_ROUNDS).then((upgraded) =>
+        pool
+          .query("update profiles set password_hash = $1 where id = $2", [
+            upgraded,
+            profile.id,
+          ])
+          .catch((error) => request.log.error(error, "password rehash failed")),
+      );
+    }
+
     const token = await issueToken(profile.id);
     return { token, account: rowToAccount(profile) };
-  });
+    },
+  );
 
   /**
    * Google sign-in / sign-up in one door. The browser sends the ID token
@@ -186,7 +214,10 @@ export default async function authRoutes(app) {
    *     email, password_hash null, birthdate from the request (the age
    *     gate collected it upstream — Google does not share birthdays).
    */
-  app.post("/api/auth/google", async (request, reply) => {
+  app.post(
+    "/api/auth/google",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (request, reply) => {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_JWKS) {
       return reply
         .code(503)
@@ -260,7 +291,8 @@ export default async function authRoutes(app) {
 
     const token = await issueToken(profile.id);
     return reply.code(201).send({ token, account: rowToAccount(profile) });
-  });
+    },
+  );
 
   app.get("/api/auth/me", { preHandler: authenticate }, async (request) => {
     return { account: request.account };
@@ -270,8 +302,8 @@ export default async function authRoutes(app) {
     "/api/auth/signout",
     { preHandler: authenticate },
     async (request, reply) => {
-      await pool.query("delete from auth_tokens where token = $1", [
-        request.authToken,
+      await pool.query("delete from auth_tokens where token_hash = $1", [
+        hashToken(request.authToken),
       ]);
       return reply.code(204).send();
     },

@@ -131,6 +131,14 @@
       "working": "Preparing…",
       "error": "Couldn't export your data — try again."
     },
+    "email": {
+      "label": "Stored Google email",
+      "description": "We keep {{email}} to re-link your account when you sign in with Google. Deleting it doesn't affect your sign-ins.",
+      "button": "Delete email",
+      "working": "Deleting…",
+      "deleted": "Email deleted.",
+      "error": "Couldn't delete the email — try again."
+    },
     "delete": {
       "label": "Delete account",
       "description": "Permanently deletes your account, your sessions and your reviews. There is no way back.",

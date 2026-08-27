@@ -25,6 +25,7 @@ import type {
 /** Payload of GET /api/profile — settings plus the user's reviews. */
 export interface OwnProfile {
   profile: ProfileSettings;
+  email: string | null;
   reviews: DeviceReview[];
 }
 
@@ -42,7 +43,19 @@ export async function fetchProfile(): Promise<OwnProfile> {
   if (!data?.profile) {
     throw new Error("Could not load your profile.");
   }
-  return { profile: data.profile, reviews: data.reviews ?? [] };
+  return {
+    profile: data.profile,
+    email: data.email ?? null,
+    reviews: data.reviews ?? [],
+  };
+}
+
+/**
+ * Deletes the Google email stored at first social sign-in (PII the user can
+ * retract at any time). Resolves silently on 204.
+ */
+export async function deleteStoredEmail(): Promise<void> {
+  await apiFetch("/profile/email", { method: "DELETE", auth: true });
 }
 
 /**

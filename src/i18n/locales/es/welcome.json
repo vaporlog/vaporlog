@@ -65,6 +65,7 @@
     "switchToSignin": "¿Ya tienes una cuenta? Inicia sesión",
     "switchToSignup": "¿Nuevo en vaporlog? Crea una cuenta",
     "orContinueWith": "o continúa con",
+    "googleEmailNote": "Guardamos tu email de Google para re-vincular tu cuenta en próximos accesos. Puedes borrarlo cuando quieras desde tu perfil.",
     "syncNote": "tu cuenta se sincroniza entre tus dispositivos — las sesiones son privadas por defecto"
   },
   "validation": {

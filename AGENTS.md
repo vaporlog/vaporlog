@@ -190,6 +190,19 @@ diario, hint en comentarios para "primera sesión del día".
   "taken" igual que signup. `refreshAccount()` en `lib/auth.ts` sincroniza
   el caché/header tras el renombrado. Ojo: `/u/:handle` viejo deja de
   resolver (es el punto — tapar la fuga).
+- (pendiente de commit) — **pasada de seguridad** (reporte
+  `../security-report/`): CORS restringido a `SITE_URL`+localhost:3000,
+  `@fastify/helmet` (sin CSP — la CSP vive en el `Caddyfile` junto a HSTS y
+  demás headers), `@fastify/rate-limit` por ruta (`/api/auth/*` agresivo,
+  POST /api/sessions y PATCH /api/profile a 30/min; `trustProxy: true` para
+  que la IP real llegue tras Caddy), `bodyLimit` 2 MiB explícito.
+  `auth_tokens` guarda solo `token_hash` (SHA-256, migración
+  `013_hash_auth_tokens.sql` — **invalida todas las sesiones activas**);
+  helper `server/src/lib/tokens.js`. bcrypt sube a cost 12 con re-hash
+  progresivo en cada signin. Email de Google: nota de consentimiento bajo el
+  botón + `DELETE /api/profile/email` y bloque en `/profile` para borrarlo.
+  OG cache key pasa de `JSON.stringify(session)` a los campos que el render
+  usa; `isOwner` muerto eliminado. `.env.local` (Supabase muerto) borrado.
 
 ## Skills del proyecto (`.kimi/skills/`)
 

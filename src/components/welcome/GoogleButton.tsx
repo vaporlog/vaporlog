@@ -82,6 +82,11 @@ export default function GoogleButton({
         <span aria-hidden="true" className="h-px flex-1 bg-border" />
       </div>
       <div ref={containerRef} className="flex min-h-11 justify-center" />
+      {/* Consent note: the email Google shares is stored to re-link the
+          account on later sign-ins; it can be deleted from /profile. */}
+      <p className="max-w-72 self-center text-center text-xs leading-relaxed text-muted-foreground">
+        {t("account.googleEmailNote")}
+      </p>
     </div>
   );
 }

@@ -131,6 +131,14 @@
       "working": "Preparando…",
       "error": "No se pudieron exportar tus datos — inténtalo de nuevo."
     },
+    "email": {
+      "label": "Email de Google guardado",
+      "description": "Guardamos {{email}} para re-vincular tu cuenta cuando accedes con Google. Borrarlo no afecta tus accesos.",
+      "button": "Borrar email",
+      "working": "Borrando…",
+      "deleted": "Email borrado.",
+      "error": "No se pudo borrar el email — inténtalo de nuevo."
+    },
     "delete": {
       "label": "Eliminar cuenta",
       "description": "Elimina permanentemente tu cuenta, tus sesiones y tus reseñas. No hay vuelta atrás.",

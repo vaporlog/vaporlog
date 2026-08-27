@@ -101,11 +101,13 @@ create index if not exists sessions_user_id_idx
 -- ----------------------------------------------------------------------------
 -- 3. auth_tokens
 -- ----------------------------------------------------------------------------
--- Opaque Bearer tokens issued at sign-up / sign-in. The API only ever
--- accepts tokens whose expires_at is still in the future; expired rows are
--- garbage (a scheduled cleanup can delete them, nothing depends on it).
+-- Opaque Bearer tokens issued at sign-up / sign-in. Only the SHA-256 hash of
+-- the token is stored (migration 013): a DB dump must not hand out live
+-- sessions. The API only ever accepts tokens whose expires_at is still in the
+-- future; expired rows are garbage (a scheduled cleanup can delete them,
+-- nothing depends on it).
 create table if not exists auth_tokens (
-  token      text primary key,
+  token_hash text primary key,
   user_id    uuid not null references profiles (id) on delete cascade,
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default now() + interval '30 days'

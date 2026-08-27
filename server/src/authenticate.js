@@ -11,6 +11,7 @@
  */
 import { pool } from "./db.js";
 import { rowToAccount } from "./mappers.js";
+import { hashToken } from "./lib/tokens.js";
 
 export async function authenticate(request, reply) {
   const header = request.headers.authorization ?? "";
@@ -31,9 +32,9 @@ export async function authenticate(request, reply) {
             p.created_at
        from auth_tokens t
        join profiles p on p.id = t.user_id
-      where t.token = $1
+      where t.token_hash = $1
         and t.expires_at > now()`,
-    [token],
+    [hashToken(token)],
   );
   if (rows.length === 0) {
     return reply.code(401).send({ error: "Not signed in." });

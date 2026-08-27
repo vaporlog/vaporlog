@@ -139,7 +139,10 @@ export default async function sessionRoutes(app) {
   // else (legacy ids) is regenerated so the uuid PK never rejects a write.
   app.post(
     "/api/sessions",
-    { preHandler: authenticate },
+    {
+      preHandler: authenticate,
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+    },
     async (request, reply) => {
       const body = request.body ?? {};
       const id =

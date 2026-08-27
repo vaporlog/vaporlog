@@ -17,6 +17,8 @@
  */
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import { pool } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
@@ -27,11 +29,27 @@ import adminRoutes from "./routes/admin.js";
 import ogRoutes from "./routes/og.js";
 import ogImageRoutes from "./routes/og-image.js";
 
-const app = Fastify({ logger: true });
+// trustProxy: the app sits behind Caddy, so the real client IP arrives in
+// X-Forwarded-For — rate limiting must key on it, not on the proxy's IP.
+// bodyLimit: explicit 2 MiB cap (default is 1 MiB); the heaviest payload is
+// POST /api/sessions, far below this.
+const app = Fastify({ logger: true, trustProxy: true, bodyLimit: 2 * 1024 * 1024 });
 
-// Same-origin in production (nginx proxies /api), but the vite dev server
-// proxies too — permissive CORS keeps every deployment shape working.
-await app.register(cors, { origin: true });
+// Same-origin in production (Caddy proxies /api); the vite dev server proxies
+// too but the browser hits it cross-origin from localhost:3000, so that origin
+// is allowed alongside the site URL. Everything else is denied by default.
+await app.register(cors, {
+  origin: [process.env.SITE_URL ?? "https://vaporlog.online", "http://localhost:3000"],
+  credentials: false,
+});
+
+// Baseline security headers. CSP is NOT set here — it lives in the Caddyfile
+// so it covers the static shell too.
+await app.register(helmet, { contentSecurityPolicy: false });
+
+// Rate limiting is opt-in per route ({ config: { rateLimit: ... } }); the
+// sensitive ones live in routes/auth.js, sessions.js and profile.js.
+await app.register(rateLimit, { global: false });
 
 // Tolerant JSON parsing: an empty body (e.g. POST /api/auth/signout sends
 // none) parses as {} instead of failing fastify's strict JSON parser, and a

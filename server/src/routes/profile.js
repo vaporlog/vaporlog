@@ -103,23 +103,42 @@ export default async function profileRoutes(app) {
   /* ---------------------------------------------------------------- */
 
   // The caller's full profile plus their reviews (one fetch for the page).
+  // email is appended separately: it is PII from Google sign-in and must
+  // never ride PROFILE_COLUMNS, which the public-profile query reuses.
   app.get("/api/profile", { preHandler: authenticate }, async (request) => {
     const { rows } = await pool.query(
-      `select ${PROFILE_COLUMNS} from profiles where id = $1`,
+      `select ${PROFILE_COLUMNS}, email from profiles where id = $1`,
       [request.account.id],
     );
     return {
       profile: rowToProfileSettings(rows[0]),
+      email: rows[0]?.email ?? null,
       reviews: await fetchReviews(request.account.id),
     };
   });
+
+  // Deletes the Google email stored at first social sign-in (PII the user
+  // can retract at any time — the consent note lives next to the button).
+  app.delete(
+    "/api/profile/email",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      await pool.query("update profiles set email = null where id = $1", [
+        request.account.id,
+      ]);
+      return reply.code(204).send();
+    },
+  );
 
   // Partial update: handle, bio, privacy flags, favorite device. Only the
   // keys present in the body are touched; an empty patch returns the
   // profile unchanged.
   app.patch(
     "/api/profile",
-    { preHandler: authenticate },
+    {
+      preHandler: authenticate,
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+    },
     async (request, reply) => {
       const body = request.body ?? {};
 

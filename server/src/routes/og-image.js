@@ -26,6 +26,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
 import { pool } from "../db.js";
+import { hashToken } from "../lib/tokens.js";
 import { humanizeSlug, normalizeTemplate } from "./og.js";
 
 const UUID_RE =
@@ -989,7 +990,6 @@ export default async function ogImageRoutes(app) {
     }
 
     const session = rows[0];
-    let isOwner = false;
     if (!session.is_public) {
       // Private session: only the owner may render/download the card. A
       // missing or foreign Bearer token gets the same fallback as unknown.
@@ -1003,13 +1003,12 @@ export default async function ogImageRoutes(app) {
         return reply.redirect(FALLBACK_IMAGE, 302);
       }
       const { rows: authRows } = await pool.query(
-        `select user_id from auth_tokens where token = $1 and expires_at > now()`,
-        [token],
+        `select user_id from auth_tokens where token_hash = $1 and expires_at > now()`,
+        [hashToken(token)],
       );
       if (authRows.length === 0 || authRows[0].user_id !== session.user_id) {
         return reply.redirect(FALLBACK_IMAGE, 302);
       }
-      isOwner = true;
     }
 
     try {
@@ -1019,9 +1018,32 @@ export default async function ogImageRoutes(app) {
       // Content flags live on the session row: the owner's own toggles
       // decide what the card shows, same rule for public and private views.
       const includeAllEffects = session.unwanted_effects_public === true;
-      // sessions has no updated_at; the rendered content itself is the key,
-      // so editing the session changes the key and invalidates naturally.
-      const cacheKey = `${id}:${template}:${includeAllEffects}:${JSON.stringify(session)}`;
+      // sessions has no updated_at; the key is built from exactly the fields
+      // the templates render, so editing the session changes the key and
+      // invalidates naturally (and cache hits skip a full-row stringify).
+      const cacheKey = [
+        id,
+        template,
+        includeAllEffects,
+        session.rating,
+        session.strain_slug,
+        session.device_slug,
+        session.device_name,
+        session.temperature_c,
+        session.duration_min,
+        session.amount_g,
+        session.liked,
+        session.author,
+        session.owner_handle,
+        session.created_at,
+        session.energy_calm_score,
+        session.notes,
+        JSON.stringify(session.moods),
+        JSON.stringify(session.aromas),
+        JSON.stringify(session.flavors),
+        JSON.stringify(session.effect_intensities),
+        JSON.stringify(session.unwanted_effects),
+      ].join("|");
       let png = cardCache.get(cacheKey);
       if (png === undefined) {
         const { width, height } = templateSize(template);

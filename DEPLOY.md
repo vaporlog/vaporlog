@@ -244,5 +244,24 @@ la comparte.
 
 ---
 
+## 14. Endurecimiento de seguridad (migración 013)
+
+La migración `013_hash_auth_tokens.sql` cambia `auth_tokens` para guardar solo
+el hash SHA-256 de cada token. **Al aplicarla, todas las sesiones activas se
+invalidan** y cada usuario vuelve a iniciar sesión — es el comportamiento
+esperado, no un fallo.
+
+```bash
+git pull
+docker exec -i vaporlog-db-1 psql -U vaporlog -d vaporlog < server/db/migrations/013_hash_auth_tokens.sql
+docker compose up -d --build api web
+```
+
+El rebuild de `web` también activa los headers de seguridad del `Caddyfile`
+(CSP, HSTS, X-Frame-Options…). Verifica después: home 200, `/api/health`, y un
+login completo (incluido el botón de Google, que la CSP permite explícitamente).
+
+---
+
 ¿Problemas? Revisa `docker compose logs -f` — casi siempre el error está ahí a
 la vista (contraseña de `.env` sin configurar, puerto 80 ocupado, etc.).

@@ -50,6 +50,7 @@ import { useDevices } from "@/lib/data";
 import {
   deleteAccount,
   deleteDeviceReview,
+  deleteStoredEmail,
   fetchProfile,
   fetchProfileExport,
   fetchProfileStats,
@@ -80,6 +81,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<ProfileSettings | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [reviews, setReviews] = useState<DeviceReview[]>([]);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,7 @@ export default function Profile() {
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingEmail, setDeletingEmail] = useState(false);
 
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -111,6 +114,7 @@ export default function Profile() {
         fetchProfileStats(),
       ]);
       setProfile(own.profile);
+      setEmail(own.email);
       setReviews(own.reviews);
       setStats(ownStats);
     } catch {
@@ -253,6 +257,20 @@ export default function Profile() {
     }
   }
 
+  async function handleDeleteEmail() {
+    if (deletingEmail) return;
+    setDeletingEmail(true);
+    try {
+      await deleteStoredEmail();
+      setEmail(null);
+      toast.success(t("data.email.deleted"));
+    } catch {
+      toast.error(t("data.email.error"));
+    } finally {
+      setDeletingEmail(false);
+    }
+  }
+
   async function handleDeleteAccount() {
     if (deleting) return;
     setDeleting(true);
@@ -373,6 +391,33 @@ export default function Profile() {
             </Button>
           </div>
         </div>
+
+        {email !== null && (
+          <div className="rounded-xl border border-border/60 bg-card p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-medium text-foreground">
+                  {t("data.email.label")}
+                </p>
+                <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+                  {t("data.email.description", { email })}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleDeleteEmail()}
+                disabled={deletingEmail}
+                className="pressable shrink-0"
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+                {deletingEmail
+                  ? t("data.email.working")
+                  : t("data.email.button")}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="rounded-xl border border-destructive/40 bg-card p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
