@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link2 } from "lucide-react";
+import { Link as RouterLink } from "react-router-dom";
+import { Link2, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -242,9 +243,13 @@ function TemplateThumbnail({
 export default function ShareRow({
   session,
   strainName,
+  isOwner = false,
 }: {
   session: SessionLog;
   strainName: string;
+  /** When true, surface the "Custom cover" entry point. The route is
+   *  auth-gated server-side regardless; this is purely a UI decision. */
+  isOwner?: boolean;
 }) {
   const { t } = useTranslation("sessionCard");
   const [template, setTemplate] = useState<OgTemplate>(readPreferredTemplate);
@@ -337,6 +342,26 @@ export default function ShareRow({
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+        {isOwner ? (
+          <Button
+            asChild
+            type="button"
+            variant={session.customOgImage ? "default" : "outline"}
+            size="sm"
+            className={
+              session.customOgImage
+                ? "pressable herb-hover bg-herb text-herb-foreground"
+                : "pressable"
+            }
+          >
+            <RouterLink to={`/s/${session.id}/edit-cover`}>
+              <Pencil className="size-4" aria-hidden />
+              {session.customOgImage
+                ? t("share.customCoverActive")
+                : t("share.customCover")}
+            </RouterLink>
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"

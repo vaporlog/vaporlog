@@ -36,6 +36,11 @@ services:
       # Google sign-in (routes/auth.js): OAuth client ID, public by design.
       # Empty = feature disabled (the welcome flow hides the button).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    volumes:
+      # Owner-built cover images (CoverEditor) — named volume so they
+      # survive `docker compose up -d --build`; the container's own
+      # filesystem is wiped on every image rebuild.
+      - custom_og:/srv/assets/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -59,3 +64,4 @@ volumes:
   pgdata:
   caddy_data:
   caddy_config:
+  custom_og:

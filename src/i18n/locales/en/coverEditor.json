@@ -1,0 +1,93 @@
+{
+  "title": "Custom cover",
+  "subtitle": "Drag images, stickers and text onto the canvas — what you build is the card people see when this session is shared.",
+  "loading": "Loading the canvas…",
+  "loadError": "Couldn't load this session.",
+  "notOwner": "Only the session owner can edit the cover.",
+  "notSignedIn": "Sign in to edit this cover.",
+  "back": "Back to session",
+  "canvas": {
+    "ariaLabel": "Cover canvas. Use the toolbar to add images, the mascot and text. Drag any element to move it.",
+    "addText": "Add text",
+    "customTextPlaceholder": "Add custom text…",
+    "addImage": "Add image",
+    "addMascot": "Add mascot",
+    "addChart": "Add effects chart",
+    "chartTitle": "Effects",
+    "chartNoEffects": "Log a mood first to add a chart.",
+    "imageFile": "Image file",
+    "imagePicker": "Pick an image",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "bringForward": "Bring forward",
+    "sendBackward": "Send backward",
+    "bringToFront": "Bring to front",
+    "sendToBack": "Send to back",
+    "front": "Front",
+    "back": "Back",
+    "undo": "Undo",
+    "redo": "Redo",
+    "align": {
+      "left": "Align left",
+      "center": "Align center",
+      "right": "Align right"
+    },
+    "fontFamily": "Font",
+    "fonts": {
+      "sans": "Sans",
+      "serif": "Serif",
+      "mono": "Mono",
+      "impact": "Impact",
+      "script": "Script"
+    },
+    "bold": "Bold",
+    "italic": "Italic",
+    "rating": {
+      "text": "Big number",
+      "stars": "Stars (5)",
+      "dots": "Dots (5)",
+      "percent": "Percent",
+      "letter": "Letter grade"
+    },
+    "temperature": {
+      "text": "Big number",
+      "thermometer": "Thermometer",
+      "chip": "Chip"
+    },
+    "effects": {
+      "bar": "Bars",
+      "list": "List"
+    },
+    "clearAll": "Clear canvas"
+  },
+  "fields": {
+    "strain": "Strain",
+    "device": "Device",
+    "temperature": "Temperature",
+    "rating": "Rating",
+    "date": "Date"
+  },
+  "save": {
+    "button": "Save cover",
+    "saving": "Saving…",
+    "success": "Cover saved — your custom card is now what gets shared.",
+    "tooLarge": "Image is too big. Try removing a layer or two.",
+    "error": "Couldn't save that cover."
+  },
+  "restore": {
+    "button": "Restore default card",
+    "confirmTitle": "Restore default card?",
+    "confirmBody": "Your custom cover will be removed and the session will go back to the auto-generated card.",
+    "confirmCta": "Restore",
+    "cancelCta": "Keep cover",
+    "success": "Default card restored.",
+    "error": "Couldn't restore the default card."
+  },
+  "backgrounds": {
+    "label": "Backgrounds",
+    "solid": "Solid",
+    "herb": "Herb",
+    "night": "Night",
+    "paper": "Paper"
+  }
+}

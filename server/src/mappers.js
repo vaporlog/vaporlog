@@ -83,6 +83,9 @@ export function rowToSession(row) {
       ? row.energy_calm_score
       : null,
     notes: row.notes ?? "",
+    // Path (relative to server/assets/) of the owner-built cover, or null
+    // when the dynamic resvg renderer is still in charge.
+    customOgImage: row.custom_og_image ?? null,
     isPublic: row.is_public,
     inFeed: row.in_feed === true,
     author:

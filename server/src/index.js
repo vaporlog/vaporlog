@@ -28,6 +28,7 @@ import detoxRoutes from "./routes/detox.js";
 import adminRoutes from "./routes/admin.js";
 import ogRoutes from "./routes/og.js";
 import ogImageRoutes from "./routes/og-image.js";
+import customOgRoutes from "./routes/custom-og.js";
 
 // trustProxy: the app sits behind Caddy, so the real client IP arrives in
 // X-Forwarded-For — rate limiting must key on it, not on the proxy's IP.
@@ -126,6 +127,7 @@ await app.register(detoxRoutes);
 await app.register(adminRoutes);
 await app.register(ogRoutes);
 await app.register(ogImageRoutes);
+await app.register(customOgRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 try {

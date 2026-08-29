@@ -23,6 +23,7 @@ const Strains = lazy(() => import("@/pages/Strains"));
 const StrainDetail = lazy(() => import("@/pages/StrainDetail"));
 const Recommendations = lazy(() => import("@/pages/Recommendations"));
 const SessionCard = lazy(() => import("@/pages/SessionCard"));
+const CoverEditor = lazy(() => import("@/pages/CoverEditor"));
 const Feed = lazy(() => import("@/pages/Feed"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const PublicProfile = lazy(() => import("@/pages/PublicProfile"));
@@ -72,6 +73,7 @@ const router = createBrowserRouter(
       { path: "/recommendations", element: <Recommendations /> },
       { path: "/feed", element: <Feed /> },
       { path: "/s/:id", element: <SessionCard /> },
+      { path: "/s/:id/edit-cover", element: <CoverEditor /> },
       { path: "/u/:handle", element: <PublicProfile /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
