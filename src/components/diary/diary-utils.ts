@@ -190,3 +190,165 @@ export function sessionDetailParts(session: SessionLog): string[] {
   if (session.amountG !== null) parts.push(`${session.amountG} g`);
   return parts;
 }
+
+/* ------------------------------------------------------------------ */
+/* Structured diary filters (the panel under the free-text search).   */
+/* ------------------------------------------------------------------ */
+
+export type LikedFilter = "all" | "liked" | "disliked";
+
+export interface DiaryFiltersState {
+  /** Strain slug, or "" for all. */
+  strainSlug: string;
+  /** Device slug, or "" for all. */
+  deviceSlug: string;
+  /** Minimum rating (1–10), or null for any. */
+  minRating: number | null;
+  liked: LikedFilter;
+  /** Tag facets: a session matches when it carries ANY selected tag (OR
+   *  within a facet, AND across facets). */
+  aromas: string[];
+  flavors: string[];
+  moods: string[];
+  /** Inclusive local-day bounds as YYYY-MM-DD, "" when unset. */
+  dateFrom: string;
+  dateTo: string;
+}
+
+export const EMPTY_DIARY_FILTERS: DiaryFiltersState = {
+  strainSlug: "",
+  deviceSlug: "",
+  minRating: null,
+  liked: "all",
+  aromas: [],
+  flavors: [],
+  moods: [],
+  dateFrom: "",
+  dateTo: "",
+};
+
+export function isDiaryFilterActive(f: DiaryFiltersState): boolean {
+  return (
+    f.strainSlug !== "" ||
+    f.deviceSlug !== "" ||
+    f.minRating !== null ||
+    f.liked !== "all" ||
+    f.aromas.length > 0 ||
+    f.flavors.length > 0 ||
+    f.moods.length > 0 ||
+    f.dateFrom !== "" ||
+    f.dateTo !== ""
+  );
+}
+
+/** Count of active filter values — the toggle button shows it as a badge. */
+export function countActiveDiaryFilters(f: DiaryFiltersState): number {
+  let count = 0;
+  if (f.strainSlug !== "") count += 1;
+  if (f.deviceSlug !== "") count += 1;
+  if (f.minRating !== null) count += 1;
+  if (f.liked !== "all") count += 1;
+  count += f.aromas.length + f.flavors.length + f.moods.length;
+  if (f.dateFrom !== "" || f.dateTo !== "") count += 1;
+  return count;
+}
+
+/**
+ * Applies the structured filters with AND semantics across facets (OR among
+ * the selected tags of one facet). Dates compare against local days, so
+ * "hasta 2026-08-29" includes that whole day.
+ */
+export function applyDiaryFilters(
+  sessions: SessionLog[],
+  filters: DiaryFiltersState,
+): SessionLog[] {
+  if (!isDiaryFilterActive(filters)) return sessions;
+  const fromTs = filters.dateFrom
+    ? new Date(`${filters.dateFrom}T00:00:00`).getTime()
+    : null;
+  const toTs = filters.dateTo
+    ? new Date(`${filters.dateTo}T23:59:59.999`).getTime()
+    : null;
+  return sessions.filter((s) => {
+    if (filters.strainSlug !== "" && s.strainSlug !== filters.strainSlug)
+      return false;
+    if (filters.deviceSlug !== "" && s.deviceSlug !== filters.deviceSlug)
+      return false;
+    if (filters.minRating !== null && s.rating < filters.minRating)
+      return false;
+    if (filters.liked === "liked" && s.liked !== true) return false;
+    if (filters.liked === "disliked" && s.liked !== false) return false;
+    if (
+      filters.aromas.length > 0 &&
+      !filters.aromas.some((tag) => s.aromas.includes(tag))
+    )
+      return false;
+    if (
+      filters.flavors.length > 0 &&
+      !filters.flavors.some((tag) => s.flavors.includes(tag))
+    )
+      return false;
+    if (
+      filters.moods.length > 0 &&
+      !filters.moods.some((tag) => s.moods.includes(tag))
+    )
+      return false;
+    if (fromTs !== null || toTs !== null) {
+      const ts = new Date(s.createdAt).getTime();
+      if (Number.isNaN(ts)) return false;
+      if (fromTs !== null && ts < fromTs) return false;
+      if (toTs !== null && ts > toTs) return false;
+    }
+    return true;
+  });
+}
+
+/** A strain/device filter option with its session count. */
+export interface NamedSlugOption {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+function slugOptions(
+  sessions: SessionLog[],
+  pick: (s: SessionLog) => string,
+  display: (slug: string) => string,
+): NamedSlugOption[] {
+  const counts = new Map<string, number>();
+  for (const s of sessions) {
+    counts.set(pick(s), (counts.get(pick(s)) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([slug, count]) => ({ slug, name: display(slug), count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/** Strains present in the diary, most-used first. */
+export function diaryStrainOptions(sessions: SessionLog[]): NamedSlugOption[] {
+  return slugOptions(sessions, (s) => s.strainSlug, displayStrainName);
+}
+
+/** Devices present in the diary, most-used first. */
+export function diaryDeviceOptions(sessions: SessionLog[]): NamedSlugOption[] {
+  return slugOptions(sessions, (s) => s.deviceSlug, displayDeviceName);
+}
+
+/**
+ * Tags present in the diary for one facet (aromas/flavors/moods),
+ * most-used first — a filter can never point at a tag the diary lacks.
+ */
+export function diaryTagOptions(
+  sessions: SessionLog[],
+  pick: (s: SessionLog) => string[],
+): string[] {
+  const counts = new Map<string, number>();
+  for (const s of sessions) {
+    for (const tag of new Set(pick(s))) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([tag]) => tag);
+}

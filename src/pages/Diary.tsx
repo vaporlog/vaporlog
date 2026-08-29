@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
+import { SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { SearchInput } from "@/components/ui/search-input";
 import i18n from "@/i18n";
 import { translateTag } from "@/i18n/vocab-translations";
 import { ActivityChart } from "@/components/diary/ActivityChart";
+import DiaryFilters from "@/components/diary/DiaryFilters";
 import { HighlightsRow } from "@/components/diary/HighlightsRow";
 import { DiaryHeader } from "@/components/diary/DiaryHeader";
 import { EmptyDiary } from "@/components/diary/EmptyDiary";
@@ -14,11 +16,19 @@ import { FavoriteStrains } from "@/components/diary/FavoriteStrains";
 import { SessionList } from "@/components/diary/SessionList";
 import { StatsStrip } from "@/components/diary/StatsStrip";
 import {
+  applyDiaryFilters,
   computeFavorites,
   computeStats,
   computeWeeklyActivity,
+  countActiveDiaryFilters,
+  diaryDeviceOptions,
+  diaryStrainOptions,
+  diaryTagOptions,
   displayDeviceName,
   displayStrainName,
+  EMPTY_DIARY_FILTERS,
+  isDiaryFilterActive,
+  type DiaryFiltersState,
 } from "@/components/diary/diary-utils";
 import {
   getProfile,
@@ -47,6 +57,28 @@ export default function Diary() {
   const favorites = useMemo(() => computeFavorites(sessions), [sessions]);
   const weekly = useMemo(() => computeWeeklyActivity(sessions), [sessions]);
 
+  // Structured filters — the panel under the search box. They compose with
+  // the free-text query (both must match) and run client-side over the same
+  // in-memory sessions.
+  const [filters, setFilters] = useState<DiaryFiltersState>(EMPTY_DIARY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterOptions = useMemo(
+    () => ({
+      strains: diaryStrainOptions(sessions),
+      devices: diaryDeviceOptions(sessions),
+      aromas: diaryTagOptions(sessions, (s) => s.aromas),
+      flavors: diaryTagOptions(sessions, (s) => s.flavors),
+      moods: diaryTagOptions(sessions, (s) => s.moods),
+    }),
+    [sessions],
+  );
+  const filtering = isDiaryFilterActive(filters);
+  const activeFilterCount = countActiveDiaryFilters(filters);
+  const facetFiltered = useMemo(
+    () => applyDiaryFilters(sessions, filters),
+    [sessions, filters],
+  );
+
   // Diary search — free text over everything the user can see on a card:
   // strain and device display names, notes and every tag list. Client-side
   // against the in-memory sessions, live on every keystroke. Controlled tags
@@ -54,8 +86,8 @@ export default function Diary() {
   const [query, setQuery] = useState("");
   const filteredSessions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q === "") return sessions;
-    return sessions.filter((session) =>
+    if (q === "") return facetFiltered;
+    return facetFiltered.filter((session) =>
       [
         displayStrainName(session.strainSlug),
         displayDeviceName(session.deviceSlug),
@@ -70,7 +102,7 @@ export default function Diary() {
         .toLowerCase()
         .includes(q),
     );
-  }, [sessions, query]);
+  }, [facetFiltered, query]);
   const searching = query.trim() !== "";
 
   // Missing or unreadable profile → the age gate owns this user first.
@@ -186,17 +218,48 @@ export default function Diary() {
           <FavoriteStrains favorites={favorites} />
           <ActivityChart weeks={weekly} />
 
-          {/* Search — filters the list live; stats stay global. */}
+          {/* Search + structured filters — they narrow the list live; the
+              stats above stay global. */}
           <div className="flex flex-col gap-1.5">
-            <SearchInput
-              value={query}
-              onChange={setQuery}
-              placeholder={t("search.placeholder")}
-              aria-label={t("search.ariaLabel")}
-              onClear={() => setQuery("")}
-              clearAriaLabel={t("search.clearAria")}
-            />
-            {searching ? (
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <SearchInput
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={t("search.placeholder")}
+                  aria-label={t("search.ariaLabel")}
+                  onClear={() => setQuery("")}
+                  clearAriaLabel={t("search.clearAria")}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((open) => !open)}
+                aria-expanded={filtersOpen}
+                aria-label={t("filters.toggleAria")}
+                className="pressable flex h-11 shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">{t("filters.toggle")}</span>
+                {activeFilterCount > 0 ? (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+            {filtersOpen ? (
+              <DiaryFilters
+                filters={filters}
+                onChange={setFilters}
+                strains={filterOptions.strains}
+                devices={filterOptions.devices}
+                aromas={filterOptions.aromas}
+                flavors={filterOptions.flavors}
+                moods={filterOptions.moods}
+              />
+            ) : null}
+            {searching || filtering ? (
               <p className="text-xs text-muted-foreground" role="status">
                 {t("search.results", {
                   shown: filteredSessions.length,
@@ -206,9 +269,11 @@ export default function Diary() {
             ) : null}
           </div>
 
-          {searching && filteredSessions.length === 0 ? (
+          {(searching || filtering) && filteredSessions.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
-              {t("search.noResults", { query: query.trim() })}
+              {searching
+                ? t("search.noResults", { query: query.trim() })
+                : t("filters.noResults")}
             </p>
           ) : (
             <SessionList
