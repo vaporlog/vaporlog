@@ -29,6 +29,7 @@ import adminRoutes from "./routes/admin.js";
 import ogRoutes from "./routes/og.js";
 import ogImageRoutes from "./routes/og-image.js";
 import customOgRoutes from "./routes/custom-og.js";
+import coverTemplateRoutes from "./routes/cover-templates.js";
 
 // trustProxy: the app sits behind Caddy, so the real client IP arrives in
 // X-Forwarded-For — rate limiting must key on it, not on the proxy's IP.
@@ -145,6 +146,7 @@ await app.register(adminRoutes);
 await app.register(ogRoutes);
 await app.register(ogImageRoutes);
 await app.register(customOgRoutes);
+await app.register(coverTemplateRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 try {

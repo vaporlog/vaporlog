@@ -194,13 +194,23 @@
     "paper": "Paper"
   },
   "gallery": {
-    "empty": "You don't have any saved covers yet. Save one and it will show up here so you can reuse it on other sessions.",
-    "current": "Current",
-    "imageOnly": "Flattened",
+    "empty": "You don't have any saved covers yet. Use \"Save as template\" and they'll show up here to apply on any session.",
     "confirmTitle": "Use this cover as a template?",
     "confirmBody": "Your current canvas will be replaced with that cover and its data will refresh to this session. You can undo it.",
     "confirmCta": "Use template",
     "cancelCta": "Cancel",
-    "applied": "Template applied — data refreshed to this session."
+    "applied": "Template applied — data refreshed to this session.",
+    "saveTemplate": "Save as template",
+    "nameLabel": "Name",
+    "namePlaceholder": "My favorite cover…",
+    "saveCta": "Save",
+    "saved": "Template saved — available on all your sessions.",
+    "saveError": "Couldn't save the template.",
+    "deleteTitle": "Delete this template?",
+    "deleteBody": "\"{{name}}\" will be deleted. Session covers already using it won't change.",
+    "deleteCta": "Delete",
+    "deleted": "Template deleted.",
+    "renameTitle": "Rename template",
+    "renamed": "Name updated."
   }
 }

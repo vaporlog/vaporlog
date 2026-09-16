@@ -68,7 +68,7 @@ import {
   type EffectsPresentation,
   type TextPresentation,
 } from "./model";
-import CoverGallery, { type GalleryCover } from "./CoverGallery";
+import CoverGallery, { type CoverTemplate } from "./CoverGallery";
 
 const RATING_PRESENTATIONS: { id: TextPresentation; key: string }[] = [
   { id: "text", key: "canvas.rating.text" },
@@ -161,7 +161,7 @@ function FieldDropdown({
 export default function CoverPalette({
   session,
   background,
-  covers,
+  refreshSignal,
   onApplyTemplate,
   onAddLayer,
   onAddImageFile,
@@ -170,8 +170,8 @@ export default function CoverPalette({
 }: {
   session: SessionLog;
   background: BackgroundFill;
-  covers: GalleryCover[];
-  onApplyTemplate: (sessionId: string) => void;
+  refreshSignal: number;
+  onApplyTemplate: (template: CoverTemplate) => void;
   onAddLayer: (layer: CoverLayer) => void;
   onAddImageFile: (file: File) => void;
   onAddMascot: () => void;
@@ -189,10 +189,10 @@ export default function CoverPalette({
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-4 p-3">
-        {/* ── My covers (saved covers as templates) ── */}
+        {/* ── My covers (global saved templates) ── */}
         <div className="flex flex-col gap-1.5">
           <SectionLabel>{t("palette.myCovers")}</SectionLabel>
-          <CoverGallery covers={covers} onApply={onApplyTemplate} />
+          <CoverGallery refreshSignal={refreshSignal} onApply={onApplyTemplate} />
         </div>
 
         <Separator />

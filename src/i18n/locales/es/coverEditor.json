@@ -194,13 +194,23 @@
     "paper": "Papel"
   },
   "gallery": {
-    "empty": "Aún no tienes portadas guardadas. Guarda una y aparecerá aquí para reutilizarla en otras sesiones.",
-    "current": "Actual",
-    "imageOnly": "Solo imagen",
+    "empty": "Aún no tienes portadas guardadas. Usa \"Guardar como template\" y aparecerán aquí para aplicarlas en cualquier sesión.",
     "confirmTitle": "¿Usar esta portada como template?",
     "confirmBody": "El lienzo actual se reemplazará por esa portada y los datos se actualizarán a esta sesión. Puedes deshacerlo.",
     "confirmCta": "Usar template",
     "cancelCta": "Cancelar",
-    "applied": "Template aplicado — los datos se actualizaron a esta sesión."
+    "applied": "Template aplicado — los datos se actualizaron a esta sesión.",
+    "saveTemplate": "Guardar como template",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Mi portada favorita…",
+    "saveCta": "Guardar",
+    "saved": "Template guardado — disponible en todas tus sesiones.",
+    "saveError": "No se pudo guardar el template.",
+    "deleteTitle": "¿Borrar este template?",
+    "deleteBody": "Se eliminará \"{{name}}\". Las portadas de sesiones que ya lo usen no cambian.",
+    "deleteCta": "Borrar",
+    "deleted": "Template borrado.",
+    "renameTitle": "Renombrar template",
+    "renamed": "Nombre actualizado."
   }
 }

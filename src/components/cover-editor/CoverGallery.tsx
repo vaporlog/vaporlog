@@ -1,13 +1,17 @@
 /*
- * "My covers" gallery for the palette — thumbnails of every session
- * that already has a saved custom cover. Picking one asks for
- * confirmation and hands the session id to the editor, which applies
- * the cover as a template (rebound to the current session's data) or,
- * for image-only covers, flattens the PNG into a single layer.
+ * "My covers" gallery for the palette — the user's saved cover
+ * templates, global across sessions (not per-session covers). Picking
+ * one asks for confirmation and hands the template to the editor,
+ * which re-binds its data layers to the current session. Each item
+ * can be renamed or deleted. The list is self-contained: it fetches
+ * on mount and again whenever `refreshSignal` bumps (the editor bumps
+ * it after a "save as template").
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -19,33 +23,48 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getToken } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { apiFetch, getToken } from "@/lib/api";
 
-export type GalleryCover = {
-  sessionId: string;
-  caption: string;
-  hasDoc: boolean;
-  isCurrent: boolean;
+export type CoverTemplate = {
+  id: string;
+  name: string;
+  doc: string;
+  hasPreview: boolean;
+  updatedAt: string;
 };
 
-function CoverThumb({
-  cover,
+function TemplateThumb({
+  template,
   onPick,
+  onRename,
+  onDelete,
 }: {
-  cover: GalleryCover;
+  template: CoverTemplate;
   onPick: () => void;
+  onRename: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useTranslation("coverEditor");
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (!template.hasPreview) return;
     let cancelled = false;
     let objectUrl: string | null = null;
     const token = getToken();
     const headers: Record<string, string> = {};
     if (token !== null) headers.Authorization = `Bearer ${token}`;
-    fetch(`/api/og/s/${cover.sessionId}/card.png`, { headers })
+    fetch(`/api/cover-templates/${template.id}/preview.png`, { headers })
       .then((response) => {
         if (!response.ok) throw new Error(`thumb ${response.status}`);
         return response.blob();
@@ -62,79 +81,170 @@ function CoverThumb({
       cancelled = true;
       if (objectUrl !== null) URL.revokeObjectURL(objectUrl);
     };
-  }, [cover.sessionId]);
+  }, [template.id, template.hasPreview, template.updatedAt]);
 
-  // Broken thumbnails disappear instead of showing a dead tile.
-  if (failed) return null;
+  // No preview (or a broken one) falls back to a tile with the name.
+  const showNameTile = !template.hasPreview || failed;
 
   return (
-    <button
-      type="button"
-      onClick={onPick}
-      className="group relative overflow-hidden rounded-md border border-border bg-card text-left transition-colors hover:border-herb/60 pressable"
-    >
-      <div className="aspect-[1200/630] w-full">
-        {src === null ? (
-          <div className="size-full animate-pulse bg-muted" aria-hidden />
-        ) : (
-          <img
-            src={src}
-            alt={cover.caption}
-            className="size-full object-cover"
-            loading="lazy"
-          />
-        )}
+    <div className="group relative overflow-hidden rounded-md border border-border bg-card transition-colors hover:border-herb/60">
+      <button
+        type="button"
+        onClick={onPick}
+        className="block w-full text-left pressable"
+      >
+        <div className="aspect-[1200/630] w-full">
+          {src !== null ? (
+            <img
+              src={src}
+              alt={template.name}
+              className="size-full object-cover"
+              loading="lazy"
+            />
+          ) : showNameTile ? (
+            <div className="flex size-full items-center justify-center bg-muted px-2">
+              <span className="text-center text-[10px] font-medium text-muted-foreground">
+                {template.name}
+              </span>
+            </div>
+          ) : (
+            <div className="size-full animate-pulse bg-muted" aria-hidden />
+          )}
+        </div>
+      </button>
+      <div className="flex items-center justify-between gap-1 px-1.5 py-1">
+        <span className="truncate text-[10px] font-medium">{template.name}</span>
+        <div className="flex shrink-0 items-center">
+          <button
+            type="button"
+            onClick={onRename}
+            aria-label={t("gallery.renameTitle")}
+            title={t("gallery.renameTitle")}
+            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground pressable"
+          >
+            <Pencil className="size-3" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={t("gallery.deleteCta")}
+            title={t("gallery.deleteCta")}
+            className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive pressable"
+          >
+            <Trash2 className="size-3" aria-hidden />
+          </button>
+        </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4">
-        <span className="truncate text-[10px] font-medium text-white">
-          {cover.caption}
-        </span>
-      </div>
-      <div className="absolute left-1 top-1 flex gap-1">
-        {cover.isCurrent ? (
-          <span className="rounded bg-herb px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-herb-foreground">
-            {t("gallery.current")}
-          </span>
-        ) : null}
-        {!cover.hasDoc ? (
-          <span className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
-            {t("gallery.imageOnly")}
-          </span>
-        ) : null}
-      </div>
-    </button>
+    </div>
   );
 }
 
 export default function CoverGallery({
-  covers,
+  refreshSignal,
   onApply,
 }: {
-  covers: GalleryCover[];
-  onApply: (sessionId: string) => void;
+  refreshSignal: number;
+  onApply: (template: CoverTemplate) => void;
 }) {
   const { t } = useTranslation("coverEditor");
-  const [pending, setPending] = useState<GalleryCover | null>(null);
+  const [templates, setTemplates] = useState<CoverTemplate[] | null>(null);
+  const [pendingApply, setPendingApply] = useState<CoverTemplate | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CoverTemplate | null>(null);
+  const [renaming, setRenaming] = useState<CoverTemplate | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  if (covers.length === 0) {
+  const refresh = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ templates: CoverTemplate[] }>(
+        "/cover-templates",
+        { auth: true },
+      );
+      setTemplates(data?.templates ?? []);
+    } catch {
+      setTemplates([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh, refreshSignal]);
+
+  const submitRename = useCallback(async () => {
+    if (renaming === null || renameSaving) return;
+    const name = renameValue.trim();
+    if (name === "") return;
+    setRenameSaving(true);
+    try {
+      await apiFetch(`/cover-templates/${renaming.id}`, {
+        method: "PATCH",
+        body: { name },
+        auth: true,
+      });
+      toast.success(t("gallery.renamed"));
+      setRenaming(null);
+      await refresh();
+    } catch {
+      toast.error(t("gallery.saveError"));
+    } finally {
+      setRenameSaving(false);
+    }
+  }, [renaming, renameSaving, renameValue, refresh, t]);
+
+  const confirmDelete = useCallback(async () => {
+    if (pendingDelete === null || deleting) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`/cover-templates/${pendingDelete.id}`, {
+        method: "DELETE",
+        auth: true,
+      });
+      toast.success(t("gallery.deleted"));
+      setPendingDelete(null);
+      await refresh();
+    } catch {
+      toast.error(t("gallery.saveError"));
+    } finally {
+      setDeleting(false);
+    }
+  }, [pendingDelete, deleting, refresh, t]);
+
+  if (templates === null) {
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="aspect-[1200/630] animate-pulse rounded-md bg-muted" aria-hidden />
+        <div className="aspect-[1200/630] animate-pulse rounded-md bg-muted" aria-hidden />
+      </div>
+    );
+  }
+
+  if (templates.length === 0) {
     return <p className="px-1 text-xs text-muted-foreground">{t("gallery.empty")}</p>;
   }
 
   return (
     <>
       <div className="grid grid-cols-2 gap-1.5">
-        {covers.map((cover) => (
-          <CoverThumb
-            key={cover.sessionId}
-            cover={cover}
-            onPick={() => setPending(cover)}
+        {templates.map((template) => (
+          <TemplateThumb
+            key={template.id}
+            template={template}
+            onPick={() => setPendingApply(template)}
+            onRename={() => {
+              setRenaming(template);
+              setRenameValue(template.name);
+            }}
+            onDelete={() => setPendingDelete(template)}
           />
         ))}
       </div>
+
+      {/* Apply confirmation — the current canvas gets replaced. */}
       <AlertDialog
-        open={pending !== null}
+        open={pendingApply !== null}
         onOpenChange={(open) => {
-          if (!open) setPending(null);
+          if (!open) setPendingApply(null);
         }}
       >
         <AlertDialogContent>
@@ -149,11 +259,93 @@ export default function CoverGallery({
             <AlertDialogAction
               className="pressable"
               onClick={() => {
-                if (pending !== null) onApply(pending.sessionId);
-                setPending(null);
+                if (pendingApply !== null) onApply(pendingApply);
+                setPendingApply(null);
               }}
             >
               {t("gallery.confirmCta")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rename dialog. */}
+      <Dialog
+        open={renaming !== null}
+        onOpenChange={(open) => {
+          if (!open) setRenaming(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("gallery.renameTitle")}</DialogTitle>
+          </DialogHeader>
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitRename();
+            }}
+          >
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("gallery.nameLabel")}
+              </span>
+              <Input
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+                placeholder={t("gallery.namePlaceholder")}
+                autoFocus
+              />
+            </label>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="pressable"
+                onClick={() => setRenaming(null)}
+              >
+                {t("gallery.cancelCta")}
+              </Button>
+              <Button
+                type="submit"
+                className="pressable herb-hover bg-herb text-herb-foreground"
+                disabled={renameSaving || renameValue.trim() === ""}
+              >
+                {t("gallery.saveCta")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation. */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("gallery.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("gallery.deleteBody", { name: pendingDelete?.name ?? "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="pressable">
+              {t("gallery.cancelCta")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="pressable"
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmDelete();
+              }}
+            >
+              {t("gallery.deleteCta")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

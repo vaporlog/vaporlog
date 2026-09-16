@@ -9,6 +9,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  BookmarkPlus,
   Redo2,
   RotateCcw,
   Save,
@@ -34,6 +35,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
@@ -46,6 +55,7 @@ import {
 import { useMySessions } from "@/lib/data";
 import CoverPalette from "@/components/cover-editor/Palette";
 import CoverInspector from "@/components/cover-editor/Inspector";
+import type { CoverTemplate } from "@/components/cover-editor/CoverGallery";
 import {
   CoverChartNode,
   CoverChipsNode,
@@ -361,81 +371,35 @@ export default function CoverEditor() {
     reader.readAsDataURL(blob);
   }, [t, addLayer]);
 
-  // ── My covers (templates from saved covers) ───────────────────────
-  // Every session with a saved custom cover shows up in the palette
-  // gallery; the one being edited goes first.
-  const covers = useMemo(
-    () =>
-      sessions
-        .filter((entry) => entry.customOgImage != null)
-        .map((entry) => ({
-          sessionId: entry.id,
-          caption: `${displayStrainName(entry.strainSlug)} · ${entry.rating.toFixed(1)}`,
-          hasDoc: parseCoverDoc(entry.customOgDoc) !== null,
-          isCurrent: entry.id === id,
-        }))
-        .sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent)),
-    [sessions, id],
-  );
+  // ── Cover templates (global "My covers" gallery) ─────────────────
+  // Templates live server-side per user, not per session; the gallery
+  // fetches them itself and refetches when refreshSignal bumps (after
+  // a "save as template" from this editor).
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
-  /** Applies a saved cover as a template: a stored doc keeps its design
-   *  and re-binds data layers to THIS session; an image-only cover is
-   *  flattened to a single full-canvas image layer. */
+  /** Applies a saved template: the stored doc keeps its design and
+   *  re-binds data layers to THIS session. */
   const applyTemplate = useCallback(
-    async (sessionId: string) => {
+    (template: CoverTemplate) => {
       if (session === null) return;
-      const source = sessions.find((entry) => entry.id === sessionId);
-      if (source === undefined) return;
-      const doc = parseCoverDoc(source.customOgDoc);
-      if (doc !== null) {
-        dispatch({
-          type: "replace_doc",
-          ...rebindDoc(doc, {
-            session,
-            strainName: displayStrainName(session.strainSlug),
-            deviceName: displayDeviceName(session.deviceSlug),
-            t,
-          }),
-        });
-      } else {
-        const token = getToken();
-        const headers: Record<string, string> = {};
-        if (token !== null) headers.Authorization = `Bearer ${token}`;
-        try {
-          const response = await fetch(`/api/og/s/${sessionId}/card.png`, { headers });
-          if (!response.ok) throw new Error(`cover ${response.status}`);
-          const blob = await response.blob();
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              if (typeof reader.result === "string") resolve(reader.result);
-              else reject(new Error("cover read failed"));
-            };
-            reader.onerror = () => reject(new Error("cover read failed"));
-            reader.readAsDataURL(blob);
-          });
-          dispatch({
-            type: "replace_doc",
-            background: "solid",
-            layers: [
-              buildImageLayer({
-                src: dataUrl,
-                width: CANVAS_W,
-                height: CANVAS_H,
-                x: 0,
-                y: 0,
-              }),
-            ],
-          });
-        } catch {
-          toast.error(t("save.error"));
-          return;
-        }
+      const doc = parseCoverDoc(template.doc);
+      if (doc === null) {
+        toast.error(t("save.error"));
+        return;
       }
+      dispatch({
+        type: "replace_doc",
+        ...rebindDoc(doc, {
+          session,
+          strainName: displayStrainName(session.strainSlug),
+          deviceName: displayDeviceName(session.deviceSlug),
+          t,
+        }),
+      });
       setSelectedId(null);
       toast.success(t("gallery.applied"));
     },
-    [session, sessions, t],
+    [session, t],
   );
 
   // ── Inline text editing overlay ───────────────────────────────────
@@ -602,29 +566,36 @@ export default function CoverEditor() {
 
   // ── Save / restore ────────────────────────────────────────────────
 
-  const handleSave = useCallback(async () => {
+  /** Rasterizes the design at its native 1200×630 design size. Commits
+   *  any in-flight inline edit and drops the selection first, then
+   *  defers a frame so the transformer / selection rect disappear from
+   *  the export — otherwise the handles ship in the PNG. Shared by the
+   *  session-cover save and the template save. */
+  const rasterizeDesign = useCallback(async (): Promise<string | null> => {
     const stage = stageRef.current;
-    if (stage === null || saving) return;
-    setSaving(true);
-    // Commit any in-flight inline edit and drop the selection, then
-    // defer a frame so the transformer / selection rect disappear from
-    // the export — otherwise the handles ship in the PNG.
+    if (stage === null) return null;
     if (editingId !== null) commitEditing();
     setSelectedId(null);
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => resolve());
     });
+    return stage.toDataURL({
+      pixelRatio: 1,
+      mimeType: "image/png",
+      width: CANVAS_W,
+      height: CANVAS_H,
+    });
+  }, [editingId, commitEditing]);
+
+  const handleSave = useCallback(async () => {
+    if (saving) return;
+    setSaving(true);
     try {
-      // Always rasterize the design at its native design size, then
-      // composite into the target size (letterboxed with the chosen
+      const designDataUrl = await rasterizeDesign();
+      if (designDataUrl === null) throw new Error("");
+      // Composite into the target size (letterboxed with the chosen
       // background). This keeps positions/sizes stable across aspect
       // ratios — switching the export doesn't shift the design.
-      const designDataUrl = stage.toDataURL({
-        pixelRatio: 1,
-        mimeType: "image/png",
-        width: CANVAS_W,
-        height: CANVAS_H,
-      });
       const dataUrl =
         exportSize.width === CANVAS_W && exportSize.height === CANVAS_H
           ? designDataUrl
@@ -645,7 +616,42 @@ export default function CoverEditor() {
     } finally {
       setSaving(false);
     }
-  }, [id, saving, t, exportSize, background, layers, editingId, commitEditing]);
+  }, [id, saving, t, exportSize, background, layers, rasterizeDesign]);
+
+  // ── Save as template ──────────────────────────────────────────────
+  // Templates are global (apply from any session). The preview is the
+  // same 1200×630 raster the session-cover save produces, without the
+  // export-size letterbox — templates are always design-size.
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  const handleSaveTemplate = useCallback(async () => {
+    const name = templateName.trim();
+    if (name === "" || savingTemplate) return;
+    setSavingTemplate(true);
+    try {
+      const dataUrl = await rasterizeDesign();
+      if (dataUrl === null) throw new Error("");
+      await apiFetch("/cover-templates", {
+        method: "POST",
+        body: {
+          name,
+          doc: serializeCoverDoc(background, layers),
+          image: dataUrl,
+        },
+        auth: true,
+      });
+      toast.success(t("gallery.saved"));
+      setTemplateDialogOpen(false);
+      setTemplateName("");
+      setRefreshSignal((current) => current + 1);
+    } catch {
+      toast.error(t("gallery.saveError"));
+    } finally {
+      setSavingTemplate(false);
+    }
+  }, [templateName, savingTemplate, rasterizeDesign, background, layers, t]);
 
   const handleRestore = useCallback(async () => {
     if (restoring) return;
@@ -874,8 +880,8 @@ export default function CoverEditor() {
     <CoverPalette
       session={session}
       background={background}
-      covers={covers}
-      onApplyTemplate={(sessionId) => void applyTemplate(sessionId)}
+      refreshSignal={refreshSignal}
+      onApplyTemplate={applyTemplate}
       onAddLayer={addLayer}
       onAddImageFile={addImageFromFile}
       onAddMascot={() => void addMascot()}
@@ -1029,6 +1035,17 @@ export default function CoverEditor() {
           ) : null}
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            disabled={layers.length === 0}
+            onClick={() => setTemplateDialogOpen(true)}
+            className="pressable"
+          >
+            <BookmarkPlus className="size-4" aria-hidden />
+            {t("gallery.saveTemplate")}
+          </Button>
+          <Button
+            type="button"
             size="sm"
             disabled={!canSave}
             onClick={() => void handleSave()}
@@ -1039,6 +1056,58 @@ export default function CoverEditor() {
           </Button>
         </div>
       </header>
+
+      {/* Save-as-template dialog: name + current canvas (design-size
+          raster) go to the global template list. */}
+      <Dialog
+        open={templateDialogOpen}
+        onOpenChange={(open) => {
+          setTemplateDialogOpen(open);
+          if (!open) setTemplateName("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("gallery.saveTemplate")}</DialogTitle>
+          </DialogHeader>
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleSaveTemplate();
+            }}
+          >
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("gallery.nameLabel")}
+              </span>
+              <Input
+                value={templateName}
+                onChange={(event) => setTemplateName(event.target.value)}
+                placeholder={t("gallery.namePlaceholder")}
+                autoFocus
+              />
+            </label>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="pressable"
+                onClick={() => setTemplateDialogOpen(false)}
+              >
+                {t("gallery.cancelCta")}
+              </Button>
+              <Button
+                type="submit"
+                className="pressable herb-hover bg-herb text-herb-foreground"
+                disabled={savingTemplate || templateName.trim() === ""}
+              >
+                {savingTemplate ? t("save.saving") : t("gallery.saveCta")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <p className="text-xs text-muted-foreground">{t("subtitle")}</p>
 
