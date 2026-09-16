@@ -205,6 +205,13 @@ diario, hint en comentarios para "primera sesión del día".
   OG cache key pasa de `JSON.stringify(session)` a los campos que el render
   usa; `isOwner` muerto eliminado. `.env.local` (Supabase muerto) borrado.
 
+- `90235cf` — **fix radar de efectos**: los ejes del spider chart se ordenan
+  agrupados (positivos contiguos, luego no deseados contiguos) en
+  `buildEffectChartSvg` (og-image.js) y `EffectRadarChart.tsx`. Antes, cuando
+  el orden del JSONB intercalaba moods y efectos no deseados, cada polígono
+  zigzagueaba por el centro y quedaban líneas rectas en las aristas; ahora el
+  área verde (positivos) y el área roja (negativos) siempre forman un abanico
+  contiguo cada una.
 ## Skills del proyecto (`.kimi/skills/`)
 
 - `grill-me` — entrevistar al dueño hasta cerrar cada rama del diseño antes
