@@ -6,8 +6,7 @@ import { useStrains } from "@/lib/data";
 
 /**
  * Finish strong (viral-product #4): the last thing 97% of visitors see is
- * a line worth quoting, the CTA repeated, and an honest "free during early
- * access" — never "free forever".
+ * a line worth quoting and the CTA repeated.
  */
 export default function Closing() {
   const { t, i18n } = useTranslation("landing");

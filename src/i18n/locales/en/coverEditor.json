@@ -72,7 +72,15 @@
     "saving": "Saving…",
     "success": "Cover saved — your custom card is now what gets shared.",
     "tooLarge": "Image is too big. Try removing a layer or two.",
-    "error": "Couldn't save that cover."
+    "error": "Couldn't save that cover.",
+    "sizeLabel": "Export size",
+    "size": {
+      "link": "Link",
+      "square": "Square",
+      "story": "Story",
+      "wide": "FB wide",
+      "custom": "Custom"
+    }
   },
   "restore": {
     "button": "Restore default card",

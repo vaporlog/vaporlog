@@ -92,6 +92,62 @@ import { cn } from "@/lib/utils";
 const CANVAS_W = 1200;
 const CANVAS_H = 630;
 
+/** Output dimensions of the saved PNG. The design space stays at
+ *  CANVAS_W × CANVAS_H; when this differs, the export letterboxes
+ *  the design into the target frame using the chosen background. */
+type ExportSize = { width: number; height: number };
+
+/** Preset sizes for the share card. Each one names the platform it
+ *  targets; the user can also drop a custom width/height. */
+const EXPORT_PRESETS: { id: string; label: string; size: ExportSize }[] = [
+  { id: "link", label: "Twitter/FB/LinkedIn", size: { width: 1200, height: 630 } },
+  { id: "square", label: "Instagram square", size: { width: 1080, height: 1080 } },
+  { id: "story", label: "Story (IG/TikTok)", size: { width: 1080, height: 1920 } },
+  { id: "wide", label: "Facebook wide", size: { width: 1200, height: 675 } },
+];
+
+/** Returns the preset whose size matches the current export dimensions,
+ *  or null when the current size is custom. */
+function findExportPresetId(size: ExportSize): string | null {
+  const match = EXPORT_PRESETS.find(
+    (preset) => preset.size.width === size.width && preset.size.height === size.height,
+  );
+  return match === undefined ? null : match.id;
+}
+
+/** Renders the design at CANVAS_W × CANVAS_H (its native size) and
+ *  composites it into a target-sized canvas, letterboxed with the
+ *  chosen background color. This lets users pick a different aspect
+ *  ratio for the saved card without re-laying out the design. */
+async function renderCoverToSize(
+  designDataUrl: string,
+  size: ExportSize,
+  background: string | null,
+): Promise<string> {
+  const canvas = document.createElement("canvas");
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const ctx = canvas.getContext("2d");
+  if (ctx === null) {
+    throw new Error("2D canvas context unavailable — cannot resize cover.");
+  }
+  ctx.fillStyle = background ?? "#030303";
+  ctx.fillRect(0, 0, size.width, size.height);
+  const design = new window.Image();
+  await new Promise<void>((resolve, reject) => {
+    design.onload = () => resolve();
+    design.onerror = () => reject(new Error("Design raster failed to load."));
+    design.src = designDataUrl;
+  });
+  const scale = Math.min(size.width / CANVAS_W, size.height / CANVAS_H);
+  const drawW = CANVAS_W * scale;
+  const drawH = CANVAS_H * scale;
+  const dx = (size.width - drawW) / 2;
+  const dy = (size.height - drawH) / 2;
+  ctx.drawImage(design, dx, dy, drawW, drawH);
+  return canvas.toDataURL("image/png");
+}
+
 /** Generate a stable per-layer id without pulling in uuid. */
 function nextId(): string {
   return `L${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -532,6 +588,14 @@ export default function CoverEditor() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  /** Final export size. The design always lives in CANVAS_W × CANVAS_H;
+   *  if the chosen size doesn't match, the export is letterboxed with
+   *  the chosen background color. The default is the standard OG link
+   *  card (Twitter/FB/LinkedIn). */
+  const [exportSize, setExportSize] = useState<ExportSize>({
+    width: CANVAS_W,
+    height: CANVAS_H,
+  });
 
   const stageRef = useRef<Konva.Stage | null>(null);
   const transformerRef = useRef<Konva.Transformer | null>(null);
@@ -848,35 +912,85 @@ export default function CoverEditor() {
     setEditingText(layer?.kind === "text" ? layer.text : "");
   }, [editingId, layers]);
 
+  // The canvas wrapper's display size follows the export aspect ratio
+  // (selected via the size picker). The design itself always lives in
+  // CANVAS_W × CANVAS_H; the wrapper's CSS aspect-ratio + a uniform
+  // scale + flex centering make the design letterbox inside whatever
+  // frame the user picked, with the chosen background color filling
+  // the rest. The AppLayout's max-w-3xl main column caps the width so
+  // the canvas never overflows.
+  const canvasWrapRef = useRef<HTMLDivElement | null>(null);
+  const [displaySize, setDisplaySize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
+  useEffect(() => {
+    const wrapper = canvasWrapRef.current;
+    if (wrapper === null) return;
+    const measure = () => {
+      const rect = wrapper.getBoundingClientRect();
+      setDisplaySize({
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
+    };
+    measure();
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    if (observer !== null) observer.observe(wrapper);
+    window.addEventListener("resize", measure);
+    return () => {
+      if (observer !== null) observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [exportSize.width, exportSize.height]);
+
+  // Uniform scale — the design fits the wrapper without distortion. The
+  // background color fills the letterbox area.
+  const displayScale =
+    displaySize.width > 0 && displaySize.height > 0
+      ? Math.min(displaySize.width / CANVAS_W, displaySize.height / CANVAS_H)
+      : 0;
+  // Letterbox offset of the design inside the stage, in design pixels.
+  // When the export aspect matches the design (1200:630), this is (0,0).
+  // For a square or story frame, the design is centered with empty
+  // space on the long axis.
+  const designOffsetX =
+    displayScale > 0
+      ? (displaySize.width / displayScale - CANVAS_W) / 2
+      : 0;
+  const designOffsetY =
+    displayScale > 0
+      ? (displaySize.height / displayScale - CANVAS_H) / 2
+      : 0;
+
   /** Measure the editing text node in screen coords. Konva scales the
-   *  stage canvas by `displayScaleX` (display / design), so the rect
+   *  stage canvas by `displayScale` (display / design), so the rect
    *  returned by getClientRect is in design space and needs to be
-   *  multiplied by that scale and offset by the stage container's
-   *  on-screen position. */
+   *  multiplied by that scale. The whole design sits inside a Group
+   *  with a letterbox offset (designOffsetX/Y), which is added before
+   *  the scale so the textarea lands on the visible design. */
   const editingRect = useMemo(() => {
     if (editingId === null) return null;
     const node = nodeRegistry.current.get(editingId);
     if (node === null || node === undefined) return null;
     const stage = node.getStage();
     if (stage === null) return null;
-    const wrapper = canvasWrapRef.current;
-    if (wrapper === null) return null;
-    // Position the overlay relative to the canvas wrapper (which is
-    // `position: relative`) — the textarea is absolutely placed inside
-    // it, so the offset must be in wrapper-local coordinates, not
-    // viewport.
-    const wrapperRect = wrapper.getBoundingClientRect();
-    const containerRect = stage.container().getBoundingClientRect();
+    // The whole design is wrapped in a Group with a letterbox offset
+    // (designOffsetX/Y) so it can sit centered inside whatever aspect
+    // the user picked for the export. The node's design-space rect,
+    // plus the Group's offset, plus the stage's uniform scale, gives
+    // the on-screen position of the textarea overlay.
     const nodeRect = node.getClientRect({ relativeTo: stage });
     const scaleX = stage.scaleX();
     const scaleY = stage.scaleY();
     return {
-      x: containerRect.left - wrapperRect.left + nodeRect.x * scaleX,
-      y: containerRect.top - wrapperRect.top + nodeRect.y * scaleY,
+      x: (designOffsetX + nodeRect.x) * scaleX,
+      y: (designOffsetY + nodeRect.y) * scaleY,
       width: Math.max(80, nodeRect.width * scaleX),
       height: Math.max(40, nodeRect.height * scaleY),
     };
-  }, [editingId, layers]);
+  }, [editingId, layers, designOffsetX, designOffsetY]);
 
   const editingLayer = editingId === null
     ? null
@@ -955,12 +1069,24 @@ export default function CoverEditor() {
       requestAnimationFrame(() => resolve());
     });
     try {
-      const dataUrl = stage.toDataURL({
+      // Always rasterize the design at its native design size, then
+      // composite into the target size (letterboxed with the chosen
+      // background). This keeps positions/sizes stable across aspect
+      // ratios — switching the export doesn't shift the design.
+      const designDataUrl = stage.toDataURL({
         pixelRatio: 1,
         mimeType: "image/png",
         width: CANVAS_W,
         height: CANVAS_H,
       });
+      const dataUrl =
+        exportSize.width === CANVAS_W && exportSize.height === CANVAS_H
+          ? designDataUrl
+          : await renderCoverToSize(
+              designDataUrl,
+              exportSize,
+              BG_COLOR[background],
+            );
       await apiFetch(`/sessions/${id}/custom-og`, {
         method: "POST",
         body: { image: dataUrl },
@@ -976,7 +1102,7 @@ export default function CoverEditor() {
     } finally {
       setSaving(false);
     }
-  }, [id, saving, t]);
+  }, [id, saving, t, exportSize, background]);
 
   const handleRestore = useCallback(async () => {
     if (restoring) return;
@@ -1022,42 +1148,22 @@ export default function CoverEditor() {
   const selectedLayer = layers.find((entry) => entry.id === selectedId) ?? null;
   const canSave = layers.length > 0 && !saving;
 
-  // Track the canvas wrapper's actual display size. The Stage renders at
-  // this size (so its pointer events and DOM canvas match the on-screen
-  // pixels); scaleX/scaleY map the 1200x630 design space onto it. CSS
-  // aspect-ratio on the wrapper guarantees the right height, and the
-  // AppLayout's max-w-3xl main column caps the width — so the canvas
-  // always fits and stays centered without a JS viewport watcher.
-  const canvasWrapRef = useRef<HTMLDivElement | null>(null);
-  const [displaySize, setDisplaySize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
-  useEffect(() => {
-    const wrapper = canvasWrapRef.current;
-    if (wrapper === null) return;
-    const measure = () => {
-      const rect = wrapper.getBoundingClientRect();
-      setDisplaySize({
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-      });
-    };
-    measure();
-    const observer =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-    if (observer !== null) observer.observe(wrapper);
-    window.addEventListener("resize", measure);
-    return () => {
-      if (observer !== null) observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-  const displayScaleX = displaySize.width > 0 ? displaySize.width / CANVAS_W : 0;
-  const displayScaleY = displaySize.height > 0 ? displaySize.height / CANVAS_H : 0;
+  // The canvas wrapper's display size follows the export aspect ratio
+  // (selected via the size picker). The design itself always lives in
+  // CANVAS_W × CANVAS_H; the wrapper's CSS aspect-ratio + a uniform
+  // scale + flex centering make the design letterbox inside whatever
+  // frame the user picked, with the chosen background color filling
+  // the rest. The AppLayout's max-w-3xl main column caps the width so
+  // the canvas never overflows.
 
   return (
-    <section className="flex flex-col gap-4">
+    <section
+      // The canvas wrapper can be wider than the main column when the
+      // user picks a larger export size; horizontal scrolling inside
+      // the section keeps the toolbar/save controls in place while the
+      // canvas itself grows.
+      className="flex flex-col gap-4 overflow-x-auto"
+    >
       <Toaster />
 
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -1115,6 +1221,28 @@ export default function CoverEditor() {
               </AlertDialogContent>
             </AlertDialog>
           ) : null}
+          <select
+            aria-label={t("save.sizeLabel")}
+            value={findExportPresetId(exportSize) ?? "custom"}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === "custom") return;
+              const preset = EXPORT_PRESETS.find((p) => p.id === value);
+              if (preset !== undefined) {
+                setExportSize(preset.size);
+              }
+            }}
+            className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+          >
+            {EXPORT_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.size.width}×{preset.size.height} · {t(`save.size.${preset.id}`)}
+              </option>
+            ))}
+            <option value="custom">
+              {exportSize.width}×{exportSize.height} · {t("save.size.custom")}
+            </option>
+          </select>
           <Button
             type="button"
             size="sm"
@@ -1587,14 +1715,27 @@ export default function CoverEditor() {
           and capped at 1200px so it never overflows the main column. */}
       <div
         ref={canvasWrapRef}
-        className="relative mx-auto w-full max-w-[1200px] aspect-[1200/630] overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+        className="relative mx-auto overflow-hidden rounded-xl border border-border shadow-sm"
+        style={{
+          // The wrapper fits the viewport: width follows the main
+          // column up to 1200px, height is capped at viewport minus
+          // the room the toolbars/header need (≈320px). The aspect
+          // ratio is the export's, so the canvas grows in the
+          // direction the user picks (wide / square / tall) without
+          // ever spilling off the screen.
+          width: "100%",
+          maxWidth: 1200,
+          maxHeight: "calc(100dvh - 320px)",
+          aspectRatio: `${exportSize.width} / ${exportSize.height}`,
+          background: BG_COLOR[background] ?? "#030303",
+        }}
       >
         <Stage
           ref={stageRef}
-          width={displaySize.width}
-          height={displaySize.height}
-          scaleX={displayScaleX}
-          scaleY={displayScaleY}
+          width={CANVAS_W}
+          height={CANVAS_H}
+          scaleX={displayScale}
+          scaleY={displayScale}
           aria-label={t("canvas.ariaLabel")}
           onMouseDown={(event) => {
             if (event.target === event.target.getStage()) {
@@ -1608,17 +1749,24 @@ export default function CoverEditor() {
           }}
         >
           <Layer>
-            {BG_COLOR[background] !== null ? (
-              <Rect
-                x={0}
-                y={0}
-                width={CANVAS_W}
-                height={CANVAS_H}
-                fill={BG_COLOR[background] ?? "#000000"}
-                listening={false}
-              />
-            ) : null}
-            {layers.map((layer) =>
+            {/* Single Group wraps the whole design so it can be
+                re-centered inside the export frame when the user
+                picks a different aspect ratio. designOffsetX/Y are
+                in design pixels (the Group lives inside the scaled
+                Stage); translating the Group shifts the design in
+                the stage's display space. */}
+            <Group x={designOffsetX} y={designOffsetY}>
+              {BG_COLOR[background] !== null ? (
+                <Rect
+                  x={0}
+                  y={0}
+                  width={CANVAS_W}
+                  height={CANVAS_H}
+                  fill={BG_COLOR[background] ?? "#000000"}
+                  listening={false}
+                />
+              ) : null}
+              {layers.map((layer) =>
               layer.kind === "text" &&
               (layer.presentation === undefined ||
                 layer.presentation === "text") ? (
@@ -1727,6 +1875,7 @@ export default function CoverEditor() {
                 />
               ),
             )}
+            </Group>
             <Transformer
               ref={transformerRef}
               rotateEnabled
@@ -1759,7 +1908,7 @@ export default function CoverEditor() {
               top: editingRect.y,
               width: editingRect.width,
               minHeight: editingRect.height,
-              fontSize: (editingLayer.kind === "text" ? editingLayer.fontSize : 16) * displayScaleX,
+              fontSize: (editingLayer.kind === "text" ? editingLayer.fontSize : 16) * displayScale,
               color: editingLayer.kind === "text" ? editingLayer.fill : "#fff",
               fontWeight: editingLayer.kind === "text" && editingLayer.fontStyle === "bold" ? 700 : 400,
               textAlign: editingLayer.kind === "text" ? (editingLayer.align ?? "left") : "left",

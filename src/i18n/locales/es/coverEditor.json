@@ -72,7 +72,15 @@
     "saving": "Guardando…",
     "success": "Portada guardada — tu tarjeta personalizada es la que se compartirá.",
     "tooLarge": "La imagen es demasiado grande. Quita alguna capa.",
-    "error": "No se pudo guardar esa portada."
+    "error": "No se pudo guardar esa portada.",
+    "sizeLabel": "Tamaño de export",
+    "size": {
+      "link": "Link",
+      "square": "Cuadrado",
+      "story": "Historia",
+      "wide": "FB ancho",
+      "custom": "Custom"
+    }
   },
   "restore": {
     "button": "Restaurar tarjeta automática",

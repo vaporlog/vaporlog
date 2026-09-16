@@ -3,6 +3,7 @@ dist/
 server/.dev-data/
 server/.dev-data.corrupt-*/
 server/.dev-data.fresh-*/
+server/assets/uploads/
 dist-verify*/
 *.tsbuildinfo
 .DS_Store
