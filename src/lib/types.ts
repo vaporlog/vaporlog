@@ -102,6 +102,12 @@ export interface SessionLog {
    * (mine, public); older clients ignore it.
    */
   customOgImage?: string | null;
+  /**
+   * Serialized cover-editor document (JSON: version, background, layers)
+   * that produced customOgImage. Optional like customOgImage; lets the
+   * editor reopen the exact design instead of re-seeding.
+   */
+  customOgDoc?: string | null;
 }
 
 /** Shape of src/data/seed.json (strains + devices only). */

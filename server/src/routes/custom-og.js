@@ -2,7 +2,8 @@
  * vaporlog API — owner-built cover image (custom OG card).
  *
  *   POST   /api/sessions/:id/custom-og   (Bearer, own only)
- *          body: { image: "data:image/png;base64,...." }  (≤ ~1.9 MiB after decode)
+ *          body: { image: "data:image/png;base64,....",  (≤ ~1.9 MiB after decode)
+ *                  doc?: "<serialized editor JSON>" }    (optional, ≤ 256 KiB)
  *          → 200 { session } | 404 unknown | 403 foreign
  *   DELETE /api/sessions/:id/custom-og   (Bearer, own only)
  *          → 204 | 404
@@ -11,9 +12,13 @@
  * POSTs it as a data URL. We decode, validate the PNG signature, write the
  * bytes to assets/uploads/custom_og/<id>.png, and stamp the relative path on
  * sessions.custom_og_image. og-image.js then prefers that file over the
- * resvg renderer. bodyLimit on the Fastify instance is 2 MiB so the whole
- * request stays under it; we also reject payloads whose decoded bytes
- * exceed a hard cap.
+ * resvg renderer. The optional `doc` field is the serialized CoverEditor
+ * document ({version, background, layers}); it is validated (string, valid
+ * JSON, ≤ 256 KiB) and stored verbatim on sessions.custom_og_doc so the
+ * owner can re-open the editor. A save without `doc` clears the column —
+ * a flattened cover must not keep a stale document. bodyLimit on the
+ * Fastify instance is 2 MiB so the whole request stays under it; we also
+ * reject payloads whose decoded bytes exceed a hard cap.
  *
  * Files live under server/assets/uploads/custom_og/ (mounted as a docker
  * volume in production so user uploads survive rebuilds; see
@@ -34,6 +39,11 @@ const UUID_RE =
 /** 1.9 MiB hard cap on the decoded image — leaves headroom under the 2 MiB
  *  bodyLimit for JSON wrapping + future tweaks. */
 const MAX_IMAGE_BYTES = Math.floor(1.9 * 1024 * 1024);
+
+/** 256 KiB hard cap on the serialized editor document. A dense cover is a
+ *  few KiB of JSON; this only exists to keep the column (and the 2 MiB
+ *  bodyLimit) bounded. */
+const MAX_DOC_BYTES = 256 * 1024;
 
 /** PNG signature: 89 50 4E 47 0D 0A 1A 0A. */
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -129,6 +139,28 @@ export default async function customOgRoutes(app) {
         });
       }
 
+      // Optional editor document: a JSON string we store verbatim. Absent
+      // (or explicit null) means "flattened cover" — the column is cleared
+      // below so no stale doc survives from a previous edit.
+      const doc = request.body?.doc;
+      let docValue = null;
+      if (doc !== undefined && doc !== null) {
+        if (
+          typeof doc !== "string" ||
+          Buffer.byteLength(doc, "utf8") > MAX_DOC_BYTES
+        ) {
+          return reply
+            .code(400)
+            .send({ error: "doc must be a JSON string under 256 KiB." });
+        }
+        try {
+          JSON.parse(doc);
+        } catch {
+          return reply.code(400).send({ error: "doc must be valid JSON." });
+        }
+        docValue = doc;
+      }
+
       await fs.mkdir(uploadsDir, { recursive: true });
       const relativePath = relativePathFor(id);
       const absolutePath = resolveCustomOgPath(relativePath);
@@ -140,10 +172,11 @@ export default async function customOgRoutes(app) {
       // Stamp the DB with the new path only if the write succeeded.
       const { rows } = await pool.query(
         `update sessions
-            set custom_og_image = $1
-          where id = $2 and user_id = $3
+            set custom_og_image = $1,
+                custom_og_doc   = $2
+          where id = $3 and user_id = $4
           returning *`,
-        [relativePath, id, request.account.id],
+        [relativePath, docValue, id, request.account.id],
       );
       return { session: rowToSession(rows[0]) };
     },
@@ -183,7 +216,8 @@ export default async function customOgRoutes(app) {
 
       await pool.query(
         `update sessions
-            set custom_og_image = null
+            set custom_og_image = null,
+                custom_og_doc   = null
           where id = $1 and user_id = $2`,
         [id, request.account.id],
       );

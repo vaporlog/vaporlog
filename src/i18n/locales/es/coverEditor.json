@@ -60,12 +60,106 @@
     },
     "clearAll": "Vaciar lienzo"
   },
+  "palette": {
+    "sessionData": "Datos de la sesión",
+    "tags": "Etiquetas",
+    "elements": "Elementos",
+    "text": {
+      "heading": "Título",
+      "subheading": "Subtítulo",
+      "body": "Cuerpo",
+      "headingContent": "Tu título aquí",
+      "subheadingContent": "Tu subtítulo aquí",
+      "bodyContent": "Escribe tu texto aquí"
+    },
+    "shapes": {
+      "rect": "Rectángulo",
+      "ellipse": "Elipse"
+    },
+    "energy": {
+      "gauge": "Medidor",
+      "text": "Texto"
+    },
+    "values": {
+      "duration": "{{count}} min",
+      "amount": "{{value}} g",
+      "liked": "👍 Me gustó",
+      "disliked": "👎 No me gustó",
+      "detox": "{{count}} días de pausa"
+    }
+  },
   "fields": {
     "strain": "Strain",
     "device": "Vaporizador",
     "temperature": "Temperatura",
     "rating": "Calificación",
-    "date": "Fecha"
+    "date": "Fecha",
+    "duration": "Duración",
+    "amount": "Cantidad",
+    "energy": "Energía",
+    "liked": "Me gustó",
+    "detoxDays": "Días de pausa",
+    "notes": "Notas",
+    "author": "Autor",
+    "aromas": "Aromas",
+    "flavors": "Sabores",
+    "moods": "Ánimos",
+    "activities": "Actividades",
+    "effectsChart": "Gráfica de efectos"
+  },
+  "inspector": {
+    "empty": "Selecciona un elemento del lienzo para editarlo",
+    "kind": {
+      "text": "Texto",
+      "image": "Imagen",
+      "chips": "Etiquetas",
+      "chart": "Gráfica",
+      "shape": "Forma"
+    },
+    "opacity": "Opacidad",
+    "text": {
+      "value": "Valor",
+      "content": "Contenido",
+      "fontSize": "Tamaño de fuente",
+      "color": "Color"
+    },
+    "chips": {
+      "tags": "Etiquetas",
+      "addTag": "Nueva etiqueta…",
+      "add": "Añadir",
+      "removeTag": "Quitar {{tag}}",
+      "style": "Estilo",
+      "filled": "Relleno",
+      "outline": "Contorno",
+      "accent": "Color de acento",
+      "textColor": "Color de texto"
+    },
+    "shape": {
+      "fill": "Relleno",
+      "stroke": "Borde",
+      "strokeOn": "Con borde",
+      "strokeOff": "Sin borde",
+      "strokeWidth": "Grosor del borde",
+      "cornerRadius": "Radio de esquinas",
+      "width": "Ancho",
+      "height": "Alto"
+    },
+    "image": {
+      "dimensions": "{{width}} × {{height}} px"
+    },
+    "chart": {
+      "title": "Título",
+      "presentation": "Presentación",
+      "panelColor": "Color del panel",
+      "effects": "Efectos"
+    }
+  },
+  "keyboardHints": "Doble clic para editar texto · Flechas para mover (Shift = ×10) · Supr para borrar · Ctrl+Z deshacer",
+  "clear": {
+    "title": "¿Vaciar el lienzo?",
+    "body": "Se quitarán todas las capas. Puedes deshacerlo.",
+    "confirm": "Vaciar todo",
+    "cancel": "Cancelar"
   },
   "save": {
     "button": "Guardar portada",

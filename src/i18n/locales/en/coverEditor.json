@@ -60,12 +60,106 @@
     },
     "clearAll": "Clear canvas"
   },
+  "palette": {
+    "sessionData": "Session data",
+    "tags": "Tags",
+    "elements": "Elements",
+    "text": {
+      "heading": "Heading",
+      "subheading": "Subheading",
+      "body": "Body",
+      "headingContent": "Your heading here",
+      "subheadingContent": "Your subheading here",
+      "bodyContent": "Write your text here"
+    },
+    "shapes": {
+      "rect": "Rectangle",
+      "ellipse": "Ellipse"
+    },
+    "energy": {
+      "gauge": "Gauge",
+      "text": "Text"
+    },
+    "values": {
+      "duration": "{{count}} min",
+      "amount": "{{value}} g",
+      "liked": "👍 Liked",
+      "disliked": "👎 Didn’t like it",
+      "detox": "{{count}}-day break"
+    }
+  },
   "fields": {
     "strain": "Strain",
     "device": "Device",
     "temperature": "Temperature",
     "rating": "Rating",
-    "date": "Date"
+    "date": "Date",
+    "duration": "Duration",
+    "amount": "Amount",
+    "energy": "Energy",
+    "liked": "Liked",
+    "detoxDays": "Break days",
+    "notes": "Notes",
+    "author": "Author",
+    "aromas": "Aromas",
+    "flavors": "Flavors",
+    "moods": "Moods",
+    "activities": "Activities",
+    "effectsChart": "Effects chart"
+  },
+  "inspector": {
+    "empty": "Select an element on the canvas to edit it",
+    "kind": {
+      "text": "Text",
+      "image": "Image",
+      "chips": "Tags",
+      "chart": "Chart",
+      "shape": "Shape"
+    },
+    "opacity": "Opacity",
+    "text": {
+      "value": "Value",
+      "content": "Content",
+      "fontSize": "Font size",
+      "color": "Color"
+    },
+    "chips": {
+      "tags": "Tags",
+      "addTag": "New tag…",
+      "add": "Add",
+      "removeTag": "Remove {{tag}}",
+      "style": "Style",
+      "filled": "Filled",
+      "outline": "Outline",
+      "accent": "Accent color",
+      "textColor": "Text color"
+    },
+    "shape": {
+      "fill": "Fill",
+      "stroke": "Stroke",
+      "strokeOn": "With stroke",
+      "strokeOff": "No stroke",
+      "strokeWidth": "Stroke width",
+      "cornerRadius": "Corner radius",
+      "width": "Width",
+      "height": "Height"
+    },
+    "image": {
+      "dimensions": "{{width}} × {{height}} px"
+    },
+    "chart": {
+      "title": "Title",
+      "presentation": "Presentation",
+      "panelColor": "Panel color",
+      "effects": "Effects"
+    }
+  },
+  "keyboardHints": "Double-click to edit text · Arrow keys to move (Shift = ×10) · Del to delete · Ctrl+Z undo",
+  "clear": {
+    "title": "Clear the canvas?",
+    "body": "Every layer will be removed. You can undo this.",
+    "confirm": "Clear all",
+    "cancel": "Cancel"
   },
   "save": {
     "button": "Save cover",

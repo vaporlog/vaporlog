@@ -86,6 +86,10 @@ export function rowToSession(row) {
     // Path (relative to server/assets/) of the owner-built cover, or null
     // when the dynamic resvg renderer is still in charge.
     customOgImage: row.custom_og_image ?? null,
+    // Serialized CoverEditor document behind the custom cover, or null.
+    // Owner-only data: public queries (feed, public profile) never select
+    // the column, so it maps to null there.
+    customOgDoc: row.custom_og_doc ?? null,
     isPublic: row.is_public,
     inFeed: row.in_feed === true,
     author:

@@ -131,13 +131,16 @@ export default async function sessionRoutes(app) {
     return { sessions };
   });
 
-  // The caller's own sessions, newest first.
+  // The caller's own sessions, newest first. custom_og_image and
+  // custom_og_doc are selected here (and only here — SESSION_COLUMNS is
+  // shared with the public feed, which must never see the editor
+  // document nor the cover path).
   app.get(
     "/api/sessions/mine",
     { preHandler: authenticate },
     async (request) => {
       const { rows } = await pool.query(
-        `select ${SESSION_COLUMNS}
+        `select ${SESSION_COLUMNS}, s.custom_og_image, s.custom_og_doc
            from sessions s
           where s.user_id = $1
           order by s.created_at desc`,
@@ -287,29 +290,28 @@ export default async function sessionRoutes(app) {
       }
       const sets = [];
       const params = [];
-      if (typeof isPublic === "boolean") {
-        params.push(isPublic);
-        sets.push(`is_public = $${params.length}`);
-        if (!isPublic) {
-          params.push(false);
-          sets.push(`in_feed = $${params.length}`);
-        }
-      }
-      if (typeof inFeed === "boolean") {
-        params.push(inFeed);
-        sets.push(`in_feed = $${params.length}`);
-        if (inFeed) {
-          params.push(true);
-          sets.push(`is_public = $${params.length}`);
-        }
-      }
+      const push = (column, value) => {
+        params.push(value);
+        sets.push(`${column} = $${params.length}`);
+      };
+      // Resolve each column exactly once — assigning is_public/in_feed
+      // twice (e.g. isPublic:true + inFeed:true in the same patch) makes
+      // Postgres reject the UPDATE with "multiple assignments to same
+      // column". inFeed:true implies public and wins the combination;
+      // isPublic:false clears in_feed unless inFeed was set explicitly.
+      const hasPublic = typeof isPublic === "boolean";
+      const hasFeed = typeof inFeed === "boolean";
+      const finalPublic =
+        hasFeed && inFeed ? true : hasPublic ? isPublic : undefined;
+      const finalFeed =
+        hasFeed ? inFeed : hasPublic && !isPublic ? false : undefined;
+      if (finalPublic !== undefined) push("is_public", finalPublic);
+      if (finalFeed !== undefined) push("in_feed", finalFeed);
       if (typeof unwantedEffectsPublic === "boolean") {
-        params.push(unwantedEffectsPublic);
-        sets.push(`unwanted_effects_public = $${params.length}`);
+        push("unwanted_effects_public", unwantedEffectsPublic);
       }
       if (typeof activitiesPublic === "boolean") {
-        params.push(activitiesPublic);
-        sets.push(`activities_public = $${params.length}`);
+        push("activities_public", activitiesPublic);
       }
       if (sets.length === 0) {
         return reply
