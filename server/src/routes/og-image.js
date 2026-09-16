@@ -1013,6 +1013,10 @@ export default async function ogImageRoutes(app) {
       }
     }
 
+    // A shared cache in front of the API must never store a private
+    // session's card: only public sessions get a public cache scope.
+    const cacheScope = session.is_public ? "public" : "private";
+
     // Owner-built cover (CoverEditor): serve the saved file as-is. This
     // takes priority over every resvg template — the user explicitly
     // authored the design. A missing/broken file falls through to the
@@ -1028,7 +1032,7 @@ export default async function ogImageRoutes(app) {
             .type("image/png")
             .header(
               "cache-control",
-              "public, max-age=300, must-revalidate",
+              `${cacheScope}, max-age=300, must-revalidate`,
             )
             .send(bytes);
         } catch {
@@ -1092,7 +1096,7 @@ export default async function ogImageRoutes(app) {
       }
       return reply
         .type("image/png")
-        .header("cache-control", "public, max-age=300")
+        .header("cache-control", `${cacheScope}, max-age=300`)
         .send(png);
     } catch (error) {
       // A broken card must never 500 a crawler — fall back to the static image.

@@ -34,13 +34,30 @@ import customOgRoutes from "./routes/custom-og.js";
 // X-Forwarded-For — rate limiting must key on it, not on the proxy's IP.
 // bodyLimit: explicit 2 MiB cap (default is 1 MiB); the heaviest payload is
 // POST /api/sessions, far below this.
-const app = Fastify({ logger: true, trustProxy: true, bodyLimit: 2 * 1024 * 1024 });
+// redact: never log the Authorization header — a live bearer token in
+// stdout/docker logs would defeat the SHA-256 token hashing in the DB.
+const app = Fastify({
+  logger: {
+    redact: {
+      paths: ["req.headers.authorization"],
+      censor: "[redacted]",
+    },
+  },
+  trustProxy: true,
+  bodyLimit: 2 * 1024 * 1024,
+});
 
 // Same-origin in production (Caddy proxies /api); the vite dev server proxies
 // too but the browser hits it cross-origin from localhost:3000, so that origin
-// is allowed alongside the site URL. Everything else is denied by default.
+// is allowed alongside the site URL — but only outside production. Everything
+// else is denied by default; requests without an Origin header (curl,
+// same-origin navigations) are unaffected.
+const allowedOrigins = [process.env.SITE_URL ?? "https://vaporlog.online"];
+if (process.env.NODE_ENV !== "production" || !process.env.DATABASE_URL) {
+  allowedOrigins.push("http://localhost:3000");
+}
 await app.register(cors, {
-  origin: [process.env.SITE_URL ?? "https://vaporlog.online", "http://localhost:3000"],
+  origin: allowedOrigins,
   credentials: false,
 });
 

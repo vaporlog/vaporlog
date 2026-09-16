@@ -6,7 +6,8 @@
  *   POST   /api/sessions                (Bearer) → upsert by id → 200 { session }
  *          · ownership enforced: an existing id owned by someone else → 403
  *          · author is stamped from the caller's handle on every write
- *          · the client's createdAt is preserved into created_at
+ *          · the client's createdAt is kept only when it is a parseable,
+ *            non-future date (retroactive entries stay; anything else → now())
  *   PATCH  /api/sessions/:id            (Bearer, own only) { isPublic }
  *          → 200 { session } | 404 (unknown OR foreign — do not leak existence)
  *   DELETE /api/sessions/:id            (Bearer, own only) → 204 | 404
@@ -75,10 +76,21 @@ function asNumberOrNull(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Preserves the client's createdAt; falls back to now() when unusable. */
+/** Small allowance for client clock skew when judging "future" timestamps. */
+const FUTURE_SKEW_MS = 15 * 60 * 1000;
+
+/**
+ * Preserves the client's createdAt when it is parseable and not in the future
+ * (retroactive diary entries are legitimate); anything unusable or beyond a
+ * small clock skew becomes now(), so created_at cannot be gamed to pin a
+ * session at the top of the newest-first feed.
+ */
 function asIsoTimestamp(value) {
-  if (typeof value === "string" && !Number.isNaN(Date.parse(value))) {
-    return new Date(value).toISOString();
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed) && parsed <= Date.now() + FUTURE_SKEW_MS) {
+      return new Date(parsed).toISOString();
+    }
   }
   return new Date().toISOString();
 }

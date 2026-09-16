@@ -31,6 +31,7 @@ import { hashToken } from "../lib/tokens.js";
 
 const HANDLE_RE = /^[a-z0-9_-]{3,20}$/i;
 const BIRTHDATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MINIMUM_AGE = 21;
 const PASSWORD_MIN_LENGTH = 6;
 const BCRYPT_ROUNDS = 12;
 
@@ -59,6 +60,41 @@ const DUMMY_HASH = bcrypt.hashSync(
   crypto.randomBytes(16).toString("hex"),
   BCRYPT_ROUNDS,
 );
+
+/**
+ * Validates a birthdate for account creation. Returns an error message, or
+ * null when valid: it must be a real calendar date (the regex alone lets
+ * '2000-99-99' through and Postgres then rejects the insert with a 500 —
+ * Date.UTC normalizes overflows, so the parsed components are compared back
+ * against the input) and it must imply an age of at least MINIMUM_AGE,
+ * computed by calendar: a birthday later this year has not happened yet.
+ */
+function birthdateError(birthdate) {
+  if (typeof birthdate !== "string" || !BIRTHDATE_RE.test(birthdate)) {
+    return "A valid birthdate is required.";
+  }
+  const year = Number(birthdate.slice(0, 4));
+  const month = Number(birthdate.slice(5, 7));
+  const day = Number(birthdate.slice(8, 10));
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return "A valid birthdate is required.";
+  }
+  const now = new Date();
+  let age = now.getUTCFullYear() - year;
+  const birthdayPassed =
+    now.getUTCMonth() + 1 > month ||
+    (now.getUTCMonth() + 1 === month && now.getUTCDate() >= day);
+  if (!birthdayPassed) age -= 1;
+  if (age < MINIMUM_AGE) {
+    return `You must be ${MINIMUM_AGE} or older to use vaporlog.`;
+  }
+  return null;
+}
 
 /** Issues a new opaque token for the account and returns it. */
 async function issueToken(userId) {
@@ -122,8 +158,9 @@ export default async function authRoutes(app) {
         error: `Passwords are at least ${PASSWORD_MIN_LENGTH} characters.`,
       });
     }
-    if (typeof birthdate !== "string" || !BIRTHDATE_RE.test(birthdate)) {
-      return reply.code(400).send({ error: "A valid birthdate is required." });
+    const birthdateValidationError = birthdateError(birthdate);
+    if (birthdateValidationError) {
+      return reply.code(400).send({ error: birthdateValidationError });
     }
 
     const normalizedHandle = handle.trim().toLowerCase();
@@ -257,8 +294,9 @@ export default async function authRoutes(app) {
 
     // New account: the 21+ gate's birthdate is mandatory (Google does not
     // provide one). The client bounces to the age gate on this 400.
-    if (typeof birthdate !== "string" || !BIRTHDATE_RE.test(birthdate)) {
-      return reply.code(400).send({ error: "A valid birthdate is required." });
+    const birthdateValidationError = birthdateError(birthdate);
+    if (birthdateValidationError) {
+      return reply.code(400).send({ error: birthdateValidationError });
     }
 
     const handle = await deriveHandle(email, sub);
