@@ -205,10 +205,16 @@ function buildEffectChartSvg(
     label = GRAY,
     track = PANEL,
   } = colors;
-  const entries = Object.entries(intensities);
-  if (entries.length === 0) return "";
-
   const unwanted = new Set(unwantedEffects);
+  // Group axes: every mood next to every other mood, every unwanted effect
+  // next to every other unwanted one. Each group's polygon then fans out as
+  // one contiguous wedge (the other group's zero points collapse at the
+  // center) instead of zig-zagging through the middle when both kinds
+  // interleave. Stable sort keeps the original order within each group.
+  const entries = Object.entries(intensities).sort(
+    (a, b) => Number(unwanted.has(a[0])) - Number(unwanted.has(b[0])),
+  );
+  if (entries.length === 0) return "";
 
   // 1-2 effects: horizontal bars, same slice style as the energy/calm bar.
   // Width scales with the template's radius budget so the bars read wider

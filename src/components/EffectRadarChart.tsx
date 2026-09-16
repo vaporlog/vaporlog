@@ -40,10 +40,16 @@ export default function EffectChart({
   for (const tag of defaultEffects) {
     if (merged[tag] === undefined) merged[tag] = 5;
   }
-  const entries = Object.entries(merged);
+  const unwanted = new Set(unwantedEffects);
+  // Group axes so moods and unwanted effects each form one contiguous
+  // wedge: the other group's zero points collapse at the center, which
+  // only reads as a clean area when same-kind axes are adjacent. Stable
+  // sort keeps the original order within each group.
+  const entries = Object.entries(merged).sort(
+    (a, b) => Number(unwanted.has(a[0])) - Number(unwanted.has(b[0])),
+  );
   if (entries.length === 0) return null;
 
-  const unwanted = new Set(unwantedEffects);
   const data = entries.map(([effect, intensity]) => ({
     effect: translateTag(effect, i18n.language),
     moodIntensity: unwanted.has(effect) ? 0 : intensity,
