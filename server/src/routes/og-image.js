@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
 import { pool } from "../db.js";
 import { hashToken } from "../lib/tokens.js";
-import { humanizeSlug, normalizeTemplate } from "./og.js";
+import { humanizeSlug, OG_TEMPLATES } from "./og.js";
 import { resolveCustomOgPath } from "./custom-og.js";
 
 const UUID_RE =
@@ -1023,11 +1023,22 @@ export default async function ogImageRoutes(app) {
     // session's card: only public sessions get a public cache scope.
     const cacheScope = session.is_public ? "public" : "private";
 
-    // Owner-built cover (CoverEditor): serve the saved file as-is. This
-    // takes priority over every resvg template — the user explicitly
-    // authored the design. A missing/broken file falls through to the
-    // dynamic renderer so the card still shows something.
-    if (typeof session.custom_og_image === "string" && session.custom_og_image !== "") {
+    // Precedence for what card.png returns: an explicit resvg template
+    // (?t=split|minimal|stats|story|story-minimal|story-stats|story-journal)
+    // always renders its template — the share UI's template thumbnails must
+    // show the real layout even when the owner has built a cover. The
+    // owner-built cover (CoverEditor) is a separate option: it is served
+    // for ?t=custom, and also when ?t= is absent or unknown so links shared
+    // before the picker existed keep showing the cover. A missing/broken
+    // cover file falls through to the split render so the card always
+    // shows something (no redirect to the static fallback here).
+    const rawTemplate = request.query?.t;
+    const isExplicitTemplate = OG_TEMPLATES.includes(rawTemplate);
+    if (
+      !isExplicitTemplate &&
+      typeof session.custom_og_image === "string" &&
+      session.custom_og_image !== ""
+    ) {
       const absolutePath = resolveCustomOgPath(session.custom_og_image);
       if (absolutePath !== null) {
         try {
@@ -1051,9 +1062,10 @@ export default async function ogImageRoutes(app) {
     }
 
     try {
-      // The share UI picks the card design via ?t= (see OG_TEMPLATES in
-      // og.js); unknown values fall back to the default split layout.
-      const template = normalizeTemplate(request.query?.t);
+      // Rendering happens only for explicit templates and for the split
+      // fallback; "custom"/unknown values normalize to "split" here because
+      // the cover case was already handled (or fell through) above.
+      const template = isExplicitTemplate ? rawTemplate : "split";
       // Content flags live on the session row: the owner's own toggles
       // decide what the card shows, same rule for public and private views.
       const includeAllEffects = session.unwanted_effects_public === true;

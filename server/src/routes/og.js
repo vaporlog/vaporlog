@@ -110,10 +110,12 @@ function esc(value) {
 }
 
 /**
- * OG card templates offered by the share UI. "split" is the default and
- * keeps clean param-less URLs; the others travel as ?t=<name> on both the
- * shared /s/:id link and the card.png it points at. og-image.js imports
- * this list to validate the param on its side.
+ * OG card templates offered by the share UI — resvg layouts only. "split"
+ * is the default and keeps clean param-less URLs; the others travel as
+ * ?t=<name> on both the shared /s/:id link and the card.png it points at.
+ * og-image.js imports this list to validate the param on its side. The
+ * owner-built cover ("custom") is NOT part of this list: it is a saved PNG
+ * file, not a resvg layout, so it must never reach the renderer.
  */
 export const OG_TEMPLATES = [
   "split",
@@ -125,8 +127,14 @@ export const OG_TEMPLATES = [
   "story-journal",
 ];
 
-/** Validates the ?t= share param; anything unknown falls back to "split". */
+/**
+ * Validates the ?t= share param; anything unknown falls back to "split".
+ * "custom" (the owner-built cover from the CoverEditor) is a valid choice
+ * but is not a resvg template, so it is accepted here without being part
+ * of OG_TEMPLATES — og-image.js checks the param itself before rendering.
+ */
 export function normalizeTemplate(value) {
+  if (value === "custom") return "custom";
   return OG_TEMPLATES.includes(value) ? value : "split";
 }
 

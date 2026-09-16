@@ -77,6 +77,7 @@
     "text": "La sesión de {{strain}} de {{author}} en vaporlog — {{rating}}/10",
     "templateLabel": "Miniatura",
     "templates": {
+      "custom": "Personalizada",
       "split": "Clásico",
       "minimal": "Minimal",
       "stats": "Stats",

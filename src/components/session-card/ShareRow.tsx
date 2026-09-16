@@ -47,13 +47,21 @@ const OG_TEMPLATES: OgTemplate[] = [
 ];
 const OG_TEMPLATE_KEY = "vaporlog.og-template";
 
-function isStoryTemplate(template: OgTemplate): boolean {
+/**
+ * What the picker can select: a rendered OG template, or "custom" — the
+ * owner's saved cover, served by the API as card.png?t=custom. The custom
+ * option only exists when the session actually has a cover.
+ */
+type ShareCard = OgTemplate | "custom";
+
+function isStoryTemplate(template: ShareCard): boolean {
   return template.startsWith("story");
 }
 
-function readPreferredTemplate(): OgTemplate {
+function readPreferredTemplate(hasCustom: boolean): ShareCard {
   try {
     const raw = localStorage.getItem(OG_TEMPLATE_KEY);
+    if (raw === "custom") return hasCustom ? "custom" : "split";
     return OG_TEMPLATES.includes(raw as OgTemplate)
       ? (raw as OgTemplate)
       : "split";
@@ -62,7 +70,7 @@ function readPreferredTemplate(): OgTemplate {
   }
 }
 
-function canonicalUrl(sessionId: string, template: OgTemplate): string {
+function canonicalUrl(sessionId: string, template: ShareCard): string {
   const base = `${window.location.origin}/s/${sessionId}`;
   // The default design keeps clean param-less links.
   return template === "split" ? base : `${base}?t=${template}`;
@@ -103,7 +111,7 @@ function cardVersion(session: SessionLog): string {
 /** OG card URL with the cache-busting content version. */
 function cardPngUrl(
   sessionId: string,
-  template: OgTemplate,
+  template: ShareCard,
   version: string,
 ): string {
   return `/api/og/s/${sessionId}/card.png?t=${template}&v=${version}`;
@@ -147,7 +155,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
 /** Fetches an OG card with the owner's Bearer token; returns a blob URL. */
 async function fetchCardBlobUrl(
   sessionId: string,
-  template: OgTemplate,
+  template: ShareCard,
   version: string,
 ) {
   const token = getToken();
@@ -174,7 +182,7 @@ function TemplateThumbnail({
   label,
 }: {
   sessionId: string;
-  template: OgTemplate;
+  template: ShareCard;
   /** Content hash — changes re-fetch the card (busts browser cache). */
   version: string;
   isPublic: boolean;
@@ -253,7 +261,10 @@ export default function ShareRow({
   isOwner?: boolean;
 }) {
   const { t } = useTranslation("sessionCard");
-  const [template, setTemplate] = useState<OgTemplate>(readPreferredTemplate);
+  const hasCustom = Boolean(session.customOgImage);
+  const [template, setTemplate] = useState<ShareCard>(() =>
+    readPreferredTemplate(hasCustom),
+  );
   const [downloading, setDownloading] = useState(false);
   const version = cardVersion(session);
   const url = canonicalUrl(session.id, template);
@@ -265,7 +276,7 @@ export default function ShareRow({
     url,
   )}&title=${encodeURIComponent(text)}`;
 
-  function selectTemplate(next: OgTemplate) {
+  function selectTemplate(next: ShareCard) {
     setTemplate(next);
     try {
       localStorage.setItem(OG_TEMPLATE_KEY, next);
@@ -310,8 +321,13 @@ export default function ShareRow({
     }
   }
 
-  const rows = [
-    OG_TEMPLATES.filter((tp) => !isStoryTemplate(tp)),
+  const horizontalTemplates = OG_TEMPLATES.filter(
+    (tp) => !isStoryTemplate(tp),
+  );
+  const rows: ShareCard[][] = [
+    // The saved custom cover is a separate option, prepended to the
+    // horizontal row — explicit templates always render their own design.
+    hasCustom ? ["custom", ...horizontalTemplates] : horizontalTemplates,
     OG_TEMPLATES.filter((tp) => isStoryTemplate(tp)),
   ];
 
