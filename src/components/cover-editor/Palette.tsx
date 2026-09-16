@@ -68,6 +68,7 @@ import {
   type EffectsPresentation,
   type TextPresentation,
 } from "./model";
+import CoverGallery, { type GalleryCover } from "./CoverGallery";
 
 const RATING_PRESENTATIONS: { id: TextPresentation; key: string }[] = [
   { id: "text", key: "canvas.rating.text" },
@@ -160,6 +161,8 @@ function FieldDropdown({
 export default function CoverPalette({
   session,
   background,
+  covers,
+  onApplyTemplate,
   onAddLayer,
   onAddImageFile,
   onAddMascot,
@@ -167,6 +170,8 @@ export default function CoverPalette({
 }: {
   session: SessionLog;
   background: BackgroundFill;
+  covers: GalleryCover[];
+  onApplyTemplate: (sessionId: string) => void;
   onAddLayer: (layer: CoverLayer) => void;
   onAddImageFile: (file: File) => void;
   onAddMascot: () => void;
@@ -184,6 +189,14 @@ export default function CoverPalette({
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-4 p-3">
+        {/* ── My covers (saved covers as templates) ── */}
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel>{t("palette.myCovers")}</SectionLabel>
+          <CoverGallery covers={covers} onApply={onApplyTemplate} />
+        </div>
+
+        <Separator />
+
         {/* ── Session data ── */}
         <div className="flex flex-col gap-1.5">
           <SectionLabel>{t("palette.sessionData")}</SectionLabel>
@@ -197,13 +210,14 @@ export default function CoverPalette({
                   fontSize: 96,
                   fill: "#74C69D",
                   fontStyle: "bold",
+                  bind: "strain",
                 })
               }
             />
             <FieldButton
               icon={<Wind />}
               label={t("fields.device")}
-              onClick={() => addText({ text: deviceName, fontSize: 44 })}
+              onClick={() => addText({ text: deviceName, fontSize: 44, bind: "device" })}
             />
             <FieldDropdown
               icon={<Star />}
@@ -240,6 +254,7 @@ export default function CoverPalette({
                   }),
                   fontSize: 36,
                   fill: "#9BA3A0",
+                  bind: "date",
                 })
               }
             />
@@ -251,6 +266,7 @@ export default function CoverPalette({
                   addText({
                     text: t("palette.values.duration", { count: session.durationMin }),
                     fontSize: 44,
+                    bind: "duration",
                   })
                 }
               />
@@ -263,6 +279,7 @@ export default function CoverPalette({
                   addText({
                     text: t("palette.values.amount", { value: session.amountG }),
                     fontSize: 44,
+                    bind: "amount",
                   })
                 }
               />
@@ -277,7 +294,11 @@ export default function CoverPalette({
                 ]}
                 onPick={(id) =>
                   onAddLayer(
-                    buildEnergyLayer(session.energyCalmScore ?? 0, id as "gauge" | "text"),
+                    buildEnergyLayer(
+                      session.energyCalmScore ?? 0,
+                      id as "gauge" | "text",
+                      "energy",
+                    ),
                   )
                 }
               />
@@ -292,6 +313,7 @@ export default function CoverPalette({
                       ? t("palette.values.liked")
                       : t("palette.values.disliked"),
                     fontSize: 64,
+                    bind: "liked",
                   })
                 }
               />
@@ -304,6 +326,7 @@ export default function CoverPalette({
                   addText({
                     text: t("palette.values.detox", { count: session.detoxDays }),
                     fontSize: 36,
+                    bind: "detox",
                   })
                 }
               />
@@ -318,6 +341,7 @@ export default function CoverPalette({
                     fontSize: 28,
                     width: 700,
                     fill: "#E5E7EB",
+                    bind: "notes",
                   })
                 }
               />
@@ -330,6 +354,7 @@ export default function CoverPalette({
                   text: `@${session.author}`,
                   fontSize: 32,
                   fill: "#9BA3A0",
+                  bind: "author",
                 })
               }
             />
@@ -356,7 +381,7 @@ export default function CoverPalette({
                   key={entry.key}
                   icon={<Tags />}
                   label={t(`fields.${entry.key}`)}
-                  onClick={() => onAddLayer(buildChipsLayer(entry.tags))}
+                  onClick={() => onAddLayer(buildChipsLayer(entry.tags, { bind: entry.key }))}
                 />
               ))}
             <FieldDropdown
@@ -368,6 +393,7 @@ export default function CoverPalette({
                   session,
                   id as EffectsPresentation,
                   t("canvas.chartTitle"),
+                  "effectsChart",
                 );
                 if (layer === null) {
                   toast.error(t("canvas.chartNoEffects"));

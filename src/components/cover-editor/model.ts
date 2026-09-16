@@ -116,6 +116,27 @@ export type TextPresentation =
 /** What a data presentation's numeric value means. */
 export type DataKind = "rating" | "temperature" | "energy";
 
+/** Session datum a layer is bound to. Bound layers keep their design
+ *  (position, style) when a doc is applied as a template and only swap
+ *  their content — see rebindDoc. */
+export type LayerBind =
+  | "strain"
+  | "device"
+  | "deviceTemp"
+  | "date"
+  | "duration"
+  | "amount"
+  | "energy"
+  | "liked"
+  | "detox"
+  | "notes"
+  | "author"
+  | "aromas"
+  | "flavors"
+  | "moods"
+  | "activities"
+  | "effectsChart";
+
 export type TextLayer = LayerBase & {
   kind: "text";
   text: string;
@@ -132,6 +153,7 @@ export type TextLayer = LayerBase & {
    *  Legacy layers without it fall back to parsing `text`. */
   dataKind?: DataKind;
   dataValue?: number;
+  bind?: LayerBind;
 };
 
 export type ImageLayer = LayerBase & {
@@ -160,6 +182,7 @@ export type ChartLayer = LayerBase & {
   /** Panel + accent colors, editable in the inspector. */
   panelColor?: string;
   title?: string;
+  bind?: LayerBind;
 };
 
 /** Tag cloud rendered as pill chips (aromas, flavors, moods, activities…). */
@@ -174,6 +197,7 @@ export type ChipsLayer = LayerBase & {
   /** Wrap width of the chip flow. */
   width: number;
   align?: "left" | "center" | "right";
+  bind?: LayerBind;
 };
 
 export type ShapeKind = "rect" | "ellipse";
@@ -315,6 +339,7 @@ export function buildTextLayer(init: {
   presentation?: TextPresentation;
   dataKind?: DataKind;
   dataValue?: number;
+  bind?: LayerBind;
 }): TextLayer {
   return {
     id: nextId(),
@@ -332,12 +357,14 @@ export function buildTextLayer(init: {
     presentation: init.presentation,
     dataKind: init.dataKind,
     dataValue: init.dataValue,
+    bind: init.bind,
   };
 }
 
 export function buildRatingLayer(
   rating: number,
   presentation: TextPresentation,
+  bind?: LayerBind,
 ): TextLayer {
   return buildTextLayer({
     text: formatDataValue("rating", rating),
@@ -347,12 +374,14 @@ export function buildRatingLayer(
     presentation,
     dataKind: "rating",
     dataValue: rating,
+    bind,
   });
 }
 
 export function buildTemperatureLayer(
   temp: number | null,
   presentation: TextPresentation,
+  bind?: LayerBind,
 ): TextLayer {
   const value = temp ?? 0;
   return buildTextLayer({
@@ -363,6 +392,7 @@ export function buildTemperatureLayer(
     presentation,
     dataKind: "temperature",
     dataValue: value,
+    bind,
   });
 }
 
@@ -370,6 +400,7 @@ export function buildTemperatureLayer(
 export function buildEnergyLayer(
   score: number,
   presentation: "gauge" | "text",
+  bind?: LayerBind,
 ): TextLayer {
   const clamped = Math.max(-5, Math.min(5, score));
   return buildTextLayer({
@@ -381,14 +412,13 @@ export function buildEnergyLayer(
     presentation,
     dataKind: "energy",
     dataValue: clamped,
+    bind,
   });
 }
 
-export function buildEffectsLayer(
-  session: SessionLog,
-  presentation: EffectsPresentation,
-  title: string,
-): ChartLayer | null {
+/** Flattened mood + unwanted-effect rows of a session, as the chart
+ *  layer and rebindDoc both consume them. */
+function effectsFromSession(session: SessionLog): ChartEffect[] {
   const effects: ChartEffect[] = [];
   for (const tag of session.moods) {
     effects.push({ tag, intensity: session.effectIntensities[tag] ?? 5, type: "mood" });
@@ -396,6 +426,16 @@ export function buildEffectsLayer(
   for (const tag of session.unwantedEffects) {
     effects.push({ tag, intensity: session.effectIntensities[tag] ?? 5, type: "unwanted" });
   }
+  return effects;
+}
+
+export function buildEffectsLayer(
+  session: SessionLog,
+  presentation: EffectsPresentation,
+  title: string,
+  bind?: LayerBind,
+): ChartLayer | null {
+  const effects = effectsFromSession(session);
   if (effects.length === 0) return null;
   return {
     id: nextId(),
@@ -406,12 +446,15 @@ export function buildEffectsLayer(
     effects,
     presentation,
     title,
+    bind,
   };
 }
 
 export function buildChipsLayer(
   tags: string[],
-  init?: Partial<Pick<ChipsLayer, "chipStyle" | "accent" | "textColor" | "fontSize" | "x" | "y">>,
+  init?: Partial<
+    Pick<ChipsLayer, "chipStyle" | "accent" | "textColor" | "fontSize" | "x" | "y" | "bind">
+  >,
 ): ChipsLayer {
   return {
     id: nextId(),
@@ -426,6 +469,7 @@ export function buildChipsLayer(
     textColor: init?.textColor ?? "#030303",
     width: 700,
     align: "left",
+    bind: init?.bind,
   };
 }
 
@@ -456,5 +500,137 @@ export function buildImageLayer(init: {
     kind: "image",
     ...baseDefaults,
     ...init,
+  };
+}
+
+// ── Template rebinding ──────────────────────────────────────────────
+
+export type RebindContext = {
+  session: SessionLog;
+  strainName: string;
+  deviceName: string;
+  t: (key: string, options?: Record<string, unknown>) => string;
+};
+
+/** Session field backing each dataKind; null means "session skipped it". */
+function dataKindSource(kind: DataKind, session: SessionLog): number | null {
+  switch (kind) {
+    case "rating":
+      return session.rating;
+    case "temperature":
+      return session.temperatureC;
+    case "energy":
+      return session.energyCalmScore;
+  }
+}
+
+function rebindTextLayer(layer: TextLayer, ctx: RebindContext): TextLayer {
+  const { session, strainName, deviceName, t } = ctx;
+  // Data-backed layers (stars/thermometer/gauge…) re-read their numeric
+  // value and re-sync the canonical text; this takes precedence over
+  // bind so the viz and its string never drift apart.
+  if (layer.dataKind !== undefined) {
+    const value = dataKindSource(layer.dataKind, session);
+    if (value === null) return layer;
+    return { ...layer, dataValue: value, text: formatDataValue(layer.dataKind, value) };
+  }
+  switch (layer.bind) {
+    case undefined:
+      return layer;
+    case "strain":
+      return strainName === "" ? layer : { ...layer, text: strainName };
+    case "device":
+      return deviceName === "" ? layer : { ...layer, text: deviceName };
+    case "deviceTemp": {
+      if (deviceName === "" && session.temperatureC === null) return layer;
+      const suffix = session.temperatureC === null ? "" : ` · ${session.temperatureC}°C`;
+      return { ...layer, text: `${deviceName}${suffix}` };
+    }
+    case "date": {
+      const date = new Date(session.createdAt);
+      if (Number.isNaN(date.getTime())) return layer;
+      return {
+        ...layer,
+        text: date.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      };
+    }
+    case "duration":
+      return session.durationMin === null
+        ? layer
+        : { ...layer, text: t("palette.values.duration", { count: session.durationMin }) };
+    case "amount":
+      return session.amountG === null
+        ? layer
+        : { ...layer, text: t("palette.values.amount", { value: session.amountG }) };
+    case "energy":
+      return session.energyCalmScore === null
+        ? layer
+        : { ...layer, text: formatDataValue("energy", session.energyCalmScore) };
+    case "liked":
+      return session.liked === null
+        ? layer
+        : {
+            ...layer,
+            text: t(session.liked ? "palette.values.liked" : "palette.values.disliked"),
+          };
+    case "detox":
+      return session.detoxDays === null
+        ? layer
+        : { ...layer, text: t("palette.values.detox", { count: session.detoxDays }) };
+    case "notes": {
+      const notes = session.notes.trim();
+      return notes === "" ? layer : { ...layer, text: notes };
+    }
+    case "author":
+      return { ...layer, text: `@${session.author}` };
+    default:
+      // Chip/chart binds on a text layer are meaningless — leave as-is.
+      return layer;
+  }
+}
+
+function rebindChipsLayer(layer: ChipsLayer, ctx: RebindContext): ChipsLayer {
+  switch (layer.bind) {
+    case "aromas":
+    case "flavors":
+    case "moods":
+    case "activities": {
+      const tags = ctx.session[layer.bind];
+      return tags.length === 0 ? layer : { ...layer, tags };
+    }
+    default:
+      return layer;
+  }
+}
+
+function rebindChartLayer(layer: ChartLayer, ctx: RebindContext): ChartLayer {
+  if (layer.bind !== "effectsChart") return layer;
+  const effects = effectsFromSession(ctx.session);
+  return effects.length === 0 ? layer : { ...layer, effects };
+}
+
+/** Applies a saved doc as a template onto another session: every layer
+ *  with a bind (or a dataKind) swaps its content for ctx.session's data
+ *  while keeping id, position and style. Data the target session lacks
+ *  (null/empty) leaves the layer untouched. */
+export function rebindDoc(doc: CoverDoc, ctx: RebindContext): CoverDoc {
+  return {
+    ...doc,
+    layers: doc.layers.map((layer) => {
+      switch (layer.kind) {
+        case "text":
+          return rebindTextLayer(layer, ctx);
+        case "chips":
+          return rebindChipsLayer(layer, ctx);
+        case "chart":
+          return rebindChartLayer(layer, ctx);
+        default:
+          return layer;
+      }
+    }),
   };
 }

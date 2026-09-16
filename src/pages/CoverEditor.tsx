@@ -65,6 +65,7 @@ import {
   EXPORT_PRESETS,
   findExportPresetId,
   parseCoverDoc,
+  rebindDoc,
   renderCoverToSize,
   serializeCoverDoc,
   type BackgroundFill,
@@ -177,6 +178,7 @@ export default function CoverEditor() {
             fill: "#74C69D",
             fontStyle: "bold",
             width: 1040,
+            bind: "strain",
           }),
           buildTextLayer({
             text: `${session.rating.toFixed(1)}/10`,
@@ -185,6 +187,8 @@ export default function CoverEditor() {
             fontSize: 72,
             fill: "#FFFFFF",
             width: 600,
+            dataKind: "rating",
+            dataValue: session.rating,
           }),
           buildTextLayer({
             text: [
@@ -200,6 +204,7 @@ export default function CoverEditor() {
             fontSize: 36,
             fill: "#9BA3A0",
             width: 1040,
+            bind: "deviceTemp",
           }),
         ],
       });
@@ -355,6 +360,83 @@ export default function CoverEditor() {
     };
     reader.readAsDataURL(blob);
   }, [t, addLayer]);
+
+  // ── My covers (templates from saved covers) ───────────────────────
+  // Every session with a saved custom cover shows up in the palette
+  // gallery; the one being edited goes first.
+  const covers = useMemo(
+    () =>
+      sessions
+        .filter((entry) => entry.customOgImage != null)
+        .map((entry) => ({
+          sessionId: entry.id,
+          caption: `${displayStrainName(entry.strainSlug)} · ${entry.rating.toFixed(1)}`,
+          hasDoc: parseCoverDoc(entry.customOgDoc) !== null,
+          isCurrent: entry.id === id,
+        }))
+        .sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent)),
+    [sessions, id],
+  );
+
+  /** Applies a saved cover as a template: a stored doc keeps its design
+   *  and re-binds data layers to THIS session; an image-only cover is
+   *  flattened to a single full-canvas image layer. */
+  const applyTemplate = useCallback(
+    async (sessionId: string) => {
+      if (session === null) return;
+      const source = sessions.find((entry) => entry.id === sessionId);
+      if (source === undefined) return;
+      const doc = parseCoverDoc(source.customOgDoc);
+      if (doc !== null) {
+        dispatch({
+          type: "replace_doc",
+          ...rebindDoc(doc, {
+            session,
+            strainName: displayStrainName(session.strainSlug),
+            deviceName: displayDeviceName(session.deviceSlug),
+            t,
+          }),
+        });
+      } else {
+        const token = getToken();
+        const headers: Record<string, string> = {};
+        if (token !== null) headers.Authorization = `Bearer ${token}`;
+        try {
+          const response = await fetch(`/api/og/s/${sessionId}/card.png`, { headers });
+          if (!response.ok) throw new Error(`cover ${response.status}`);
+          const blob = await response.blob();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              if (typeof reader.result === "string") resolve(reader.result);
+              else reject(new Error("cover read failed"));
+            };
+            reader.onerror = () => reject(new Error("cover read failed"));
+            reader.readAsDataURL(blob);
+          });
+          dispatch({
+            type: "replace_doc",
+            background: "solid",
+            layers: [
+              buildImageLayer({
+                src: dataUrl,
+                width: CANVAS_W,
+                height: CANVAS_H,
+                x: 0,
+                y: 0,
+              }),
+            ],
+          });
+        } catch {
+          toast.error(t("save.error"));
+          return;
+        }
+      }
+      setSelectedId(null);
+      toast.success(t("gallery.applied"));
+    },
+    [session, sessions, t],
+  );
 
   // ── Inline text editing overlay ───────────────────────────────────
   // Local draft for the textarea — committed back to the layer (and
@@ -792,6 +874,8 @@ export default function CoverEditor() {
     <CoverPalette
       session={session}
       background={background}
+      covers={covers}
+      onApplyTemplate={(sessionId) => void applyTemplate(sessionId)}
       onAddLayer={addLayer}
       onAddImageFile={addImageFromFile}
       onAddMascot={() => void addMascot()}

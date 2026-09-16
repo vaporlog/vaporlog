@@ -64,6 +64,7 @@
     "sessionData": "Datos de la sesión",
     "tags": "Etiquetas",
     "elements": "Elementos",
+    "myCovers": "Mis portadas",
     "text": {
       "heading": "Título",
       "subheading": "Subtítulo",
@@ -191,5 +192,15 @@
     "herb": "Verde",
     "night": "Noche",
     "paper": "Papel"
+  },
+  "gallery": {
+    "empty": "Aún no tienes portadas guardadas. Guarda una y aparecerá aquí para reutilizarla en otras sesiones.",
+    "current": "Actual",
+    "imageOnly": "Solo imagen",
+    "confirmTitle": "¿Usar esta portada como template?",
+    "confirmBody": "El lienzo actual se reemplazará por esa portada y los datos se actualizarán a esta sesión. Puedes deshacerlo.",
+    "confirmCta": "Usar template",
+    "cancelCta": "Cancelar",
+    "applied": "Template aplicado — los datos se actualizaron a esta sesión."
   }
 }

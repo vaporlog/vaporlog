@@ -64,6 +64,7 @@
     "sessionData": "Session data",
     "tags": "Tags",
     "elements": "Elements",
+    "myCovers": "My covers",
     "text": {
       "heading": "Heading",
       "subheading": "Subheading",
@@ -191,5 +192,15 @@
     "herb": "Herb",
     "night": "Night",
     "paper": "Paper"
+  },
+  "gallery": {
+    "empty": "You don't have any saved covers yet. Save one and it will show up here so you can reuse it on other sessions.",
+    "current": "Current",
+    "imageOnly": "Flattened",
+    "confirmTitle": "Use this cover as a template?",
+    "confirmBody": "Your current canvas will be replaced with that cover and its data will refresh to this session. You can undo it.",
+    "confirmCta": "Use template",
+    "cancelCta": "Cancel",
+    "applied": "Template applied — data refreshed to this session."
   }
 }

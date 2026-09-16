@@ -39,7 +39,8 @@ export type CanvasAction =
   | { type: "set_background"; background: BackgroundFill }
   | { type: "undo" }
   | { type: "redo" }
-  | { type: "reset_with"; layers: CoverLayer[]; background: BackgroundFill };
+  | { type: "reset_with"; layers: CoverLayer[]; background: BackgroundFill }
+  | { type: "replace_doc"; layers: CoverLayer[]; background: BackgroundFill };
 
 export type HistoryState = {
   past: CanvasSnapshot[];
@@ -105,6 +106,14 @@ export function historyReducer(state: HistoryState, action: CanvasAction): Histo
         future: [],
         coalescing: null,
       };
+    }
+    case "replace_doc": {
+      // Template apply: swaps the whole document but pushes the previous
+      // one onto the stack, so the user can undo back out of it.
+      return pushHistory(state, {
+        layers: action.layers,
+        background: action.background,
+      });
     }
     case "add_layer": {
       return pushHistory(state, {
