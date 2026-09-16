@@ -18,9 +18,9 @@ import { getCurrentAccount, onAuthChange, type Account } from "@/lib/auth";
  *   4. How it works in 3 steps
  *   5. Comparison vs notes app / spreadsheet (#31)
  *   6. Social proof from real community sessions (#29)
- *   7. A footer people want to share (#4) + "free during early access"
+ *   7. A footer people want to share (#4)
  * Three colors only (#2): white, near-black, herb green for the CTA and
- * rating highlights. No pricing section — free during early access.
+ * rating highlights. No pricing section — the app is free.
  *
  * Visitor surface only: a signed-in account's home is the diary, so "/"
  * steps aside to /diary (first render is already gated on the restored

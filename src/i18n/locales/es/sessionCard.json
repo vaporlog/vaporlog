@@ -10,7 +10,7 @@
   },
   "cta": {
     "button": "Empieza tu diario",
-    "subtext": "Gratis durante el acceso anticipado — registra tu primera sesión en menos de un minuto."
+    "subtext": "Registra tu primera sesión en menos de un minuto."
   },
   "legal": "Solo mayores de 21 años, donde sea legal. Las calificaciones y los efectos son la experiencia de una persona, no un consejo médico.",
   "tagline": "Toda gran sesión merece un testigo.",
@@ -94,6 +94,8 @@
     "toX": "Compartir en X",
     "toReddit": "Compartir en Reddit",
     "copySuccess": "Enlace copiado — pásalo.",
-    "copyError": "No se pudo copiar el enlace — mantén presionada la barra de direcciones."
+    "copyError": "No se pudo copiar el enlace — mantén presionada la barra de direcciones.",
+    "customCover": "Portada personalizada",
+    "customCoverActive": "Portada personalizada activa"
   }
 }

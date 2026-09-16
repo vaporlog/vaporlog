@@ -15,6 +15,9 @@
  * the vite server on localhost:3000.
  */
 import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { pool } from "../db.js";
 
 const UUID_RE =
@@ -127,6 +130,13 @@ export function normalizeTemplate(value) {
   return OG_TEMPLATES.includes(value) ? value : "split";
 }
 
+/** Path to the bundled mascot PNG (also read by og-image.js for cards). */
+const MASCOT_PATH = path.join(
+  path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url)))),
+  "assets",
+  "mascot.png",
+);
+
 /**
  * Rewrites the default preview tags of the SPA shell for one public
  * session. The defaults in index.html are replaced in place (crawlers take
@@ -237,5 +247,21 @@ export default async function ogRoutes(app) {
       .type("text/html; charset=utf-8")
       .header("cache-control", "public, max-age=300")
       .send(out);
+  });
+
+  // Public mascot asset. The CoverEditor fetches this to drop the brand
+  // mascot onto a custom cover; the resvg renderer embeds it directly
+  // from disk. Cached aggressively — the mascot never changes between
+  // deploys (the docker COPY bakes the file in).
+  app.get("/api/og/mascot.png", async (_request, reply) => {
+    try {
+      const bytes = await fs.promises.readFile(MASCOT_PATH);
+      return reply
+        .type("image/png")
+        .header("cache-control", "public, max-age=86400, immutable")
+        .send(bytes);
+    } catch {
+      return reply.code(404).send({ error: "Mascot not found." });
+    }
   });
 }

@@ -28,6 +28,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { pool } from "../db.js";
 import { hashToken } from "../lib/tokens.js";
 import { humanizeSlug, normalizeTemplate } from "./og.js";
+import { resolveCustomOgPath } from "./custom-og.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -976,6 +977,7 @@ export default async function ogImageRoutes(app) {
               s.moods, s.aromas, s.flavors, s.effect_intensities,
               s.unwanted_effects, s.unwanted_effects_public,
               s.energy_calm_score, s.created_at,
+              s.custom_og_image,
               p.handle as owner_handle,
               d.name   as device_name
          from sessions s
@@ -1008,6 +1010,37 @@ export default async function ogImageRoutes(app) {
       );
       if (authRows.length === 0 || authRows[0].user_id !== session.user_id) {
         return reply.redirect(FALLBACK_IMAGE, 302);
+      }
+    }
+
+    // A shared cache in front of the API must never store a private
+    // session's card: only public sessions get a public cache scope.
+    const cacheScope = session.is_public ? "public" : "private";
+
+    // Owner-built cover (CoverEditor): serve the saved file as-is. This
+    // takes priority over every resvg template — the user explicitly
+    // authored the design. A missing/broken file falls through to the
+    // dynamic renderer so the card still shows something.
+    if (typeof session.custom_og_image === "string" && session.custom_og_image !== "") {
+      const absolutePath = resolveCustomOgPath(session.custom_og_image);
+      if (absolutePath !== null) {
+        try {
+          const bytes = await fs.promises.readFile(absolutePath);
+          // Cache-bytes: the file's mtime changes on every save, so this
+          // header busts the browser cache on edits without query params.
+          return reply
+            .type("image/png")
+            .header(
+              "cache-control",
+              `${cacheScope}, max-age=300, must-revalidate`,
+            )
+            .send(bytes);
+        } catch {
+          // File missing on disk: drop the stale reference and fall through
+          // to the dynamic renderer. We don't clear the column here — the
+          // DELETE endpoint exists for that — so the next upload reuses
+          // the same path and the next read is a single retry away.
+        }
       }
     }
 
@@ -1063,7 +1096,7 @@ export default async function ogImageRoutes(app) {
       }
       return reply
         .type("image/png")
-        .header("cache-control", "public, max-age=300")
+        .header("cache-control", `${cacheScope}, max-age=300`)
         .send(png);
     } catch (error) {
       // A broken card must never 500 a crawler — fall back to the static image.

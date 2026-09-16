@@ -12,7 +12,8 @@ sesión (strain, dispositivo, temperatura, duración, cantidad, rating, aromas,
 sabores, moods, actividades, notas), la llevan en su diario privado y pueden
 **publicar** sesiones individuales al feed comunitario. Catálogos: ~400 strains
 (datos verificados de Leafly) y 113 vaporizadores. Sitio: https://vaporlog.online
-App 100% gratis por decisión del dueño (sin planes de pago por ahora).
+App 100% gratis por decisión del dueño (sin planes de pago — el copy nunca
+insinúa que se cobrará en el futuro).
 
 Principios de producto que rigen las decisiones de diseño/copy: ver
 `.kimi/skills/viral-product` y `.kimi/skills/revenue-centric-design`.
@@ -190,7 +191,7 @@ diario, hint en comentarios para "primera sesión del día".
   "taken" igual que signup. `refreshAccount()` en `lib/auth.ts` sincroniza
   el caché/header tras el renombrado. Ojo: `/u/:handle` viejo deja de
   resolver (es el punto — tapar la fuga).
-- (pendiente de commit) — **pasada de seguridad** (reporte
+- `b8e46af` — **pasada de seguridad** (reporte
   `../security-report/`): CORS restringido a `SITE_URL`+localhost:3000,
   `@fastify/helmet` (sin CSP — la CSP vive en el `Caddyfile` junto a HSTS y
   demás headers), `@fastify/rate-limit` por ruta (`/api/auth/*` agresivo,

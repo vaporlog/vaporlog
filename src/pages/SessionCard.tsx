@@ -288,7 +288,11 @@ export default function SessionCard() {
           even on private sessions (download works with their token); public
           sessions get it for everyone. */}
       <div className="vl-enter" style={{ animationDelay: "210ms" }}>
-        <ShareRow session={session} strainName={strainName} />
+        <ShareRow
+          session={session}
+          strainName={strainName}
+          isOwner={isOwner}
+        />
       </div>
 
       {/* 5 · Legal line (spec decision 5) */}

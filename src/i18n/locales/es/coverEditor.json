@@ -1,0 +1,101 @@
+{
+  "title": "Portada personalizada",
+  "subtitle": "Arrastra imágenes, stickers y texto al lienzo — lo que armes será la tarjeta que vean cuando compartan esta sesión.",
+  "loading": "Cargando el lienzo…",
+  "loadError": "No se pudo cargar esta sesión.",
+  "notOwner": "Solo el dueño de la sesión puede editar la portada.",
+  "notSignedIn": "Inicia sesión para editar esta portada.",
+  "back": "Volver a la sesión",
+  "canvas": {
+    "ariaLabel": "Lienzo de portada. Usa la barra para añadir imágenes, la mascota y texto. Arrastra cualquier elemento para moverlo.",
+    "addText": "Añadir texto",
+    "customTextPlaceholder": "Texto personalizado…",
+    "addImage": "Añadir imagen",
+    "addMascot": "Añadir mascota",
+    "addChart": "Añadir gráfica de efectos",
+    "chartTitle": "Efectos",
+    "chartNoEffects": "Registra primero un ánimo para añadir una gráfica.",
+    "imageFile": "Archivo de imagen",
+    "imagePicker": "Elegir imagen",
+    "delete": "Borrar",
+    "duplicate": "Duplicar",
+    "bringForward": "Traer al frente",
+    "sendBackward": "Enviar atrás",
+    "bringToFront": "Traer al frente absoluto",
+    "sendToBack": "Enviar al fondo absoluto",
+    "front": "Frente",
+    "back": "Fondo",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "align": {
+      "left": "Alinear a la izquierda",
+      "center": "Centrar",
+      "right": "Alinear a la derecha"
+    },
+    "fontFamily": "Tipografía",
+    "fonts": {
+      "sans": "Sans",
+      "serif": "Serif",
+      "mono": "Mono",
+      "impact": "Impact",
+      "script": "Script"
+    },
+    "bold": "Negrita",
+    "italic": "Itálica",
+    "rating": {
+      "text": "Número grande",
+      "stars": "Estrellas (5)",
+      "dots": "Puntos (5)",
+      "percent": "Porcentaje",
+      "letter": "Letra"
+    },
+    "temperature": {
+      "text": "Número grande",
+      "thermometer": "Termómetro",
+      "chip": "Etiqueta"
+    },
+    "effects": {
+      "bar": "Barras",
+      "list": "Lista"
+    },
+    "clearAll": "Vaciar lienzo"
+  },
+  "fields": {
+    "strain": "Strain",
+    "device": "Vaporizador",
+    "temperature": "Temperatura",
+    "rating": "Calificación",
+    "date": "Fecha"
+  },
+  "save": {
+    "button": "Guardar portada",
+    "saving": "Guardando…",
+    "success": "Portada guardada — tu tarjeta personalizada es la que se compartirá.",
+    "tooLarge": "La imagen es demasiado grande. Quita alguna capa.",
+    "error": "No se pudo guardar esa portada.",
+    "sizeLabel": "Tamaño de export",
+    "size": {
+      "link": "Link",
+      "square": "Cuadrado",
+      "story": "Historia",
+      "wide": "FB ancho",
+      "custom": "Custom"
+    }
+  },
+  "restore": {
+    "button": "Restaurar tarjeta automática",
+    "confirmTitle": "¿Restaurar la tarjeta automática?",
+    "confirmBody": "Se eliminará tu portada personalizada y la sesión volverá a la tarjeta generada automáticamente.",
+    "confirmCta": "Restaurar",
+    "cancelCta": "Conservar portada",
+    "success": "Tarjeta automática restaurada.",
+    "error": "No se pudo restaurar la tarjeta automática."
+  },
+  "backgrounds": {
+    "label": "Fondos",
+    "solid": "Sólido",
+    "herb": "Verde",
+    "night": "Noche",
+    "paper": "Papel"
+  }
+}

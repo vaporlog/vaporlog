@@ -10,7 +10,7 @@
   },
   "cta": {
     "button": "Start Your Journal",
-    "subtext": "Free during early access — log your first session in under a minute."
+    "subtext": "Log your first session in under a minute."
   },
   "legal": "21+ only, where legal. Ratings and effects are one person's experience, not medical advice.",
   "tagline": "Every great session deserves a witness.",
@@ -94,6 +94,8 @@
     "toX": "Share to X",
     "toReddit": "Share to Reddit",
     "copySuccess": "Link copied — pass it on.",
-    "copyError": "Couldn't copy the link — long-press the address bar instead."
+    "copyError": "Couldn't copy the link — long-press the address bar instead.",
+    "customCover": "Custom cover",
+    "customCoverActive": "Custom cover active"
   }
 }

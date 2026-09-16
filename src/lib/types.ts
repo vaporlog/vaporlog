@@ -95,6 +95,13 @@ export interface SessionLog {
   authorProfilePublic?: boolean;
   /** ISO 8601 timestamp. */
   createdAt: string;
+  /**
+   * Path (relative to server/assets/) of an owner-built cover image, or
+   * null when the dynamic resvg renderer is still in charge. Optional:
+   * only present on payloads the API actually annotates with the column
+   * (mine, public); older clients ignore it.
+   */
+  customOgImage?: string | null;
 }
 
 /** Shape of src/data/seed.json (strains + devices only). */

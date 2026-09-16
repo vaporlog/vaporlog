@@ -72,7 +72,7 @@
   },
   "cta": {
     "button": "Start Your Journal",
-    "sub": "Free during early access · your first entry takes under a minute"
+    "sub": "Your first entry takes under a minute"
   },
   "sessionCard": {
     "duration": "{{count}} min",
