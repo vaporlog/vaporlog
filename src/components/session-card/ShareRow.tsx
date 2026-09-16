@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import i18n from "@/i18n";
 import { getToken } from "@/lib/api";
+import { COVER_EDITOR_ENABLED } from "@/lib/features";
 import { cn } from "@/lib/utils";
 import type { SessionLog } from "@/lib/types";
 
@@ -342,7 +343,7 @@ export default function ShareRow({
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-        {isOwner ? (
+        {COVER_EDITOR_ENABLED && isOwner ? (
           <Button
             asChild
             type="button"

@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import AgeGate from "@/components/AgeGate";
 import Landing from "@/pages/Landing";
 import { whenAuthReady } from "@/lib/auth";
+import { COVER_EDITOR_ENABLED } from "@/lib/features";
 
 /*
  * Route-level code splitting: the landing page stays in the entry chunk
@@ -73,7 +74,9 @@ const router = createBrowserRouter(
       { path: "/recommendations", element: <Recommendations /> },
       { path: "/feed", element: <Feed /> },
       { path: "/s/:id", element: <SessionCard /> },
-      { path: "/s/:id/edit-cover", element: <CoverEditor /> },
+      ...(COVER_EDITOR_ENABLED
+        ? [{ path: "/s/:id/edit-cover", element: <CoverEditor /> }]
+        : []),
       { path: "/u/:handle", element: <PublicProfile /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
