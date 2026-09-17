@@ -248,8 +248,6 @@ export function CoverImageNode({ layer, register, onSelect, onChange }: NodeProp
   const common = {
     x: layer.x + (layer.flipX === true ? layer.width * layer.scaleX : 0),
     y: layer.y + (layer.flipY === true ? layer.height * layer.scaleY : 0),
-    width: layer.width,
-    height: layer.height,
     rotation: layer.rotation,
     scaleX,
     scaleY,
@@ -277,38 +275,49 @@ export function CoverImageNode({ layer, register, onSelect, onChange }: NodeProp
       });
     },
   };
-  if (img === null) {
-    return (
-      <Rect
-        ref={register as (node: Konva.Node | null) => void}
-        {...common}
-        fill="#222"
-        cornerRadius={8}
-      />
-    );
-  }
   const f = layer.filters;
   const clipRadius = layer.cornerRadius ?? 0;
+  // The Group is the registered node and NEVER unmounts: the bitmap
+  // swaps in under it once decoded. Registering the placeholder Rect
+  // directly used to leave the Transformer pinned to a destroyed node
+  // (the pin effect only re-runs on selection/layer changes), which
+  // made resizing a freshly added image silently do nothing.
   return (
-    <KonvaImage
-      ref={(node) => {
-        nodeRef.current = node;
-        register(node);
-      }}
+    <Group
+      ref={register as (node: Konva.Node | null) => void}
       {...common}
-      image={img}
-      clipFunc={
-        clipRadius > 0 ? roundedRectClip(layer.width, layer.height, clipRadius) : undefined
-      }
-      filters={filters}
-      brightness={f?.brightness ?? 0}
-      contrast={f?.contrast ?? 0}
-      hue={0}
-      // Inspector exposes saturate as -100..100; Konva HSL expects -2..2.
-      saturation={(f?.saturate ?? 0) / 50}
-      luminance={0}
-      blurRadius={f?.blur ?? 0}
-    />
+    >
+      {img === null ? (
+        <Rect
+          x={0}
+          y={0}
+          width={layer.width}
+          height={layer.height}
+          fill="#222"
+          cornerRadius={8}
+        />
+      ) : (
+        <KonvaImage
+          ref={nodeRef}
+          x={0}
+          y={0}
+          width={layer.width}
+          height={layer.height}
+          image={img}
+          clipFunc={
+            clipRadius > 0 ? roundedRectClip(layer.width, layer.height, clipRadius) : undefined
+          }
+          filters={filters}
+          brightness={f?.brightness ?? 0}
+          contrast={f?.contrast ?? 0}
+          hue={0}
+          // Inspector exposes saturate as -100..100; Konva HSL expects -2..2.
+          saturation={(f?.saturate ?? 0) / 50}
+          luminance={0}
+          blurRadius={f?.blur ?? 0}
+        />
+      )}
+    </Group>
   );
 }
 
