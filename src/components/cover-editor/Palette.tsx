@@ -25,6 +25,7 @@ import {
   Gauge,
   ImagePlus,
   MessageSquareText,
+  Minus,
   Scale,
   Sparkles,
   Square,
@@ -32,6 +33,7 @@ import {
   Tags,
   Thermometer,
   ThumbsUp,
+  Triangle,
   Type,
   User,
   Wind,
@@ -55,7 +57,7 @@ import {
 import type { SessionLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
-  BG_COLOR,
+  bgCss,
   buildChipsLayer,
   buildEffectsLayer,
   buildEnergyLayer,
@@ -89,7 +91,17 @@ const EFFECTS_PRESENTATIONS: { id: EffectsPresentation; key: string }[] = [
   { id: "list", key: "canvas.effects.list" },
 ];
 
-const BACKGROUNDS: BackgroundFill[] = ["night", "solid", "herb", "paper", "transparent"];
+const BACKGROUNDS: { fill: BackgroundFill; labelKey: string }[] = [
+  { fill: "night", labelKey: "backgrounds.night" },
+  { fill: "solid", labelKey: "backgrounds.solid" },
+  { fill: "herb", labelKey: "backgrounds.herb" },
+  { fill: "paper", labelKey: "backgrounds.paper" },
+  { fill: "grad-sunset", labelKey: "backgrounds.gradSunset" },
+  { fill: "grad-forest", labelKey: "backgrounds.gradForest" },
+  { fill: "grad-ocean", labelKey: "backgrounds.gradOcean" },
+  { fill: "grad-berry", labelKey: "backgrounds.gradBerry" },
+  { fill: "transparent", labelKey: "backgrounds.transparent" },
+];
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -445,6 +457,21 @@ export default function CoverPalette({
               onClick={() => onAddLayer(buildShapeLayer("ellipse"))}
             />
             <FieldButton
+              icon={<Minus />}
+              label={t("palette.shapes.line")}
+              onClick={() => onAddLayer(buildShapeLayer("line"))}
+            />
+            <FieldButton
+              icon={<Triangle />}
+              label={t("palette.shapes.triangle")}
+              onClick={() => onAddLayer(buildShapeLayer("triangle"))}
+            />
+            <FieldButton
+              icon={<Star />}
+              label={t("palette.shapes.star")}
+              onClick={() => onAddLayer(buildShapeLayer("star"))}
+            />
+            <FieldButton
               icon={<ImagePlus />}
               label={t("canvas.addImage")}
               onClick={() => fileInputRef.current?.click()}
@@ -474,13 +501,13 @@ export default function CoverPalette({
         <div className="flex flex-col gap-1.5">
           <SectionLabel>{t("backgrounds.label")}</SectionLabel>
           <div className="flex flex-wrap items-center gap-2 px-1">
-            {BACKGROUNDS.map((fill) => (
+            {BACKGROUNDS.map(({ fill, labelKey }) => (
               <button
                 key={fill}
                 type="button"
                 onClick={() => onBackground(fill)}
-                title={t(`backgrounds.${fill}`)}
-                aria-label={t(`backgrounds.${fill}`)}
+                title={t(labelKey)}
+                aria-label={t(labelKey)}
                 aria-pressed={background === fill}
                 className={cn(
                   "size-8 rounded-full border-2 transition-transform pressable",
@@ -488,11 +515,7 @@ export default function CoverPalette({
                     ? "border-herb scale-110"
                     : "border-border hover:scale-105",
                 )}
-                style={{
-                  background:
-                    BG_COLOR[fill] ??
-                    "repeating-conic-gradient(#3f3f46 0% 25%, #27272a 0% 50%) 0 0 / 12px 12px",
-                }}
+                style={{ background: bgCss(fill) }}
               />
             ))}
           </div>

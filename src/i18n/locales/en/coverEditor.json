@@ -27,6 +27,9 @@
     "back": "Back",
     "undo": "Undo",
     "redo": "Redo",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomFit": "Fit to canvas",
     "align": {
       "left": "Align left",
       "center": "Align center",
@@ -75,7 +78,10 @@
     },
     "shapes": {
       "rect": "Rectangle",
-      "ellipse": "Ellipse"
+      "ellipse": "Ellipse",
+      "line": "Line",
+      "triangle": "Triangle",
+      "star": "Star"
     },
     "energy": {
       "gauge": "Gauge",
@@ -110,6 +116,8 @@
   },
   "inspector": {
     "empty": "Select an element on the canvas to edit it",
+    "tabProperties": "Properties",
+    "tabLayers": "Layers",
     "kind": {
       "text": "Text",
       "image": "Image",
@@ -118,11 +126,37 @@
       "shape": "Shape"
     },
     "opacity": "Opacity",
+    "position": {
+      "title": "Position",
+      "x": "X",
+      "y": "Y",
+      "rotation": "Rotation"
+    },
+    "align": {
+      "label": "Align to canvas",
+      "left": "Align left",
+      "centerX": "Center horizontally",
+      "right": "Align right",
+      "top": "Align top",
+      "centerY": "Center vertically",
+      "bottom": "Align bottom"
+    },
+    "flipX": "Flip horizontal",
+    "flipY": "Flip vertical",
     "text": {
       "value": "Value",
       "content": "Content",
       "fontSize": "Font size",
-      "color": "Color"
+      "color": "Color",
+      "letterSpacing": "Letter spacing",
+      "lineHeight": "Line height",
+      "shadow": "Shadow",
+      "shadowColor": "Shadow color",
+      "shadowBlur": "Blur",
+      "shadowOffsetX": "Offset X",
+      "shadowOffsetY": "Offset Y",
+      "outline": "Outline",
+      "outlineWidth": "Outline width"
     },
     "chips": {
       "tags": "Tags",
@@ -146,7 +180,15 @@
       "height": "Height"
     },
     "image": {
-      "dimensions": "{{width}} × {{height}} px"
+      "dimensions": "{{width}} × {{height}} px",
+      "cornerRadius": "Corner rounding",
+      "filters": "Filters",
+      "brightness": "Brightness",
+      "contrast": "Contrast",
+      "saturate": "Saturation",
+      "grayscale": "Grayscale",
+      "sepia": "Sepia",
+      "blur": "Blur"
     },
     "chart": {
       "title": "Title",
@@ -155,7 +197,14 @@
       "effects": "Effects"
     }
   },
-  "keyboardHints": "Double-click to edit text · Arrow keys to move (Shift = ×10) · Del to delete · Ctrl+Z undo",
+  "layers": {
+    "empty": "No layers yet. Add elements from the left panel.",
+    "show": "Show layer",
+    "hide": "Hide layer",
+    "lock": "Lock layer",
+    "unlock": "Unlock layer"
+  },
+  "keyboardHints": "Double-click to edit text · Arrows nudge (Shift ×10) · Ctrl+D duplicates · Ctrl+C/V copy/paste · Ctrl+wheel zoom · Ctrl+Z undo",
   "clear": {
     "title": "Clear the canvas?",
     "body": "Every layer will be removed. You can undo this.",
@@ -191,7 +240,12 @@
     "solid": "Solid",
     "herb": "Herb",
     "night": "Night",
-    "paper": "Paper"
+    "paper": "Paper",
+    "transparent": "Transparent",
+    "gradSunset": "Sunset",
+    "gradForest": "Forest",
+    "gradOcean": "Ocean",
+    "gradBerry": "Berry"
   },
   "gallery": {
     "empty": "You don't have any saved covers yet. Use \"Save as template\" and they'll show up here to apply on any session.",

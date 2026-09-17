@@ -27,6 +27,9 @@
     "back": "Fondo",
     "undo": "Deshacer",
     "redo": "Rehacer",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoomFit": "Ajustar al lienzo",
     "align": {
       "left": "Alinear a la izquierda",
       "center": "Centrar",
@@ -75,7 +78,10 @@
     },
     "shapes": {
       "rect": "Rectángulo",
-      "ellipse": "Elipse"
+      "ellipse": "Elipse",
+      "line": "Línea",
+      "triangle": "Triángulo",
+      "star": "Estrella"
     },
     "energy": {
       "gauge": "Medidor",
@@ -110,6 +116,8 @@
   },
   "inspector": {
     "empty": "Selecciona un elemento del lienzo para editarlo",
+    "tabProperties": "Propiedades",
+    "tabLayers": "Capas",
     "kind": {
       "text": "Texto",
       "image": "Imagen",
@@ -118,11 +126,37 @@
       "shape": "Forma"
     },
     "opacity": "Opacidad",
+    "position": {
+      "title": "Posición",
+      "x": "X",
+      "y": "Y",
+      "rotation": "Rotación"
+    },
+    "align": {
+      "label": "Alinear al lienzo",
+      "left": "Alinear a la izquierda",
+      "centerX": "Centrar horizontal",
+      "right": "Alinear a la derecha",
+      "top": "Alinear arriba",
+      "centerY": "Centrar vertical",
+      "bottom": "Alinear abajo"
+    },
+    "flipX": "Voltear horizontal",
+    "flipY": "Voltear vertical",
     "text": {
       "value": "Valor",
       "content": "Contenido",
       "fontSize": "Tamaño de fuente",
-      "color": "Color"
+      "color": "Color",
+      "letterSpacing": "Espaciado de letras",
+      "lineHeight": "Interlineado",
+      "shadow": "Sombra",
+      "shadowColor": "Color de sombra",
+      "shadowBlur": "Difuminado",
+      "shadowOffsetX": "Desplazamiento X",
+      "shadowOffsetY": "Desplazamiento Y",
+      "outline": "Contorno",
+      "outlineWidth": "Grosor del contorno"
     },
     "chips": {
       "tags": "Etiquetas",
@@ -146,7 +180,15 @@
       "height": "Alto"
     },
     "image": {
-      "dimensions": "{{width}} × {{height}} px"
+      "dimensions": "{{width}} × {{height}} px",
+      "cornerRadius": "Redondez de esquinas",
+      "filters": "Filtros",
+      "brightness": "Brillo",
+      "contrast": "Contraste",
+      "saturate": "Saturación",
+      "grayscale": "Blanco y negro",
+      "sepia": "Sepia",
+      "blur": "Desenfoque"
     },
     "chart": {
       "title": "Título",
@@ -155,7 +197,14 @@
       "effects": "Efectos"
     }
   },
-  "keyboardHints": "Doble clic para editar texto · Flechas para mover (Shift = ×10) · Supr para borrar · Ctrl+Z deshacer",
+  "layers": {
+    "empty": "Aún no hay capas. Agrega elementos desde el panel de la izquierda.",
+    "show": "Mostrar capa",
+    "hide": "Ocultar capa",
+    "lock": "Bloquear capa",
+    "unlock": "Desbloquear capa"
+  },
+  "keyboardHints": "Doble clic edita texto · Flechas mueven (Shift ×10) · Ctrl+D duplica · Ctrl+C/V copia/pega · Ctrl+rueda zoom · Ctrl+Z deshace",
   "clear": {
     "title": "¿Vaciar el lienzo?",
     "body": "Se quitarán todas las capas. Puedes deshacerlo.",
@@ -191,7 +240,12 @@
     "solid": "Sólido",
     "herb": "Verde",
     "night": "Noche",
-    "paper": "Papel"
+    "paper": "Papel",
+    "transparent": "Transparente",
+    "gradSunset": "Atardecer",
+    "gradForest": "Bosque",
+    "gradOcean": "Océano",
+    "gradBerry": "Baya"
   },
   "gallery": {
     "empty": "Aún no tienes portadas guardadas. Usa \"Guardar como template\" y aparecerán aquí para aplicarlas en cualquier sesión.",

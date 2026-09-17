@@ -9,19 +9,31 @@
  *   transform grows the wrap width, scale resets to 1.
  * - Images, charts, shapes, and data-viz keep scaleX/scaleY from the
  *   transformer (shapes bake scale into width/height instead).
- * - All nodes honor layer.opacity (default 1).
+ * - All nodes honor layer.opacity (default 1), layer.visible (default
+ *   true) and layer.locked (default false: locked layers don't drag and
+ *   don't listen, so they're click-through and unselectable on canvas).
+ * - Flip convention (images and shapes): flipX/flipY are layer flags,
+ *   not negative scale in the doc. Rendered scale is scaleX · -1 and the
+ *   node position is compensated (x += width·scaleX, y += height·scaleY)
+ *   so the mirror happens in place around the layer's box. Transform
+ *   commits strip the sign back out (Math.abs) and undo the
+ *   compensation, keeping layer.scaleX/scaleY always positive.
+ *   Exception: the ellipse keeps its legacy centered-at-(x,y) origin, so
+ *   it needs no compensation (a mirrored ellipse looks identical).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Circle,
   Ellipse,
   Group,
   Image as KonvaImage,
+  Line,
   Rect,
+  Star,
   Text,
 } from "react-konva";
-import type Konva from "konva";
+import Konva from "konva";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -33,6 +45,7 @@ import {
   DEFAULT_FONT,
   type ChartLayer,
   type ChipsLayer,
+  type ImageFilters,
   type ImageLayer,
   type ShapeLayer,
   type TextLayer,
@@ -44,6 +57,39 @@ type NodeProps<L> = {
   onSelect: () => void;
   onChange: (patch: Partial<L>) => void;
 };
+
+/** Canvas behavior shared by every node: hidden layers don't render,
+ *  locked layers are inert (no drag, no hit detection). */
+function interactivity(layer: { locked?: boolean; visible?: boolean }) {
+  const locked = layer.locked === true;
+  return {
+    visible: layer.visible !== false,
+    listening: !locked,
+    draggable: !locked,
+  };
+}
+
+/** Konva filter pipeline for the active entries of an ImageFilters
+ *  object, in a stable order. Empty array = render uncached. */
+function activeImageFilters(
+  filters: ImageFilters | undefined,
+): NonNullable<Konva.NodeConfig["filters"]> {
+  if (filters === undefined) return [];
+  const out: NonNullable<Konva.NodeConfig["filters"]> = [];
+  if (filters.brightness !== undefined && filters.brightness !== 0) {
+    out.push(Konva.Filters.Brighten);
+  }
+  if (filters.contrast !== undefined && filters.contrast !== 0) {
+    out.push(Konva.Filters.Contrast);
+  }
+  if (filters.saturate !== undefined && filters.saturate !== 0) {
+    out.push(Konva.Filters.HSL);
+  }
+  if (filters.grayscale === true) out.push(Konva.Filters.Grayscale);
+  if (filters.sepia === true) out.push(Konva.Filters.Sepia);
+  if (filters.blur !== undefined && filters.blur > 0) out.push(Konva.Filters.Blur);
+  return out;
+}
 
 /** Loads one <img> from a data URL; null while pending or on error. */
 function useHtmlImage(src: string | null): HTMLImageElement | null {
@@ -95,6 +141,7 @@ export function CoverTextNode({
   hidden,
   onEdit,
 }: NodeProps<TextLayer> & { hidden: boolean; onEdit: () => void }) {
+  const inter = interactivity(layer);
   return (
     <Text
       ref={register as (node: Konva.Node | null) => void}
@@ -108,13 +155,22 @@ export function CoverTextNode({
       width={layer.width}
       wrap="word"
       align={layer.align ?? "left"}
+      letterSpacing={layer.letterSpacing ?? 0}
+      lineHeight={layer.lineHeight ?? 1}
+      shadowColor={layer.shadow?.color}
+      shadowBlur={layer.shadow?.blur}
+      shadowOffsetX={layer.shadow?.offsetX}
+      shadowOffsetY={layer.shadow?.offsetY}
+      shadowOpacity={layer.shadow !== undefined ? 1 : undefined}
+      stroke={layer.stroke}
+      strokeWidth={layer.stroke !== undefined ? (layer.strokeWidth ?? 1) : undefined}
       rotation={layer.rotation}
       scaleX={layer.scaleX}
       scaleY={layer.scaleY}
       opacity={layer.opacity ?? 1}
-      draggable
-      visible={!hidden}
-      listening={!hidden}
+      draggable={inter.draggable}
+      visible={!hidden && inter.visible}
+      listening={!hidden && inter.listening}
       onClick={onSelect}
       onTap={onSelect}
       onDblClick={onEdit}
@@ -142,64 +198,161 @@ export function CoverTextNode({
 
 // ── Image ───────────────────────────────────────────────────────────
 
+/** Rounded-rect clip path for image cornerRadius, in local coords. */
+function roundedRectClip(width: number, height: number, radius: number) {
+  const r = Math.min(radius, width / 2, height / 2);
+  return (ctx: {
+    beginPath: () => void;
+    moveTo: (x: number, y: number) => void;
+    lineTo: (x: number, y: number) => void;
+    quadraticCurveTo: (a: number, b: number, c: number, d: number) => void;
+    closePath: () => void;
+  }) => {
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(width - r, 0);
+    ctx.quadraticCurveTo(width, 0, width, r);
+    ctx.lineTo(width, height - r);
+    ctx.quadraticCurveTo(width, height, width - r, height);
+    ctx.lineTo(r, height);
+    ctx.quadraticCurveTo(0, height, 0, height - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+  };
+}
+
 export function CoverImageNode({ layer, register, onSelect, onChange }: NodeProps<ImageLayer>) {
   const img = useHtmlImage(layer.src);
+  const inter = interactivity(layer);
+  const nodeRef = useRef<Konva.Image | null>(null);
+  // Filters: native Konva pixel filters (chosen over an offscreen 2D
+  // canvas with ctx.filter because Konva's work in every browser —
+  // Safari only got ctx.filter in v18). They require node.cache(), which
+  // react-konva can't drive declaratively, so an effect re-caches when
+  // the bitmap, filters or box size change and clears the cache when no
+  // filter is active.
+  const filters = useMemo(() => activeImageFilters(layer.filters), [layer.filters]);
+  useEffect(() => {
+    const node = nodeRef.current;
+    if (node === null || img === null) return;
+    if (filters.length === 0) {
+      node.clearCache();
+      return;
+    }
+    node.cache();
+  }, [img, filters, layer.width, layer.height]);
+
+  const scaleX = layer.scaleX * (layer.flipX === true ? -1 : 1);
+  const scaleY = layer.scaleY * (layer.flipY === true ? -1 : 1);
   const common = {
-    ref: register as (node: Konva.Node | null) => void,
-    x: layer.x,
-    y: layer.y,
+    x: layer.x + (layer.flipX === true ? layer.width * layer.scaleX : 0),
+    y: layer.y + (layer.flipY === true ? layer.height * layer.scaleY : 0),
     width: layer.width,
     height: layer.height,
     rotation: layer.rotation,
-    scaleX: layer.scaleX,
-    scaleY: layer.scaleY,
+    scaleX,
+    scaleY,
     opacity: layer.opacity ?? 1,
-    draggable: true,
+    draggable: inter.draggable,
+    visible: inter.visible,
+    listening: inter.listening,
     onClick: onSelect,
     onTap: onSelect,
     onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) =>
-      onChange({ x: event.target.x(), y: event.target.y() }),
+      onChange({
+        x: event.target.x() - (layer.flipX === true ? layer.width * layer.scaleX : 0),
+        y: event.target.y() - (layer.flipY === true ? layer.height * layer.scaleY : 0),
+      }),
     onTransformEnd: (event: Konva.KonvaEventObject<Event>) => {
       const node = event.target;
+      const absScaleX = Math.abs(node.scaleX());
+      const absScaleY = Math.abs(node.scaleY());
       onChange({
-        x: node.x(),
-        y: node.y(),
+        x: node.x() - (layer.flipX === true ? layer.width * absScaleX : 0),
+        y: node.y() - (layer.flipY === true ? layer.height * absScaleY : 0),
         rotation: node.rotation(),
-        scaleX: node.scaleX(),
-        scaleY: node.scaleY(),
+        scaleX: absScaleX,
+        scaleY: absScaleY,
       });
     },
   };
   if (img === null) {
-    return <Rect {...common} fill="#222" cornerRadius={8} />;
+    return (
+      <Rect
+        ref={register as (node: Konva.Node | null) => void}
+        {...common}
+        fill="#222"
+        cornerRadius={8}
+      />
+    );
   }
-  return <KonvaImage {...common} image={img} />;
+  const f = layer.filters;
+  const clipRadius = layer.cornerRadius ?? 0;
+  return (
+    <KonvaImage
+      ref={(node) => {
+        nodeRef.current = node;
+        register(node);
+      }}
+      {...common}
+      image={img}
+      clipFunc={
+        clipRadius > 0 ? roundedRectClip(layer.width, layer.height, clipRadius) : undefined
+      }
+      filters={filters}
+      brightness={f?.brightness ?? 0}
+      contrast={f?.contrast ?? 0}
+      hue={0}
+      // Inspector exposes saturate as -100..100; Konva HSL expects -2..2.
+      saturation={(f?.saturate ?? 0) / 50}
+      luminance={0}
+      blurRadius={f?.blur ?? 0}
+    />
+  );
 }
 
 // ── Shape ───────────────────────────────────────────────────────────
 
 export function CoverShapeNode({ layer, register, onSelect, onChange }: NodeProps<ShapeLayer>) {
+  const inter = interactivity(layer);
+  const flipX = layer.flipX === true;
+  const flipY = layer.flipY === true;
+  // The ellipse keeps its legacy centered origin ((x, y) is the center,
+  // not the box corner), so it skips flip compensation — mirroring a
+  // centered ellipse around itself is a visual no-op anyway.
+  const centered = layer.shape === "ellipse";
+  const compX = !centered && flipX ? layer.width : 0;
+  const compY = !centered && flipY ? layer.height : 0;
   const common = {
-    x: layer.x,
-    y: layer.y,
+    x: layer.x + compX,
+    y: layer.y + compY,
     rotation: layer.rotation,
+    scaleX: flipX ? -1 : 1,
+    scaleY: flipY ? -1 : 1,
     opacity: layer.opacity ?? 1,
-    draggable: true,
+    draggable: inter.draggable,
+    visible: inter.visible,
+    listening: inter.listening,
     onClick: onSelect,
     onTap: onSelect,
     onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) =>
-      onChange({ x: event.target.x(), y: event.target.y() }),
+      onChange({ x: event.target.x() - compX, y: event.target.y() - compY }),
   };
   const bakeTransform = (event: Konva.KonvaEventObject<Event>) => {
     // Shapes bake scale into their width/height so stroke width stays
-    // uniform no matter how the user resizes.
+    // uniform no matter how the user resizes. Flip is a layer flag, so
+    // the sign comes off before baking (Math.abs).
     const node = event.target;
+    const sx = Math.abs(node.scaleX());
+    const sy = Math.abs(node.scaleY());
     onChange({
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - (!centered && flipX ? layer.width * sx : 0),
+      y: node.y() - (!centered && flipY ? layer.height * sy : 0),
       rotation: node.rotation(),
-      width: Math.max(8, layer.width * node.scaleX()),
-      height: Math.max(8, layer.height * node.scaleY()),
+      width: Math.max(8, layer.width * sx),
+      // Lines are only 4px tall — don't force them to the usual 8px min.
+      height: Math.max(layer.shape === "line" ? 2 : 8, layer.height * sy),
       scaleX: 1,
       scaleY: 1,
     });
@@ -219,6 +372,57 @@ export function CoverShapeNode({ layer, register, onSelect, onChange }: NodeProp
         {...strokeProps}
         onTransformEnd={bakeTransform}
       />
+    );
+  }
+  if (layer.shape === "line") {
+    const thickness = layer.strokeWidth ?? 4;
+    return (
+      <Line
+        ref={register as (node: Konva.Node | null) => void}
+        {...common}
+        points={[0, layer.height / 2, layer.width, layer.height / 2]}
+        stroke={layer.fill}
+        strokeWidth={thickness}
+        lineCap="round"
+        hitStrokeWidth={Math.max(thickness, 16)}
+        onTransformEnd={bakeTransform}
+      />
+    );
+  }
+  if (layer.shape === "triangle") {
+    return (
+      <Line
+        ref={register as (node: Konva.Node | null) => void}
+        {...common}
+        points={[layer.width / 2, 0, layer.width, layer.height, 0, layer.height]}
+        closed
+        fill={layer.fill}
+        {...strokeProps}
+        onTransformEnd={bakeTransform}
+      />
+    );
+  }
+  if (layer.shape === "star") {
+    // Wrapped in a Group so the star can center itself inside the w×h
+    // box while the outer node keeps the box-corner origin (rotation and
+    // flip behave like every other shape).
+    const outer = Math.min(layer.width, layer.height) / 2;
+    return (
+      <Group
+        ref={register as (node: Konva.Node | null) => void}
+        {...common}
+        onTransformEnd={bakeTransform}
+      >
+        <Star
+          x={layer.width / 2}
+          y={layer.height / 2}
+          numPoints={5}
+          innerRadius={outer / 2}
+          outerRadius={outer}
+          fill={layer.fill}
+          {...strokeProps}
+        />
+      </Group>
     );
   }
   return (
@@ -285,6 +489,7 @@ function layoutChips(layer: ChipsLayer): { boxes: ChipBox[]; height: number } {
 export function CoverChipsNode({ layer, register, onSelect, onChange }: NodeProps<ChipsLayer>) {
   const { boxes } = layoutChips(layer);
   const filled = layer.chipStyle === "filled";
+  const inter = interactivity(layer);
   return (
     <Group
       ref={register as (node: Konva.Node | null) => void}
@@ -294,7 +499,9 @@ export function CoverChipsNode({ layer, register, onSelect, onChange }: NodeProp
       scaleX={layer.scaleX}
       scaleY={layer.scaleY}
       opacity={layer.opacity ?? 1}
-      draggable
+      draggable={inter.draggable}
+      visible={inter.visible}
+      listening={inter.listening}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(event) =>
@@ -356,6 +563,7 @@ export function CoverChartNode({ layer, register, onSelect, onChange }: NodeProp
   const unwantedColor = "#DC2626";
   const track = "#1F2937";
   const label = "#E5E7EB";
+  const inter = interactivity(layer);
 
   return (
     <Group
@@ -366,7 +574,9 @@ export function CoverChartNode({ layer, register, onSelect, onChange }: NodeProp
       scaleX={layer.scaleX}
       scaleY={layer.scaleY}
       opacity={layer.opacity ?? 1}
-      draggable
+      draggable={inter.draggable}
+      visible={inter.visible}
+      listening={inter.listening}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(event) =>
@@ -482,6 +692,7 @@ export function DataVizNode({ layer, register, onSelect, onChange }: NodeProps<T
   const font = layer.fontFamily ?? DEFAULT_FONT;
   const value = dataValueOf(layer);
   const presentation = layer.presentation ?? "text";
+  const inter = interactivity(layer);
 
   return (
     <Group
@@ -492,7 +703,9 @@ export function DataVizNode({ layer, register, onSelect, onChange }: NodeProps<T
       scaleX={layer.scaleX}
       scaleY={layer.scaleY}
       opacity={layer.opacity ?? 1}
-      draggable
+      draggable={inter.draggable}
+      visible={inter.visible}
+      listening={inter.listening}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(event) =>

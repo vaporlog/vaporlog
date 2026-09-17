@@ -10,6 +10,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BookmarkPlus,
+  Minus,
+  Plus,
   Redo2,
   RotateCcw,
   Save,
@@ -18,7 +20,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Stage, Layer, Group, Rect, Transformer } from "react-konva";
+import { Stage, Layer, Group, Line, Rect, Transformer } from "react-konva";
 import type Konva from "konva";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch, getToken } from "@/lib/api";
 import {
   displayDeviceName,
@@ -55,6 +58,7 @@ import {
 import { useMySessions } from "@/lib/data";
 import CoverPalette from "@/components/cover-editor/Palette";
 import CoverInspector from "@/components/cover-editor/Inspector";
+import LayersPanel from "@/components/cover-editor/LayersPanel";
 import type { CoverTemplate } from "@/components/cover-editor/CoverGallery";
 import {
   CoverChartNode,
@@ -67,6 +71,8 @@ import {
 import { historyReducer, INITIAL_HISTORY } from "@/components/cover-editor/history";
 import {
   BG_COLOR,
+  BG_DEFS,
+  bgCss,
   buildImageLayer,
   buildTextLayer,
   CANVAS_H,
@@ -74,6 +80,7 @@ import {
   DEFAULT_FONT,
   EXPORT_PRESETS,
   findExportPresetId,
+  nextId,
   parseCoverDoc,
   rebindDoc,
   renderCoverToSize,
@@ -89,8 +96,11 @@ import {
  * Shell around the cover-editor modules:
  *   - left panel   CoverPalette   — everything that can drop on the canvas
  *   - center       Konva Stage    — the 1200×630 design, letterboxed into
- *                                   the chosen export aspect
- *   - right panel  CoverInspector — properties of the selected layer
+ *                                   the chosen export aspect, with zoom
+ *                                   (fit scale × user zoom) and smart
+ *                                   drag guides
+ *   - right panel  Tabs           — "Properties" (CoverInspector) and
+ *                                   "Layers" (LayersPanel)
  * Document state (layers + background) lives in the undo/redo history
  * reducer; selection and inline text editing are transient UI state.
  *
@@ -113,6 +123,28 @@ function useMediaQuery(query: string): boolean {
   }, [query]);
   return matches;
 }
+
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 3;
+
+const clampZoom = (value: number): number =>
+  Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100));
+
+/** Converts a CSS-style gradient angle (0deg = up, 90deg = right,
+ *  135deg = down-right) into a Konva linear-gradient end point spanning
+ *  the design canvas from the origin. */
+function gradientEndPoint(angle: number): { x: number; y: number } {
+  const rad = (angle * Math.PI) / 180;
+  return { x: Math.sin(rad) * CANVAS_W, y: -Math.cos(rad) * CANVAS_H };
+}
+
+/** Active smart-guide line during a drag, in design pixels. */
+type GuideLine = { orientation: "v" | "h"; position: number };
+
+/** Snap distance for smart guides, in design pixels. */
+const GUIDE_SNAP = 8;
+
+type CanvasAlign = "left" | "centerX" | "right" | "top" | "centerY" | "bottom";
 
 export default function CoverEditor() {
   const { t } = useTranslation("coverEditor");
@@ -146,6 +178,14 @@ export default function CoverEditor() {
   const stageRef = useRef<Konva.Stage | null>(null);
   const transformerRef = useRef<Konva.Transformer | null>(null);
   const nodeRegistry = useRef<Map<string, Konva.Node>>(new Map());
+  /** Group wrapping the whole design (letterbox offset). Smart guides and
+   *  canvas alignment measure nodes against it, in design pixels. */
+  const designGroupRef = useRef<Konva.Group | null>(null);
+  /** Canvas zoom on top of the fit-to-wrapper display scale. */
+  const [zoom, setZoom] = useState(1);
+  const [guides, setGuides] = useState<GuideLine[]>([]);
+  /** In-memory layer clipboard for Ctrl/Cmd+C → V (JSON deep clone). */
+  const clipboardRef = useRef<CoverLayer | null>(null);
 
   // Auth gate: not signed in → back to welcome. Owner check happens once
   // the session list resolves; an unknown id lands in the same "not owner"
@@ -244,6 +284,84 @@ export default function CoverEditor() {
     [],
   );
 
+  // ── Smart guides (drag snapping) ──────────────────────────────────
+  // The layer nodes own their drag (and the dragEnd commit), so guides
+  // hook in one level up: Konva bubbles dragmove to the Stage with
+  // e.target set to the dragged node. Snapping only nudges the node's
+  // visual position — no dispatch — so the node's own dragEnd commits
+  // the already-snapped x/y. Guides are measured in design pixels
+  // against the design Group.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (stage === null) return;
+
+    const onDragMove = (event: Konva.KonvaEventObject<DragEvent>) => {
+      const node = event.target;
+      const group = designGroupRef.current;
+      if (group === null) return;
+      let draggedId: string | null = null;
+      for (const [layerId, registered] of nodeRegistry.current) {
+        if (registered === node) {
+          draggedId = layerId;
+          break;
+        }
+      }
+      // Not a registered layer node (transformer anchor, stage…) — no guides.
+      if (draggedId === null) {
+        setGuides([]);
+        return;
+      }
+      const box = node.getClientRect({ relativeTo: group });
+      const candidatesX = [0, CANVAS_W / 2, CANVAS_W];
+      const candidatesY = [0, CANVAS_H / 2, CANVAS_H];
+      for (const [layerId, other] of nodeRegistry.current) {
+        if (layerId === draggedId) continue;
+        const otherLayer = layers.find((entry) => entry.id === layerId);
+        if (otherLayer !== undefined && (otherLayer.locked || otherLayer.visible === false)) {
+          continue;
+        }
+        const rect = other.getClientRect({ relativeTo: group });
+        if (rect.width === 0 && rect.height === 0) continue;
+        candidatesX.push(rect.x, rect.x + rect.width / 2, rect.x + rect.width);
+        candidatesY.push(rect.y, rect.y + rect.height / 2, rect.y + rect.height);
+      }
+      const edgesX = [box.x, box.x + box.width / 2, box.x + box.width];
+      const edgesY = [box.y, box.y + box.height / 2, box.y + box.height];
+      let snapX: { delta: number; line: number } | null = null;
+      let snapY: { delta: number; line: number } | null = null;
+      for (const edge of edgesX) {
+        for (const candidate of candidatesX) {
+          const delta = candidate - edge;
+          if (Math.abs(delta) <= GUIDE_SNAP && (snapX === null || Math.abs(delta) < Math.abs(snapX.delta))) {
+            snapX = { delta, line: candidate };
+          }
+        }
+      }
+      for (const edge of edgesY) {
+        for (const candidate of candidatesY) {
+          const delta = candidate - edge;
+          if (Math.abs(delta) <= GUIDE_SNAP && (snapY === null || Math.abs(delta) < Math.abs(snapY.delta))) {
+            snapY = { delta, line: candidate };
+          }
+        }
+      }
+      if (snapX !== null) node.x(node.x() + snapX.delta);
+      if (snapY !== null) node.y(node.y() + snapY.delta);
+      const nextGuides: GuideLine[] = [];
+      if (snapX !== null) nextGuides.push({ orientation: "v", position: snapX.line });
+      if (snapY !== null) nextGuides.push({ orientation: "h", position: snapY.line });
+      setGuides(nextGuides);
+    };
+    const onDragEnd = () => setGuides([]);
+
+    stage.on("dragmove", onDragMove);
+    stage.on("dragend", onDragEnd);
+    return () => {
+      stage.off("dragmove", onDragMove);
+      stage.off("dragend", onDragEnd);
+    };
+  }, [layers]);
+
   // ── Layer mutations ───────────────────────────────────────────────
 
   const updateLayer = useCallback(
@@ -276,6 +394,98 @@ export default function CoverEditor() {
     },
     [],
   );
+
+  const toggleLayerVisible = useCallback(
+    (layerId: string) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer === undefined) return;
+      dispatch({
+        type: "update_layer",
+        id: layerId,
+        patch: { visible: !(layer.visible ?? true) },
+      });
+    },
+    [layers],
+  );
+
+  const toggleLayerLock = useCallback(
+    (layerId: string) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer === undefined) return;
+      dispatch({
+        type: "update_layer",
+        id: layerId,
+        patch: { locked: !(layer.locked ?? false) },
+      });
+    },
+    [layers],
+  );
+
+  /** Aligns the selected layer's visual box to the 1200×630 canvas. The
+   *  measured rect (getClientRect against the design Group) already
+   *  includes rotation/scale, so the position patch compensates for the
+   *  gap between the node's origin and its visual edge. */
+  const alignSelected = useCallback(
+    (align: CanvasAlign) => {
+      if (selectedId === null) return;
+      const node = nodeRegistry.current.get(selectedId);
+      const group = designGroupRef.current;
+      const layer = layers.find((entry) => entry.id === selectedId);
+      if (node === undefined || group === null || layer === undefined) return;
+      const rect = node.getClientRect({ relativeTo: group });
+      let x = layer.x;
+      let y = layer.y;
+      switch (align) {
+        case "left":
+          x = layer.x - rect.x;
+          break;
+        case "centerX":
+          x = layer.x + (CANVAS_W - rect.width) / 2 - rect.x;
+          break;
+        case "right":
+          x = layer.x + CANVAS_W - rect.x - rect.width;
+          break;
+        case "top":
+          y = layer.y - rect.y;
+          break;
+        case "centerY":
+          y = layer.y + (CANVAS_H - rect.height) / 2 - rect.y;
+          break;
+        case "bottom":
+          y = layer.y + CANVAS_H - rect.y - rect.height;
+          break;
+      }
+      dispatch({
+        type: "update_layer",
+        id: layer.id,
+        patch: { x: Math.round(x), y: Math.round(y) },
+      });
+    },
+    [selectedId, layers],
+  );
+
+  /** Ctrl/Cmd+C: deep-clone the selected layer into the in-memory
+   *  clipboard (JSON — layer data is plain serializable). */
+  const copySelectedLayer = useCallback(() => {
+    const layer = layers.find((entry) => entry.id === selectedId);
+    if (layer === undefined) return;
+    clipboardRef.current = JSON.parse(JSON.stringify(layer)) as CoverLayer;
+  }, [layers, selectedId]);
+
+  /** Ctrl/Cmd+V: paste the clipboard as a new layer, offset +40/+40
+   *  from the copied original, and select the copy. */
+  const pasteClipboardLayer = useCallback(() => {
+    const clip = clipboardRef.current;
+    if (clip === null) return;
+    const copy = {
+      ...(JSON.parse(JSON.stringify(clip)) as CoverLayer),
+      id: nextId(),
+      x: clip.x + 40,
+      y: clip.y + 40,
+    };
+    dispatch({ type: "add_layer", layer: copy });
+    setSelectedId(copy.id);
+  }, []);
 
   const setBackground = useCallback((fill: BackgroundFill) => {
     dispatch({ type: "set_background", background: fill });
@@ -448,11 +658,16 @@ export default function CoverEditor() {
   }, [exportSize.width, exportSize.height, isDesktop]);
 
   // Uniform scale — the design fits the wrapper without distortion. The
-  // background color fills the letterbox area.
+  // background color fills the letterbox area. The stage's actual scale
+  // stacks the user's zoom on top of the fit scale.
   const displayScale =
     displaySize.width > 0 && displaySize.height > 0
       ? Math.min(displaySize.width / CANVAS_W, displaySize.height / CANVAS_H)
       : 0;
+  const stageScale = displayScale * zoom;
+
+  // Background definition: solid color or gradient (contract: BG_DEFS).
+  const bgDef = BG_DEFS[background];
   // Letterbox offset of the design inside the stage, in design pixels.
   // When the export aspect matches the design (1200:630), this is (0,0).
   const designOffsetX =
@@ -465,12 +680,12 @@ export default function CoverEditor() {
       ? null
       : layers.find((entry) => entry.id === editingId) ?? null;
 
-  /** Measure the editing text node in screen coords. Konva scales the
-   *  stage canvas by `displayScale` (display / design), so the rect
-   *  returned by getClientRect is in design space and needs to be
-   *  multiplied by that scale. The whole design sits inside a Group
-   *  with a letterbox offset (designOffsetX/Y), which is added before
-   *  the scale so the textarea lands on the visible design. */
+  /** Measure the editing text node in screen coords. The stage's scale
+   *  (fit-to-wrapper × zoom) converts the design-space rect returned by
+   *  getClientRect straight to screen pixels. The whole design sits
+   *  inside a Group with a letterbox offset (designOffsetX/Y), which is
+   *  added before the scale so the textarea lands on the visible
+   *  design. */
   const editingRect = useMemo(() => {
     if (editingLayer === null) return null;
     const node = nodeRegistry.current.get(editingLayer.id);
@@ -478,15 +693,13 @@ export default function CoverEditor() {
     const stage = node.getStage();
     if (stage === null) return null;
     const nodeRect = node.getClientRect({ relativeTo: stage });
-    const scaleX = stage.scaleX();
-    const scaleY = stage.scaleY();
     return {
-      x: (designOffsetX + nodeRect.x) * scaleX,
-      y: (designOffsetY + nodeRect.y) * scaleY,
-      width: Math.max(80, nodeRect.width * scaleX),
-      height: Math.max(40, nodeRect.height * scaleY),
+      x: (designOffsetX + nodeRect.x) * stageScale,
+      y: (designOffsetY + nodeRect.y) * stageScale,
+      width: Math.max(80, nodeRect.width * stageScale),
+      height: Math.max(40, nodeRect.height * stageScale),
     };
-  }, [editingLayer, designOffsetX, designOffsetY]);
+  }, [editingLayer, designOffsetX, designOffsetY, stageScale]);
 
   const commitEditing = useCallback(() => {
     if (editingId === null) return;
@@ -501,6 +714,24 @@ export default function CoverEditor() {
     setEditingId(null);
   }, [editingId, editingText, layers]);
 
+  // Ctrl/Cmd + wheel zooms the canvas. Native listener with
+  // passive:false — React's synthetic onWheel can't preventDefault.
+  useEffect(() => {
+    const wrapper = canvasWrapRef.current;
+    if (wrapper === null) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom((current) =>
+        clampZoom(current * (event.deltaY < 0 ? 1.1 : 1 / 1.1)),
+      );
+    };
+    wrapper.addEventListener("wheel", onWheel, { passive: false });
+    return () => wrapper.removeEventListener("wheel", onWheel);
+    // isDesktop: the wrapper node is a different element per layout
+    // branch — rebind when the branch swaps.
+  }, [isDesktop]);
+
   const cancelEditing = useCallback(() => {
     setEditingId(null);
   }, []);
@@ -508,8 +739,10 @@ export default function CoverEditor() {
   // ── Keyboard shortcuts ────────────────────────────────────────────
   // Esc cancels inline edit / deselects; Delete/Backspace removes the
   // selected layer; Ctrl/Cmd+Z undo; Ctrl/Cmd+Shift+Z or Ctrl+Y redo;
-  // arrows nudge the selected layer (1px, 10px with Shift). Bound on
-  // window so the canvas itself doesn't have to own focus.
+  // Ctrl/Cmd+D duplicates, Ctrl/Cmd+C copies and Ctrl/Cmd+V pastes the
+  // selected layer (in-memory clipboard); arrows nudge the selected
+  // layer (1px, 10px with Shift). Bound on window so the canvas itself
+  // doesn't have to own focus.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
@@ -538,6 +771,21 @@ export default function CoverEditor() {
         }
         return;
       }
+      if (mod && event.key.toLowerCase() === "d") {
+        if (selectedId === null) return;
+        event.preventDefault();
+        duplicateLayer(selectedId);
+        return;
+      }
+      if (mod && event.key.toLowerCase() === "c") {
+        if (selectedId === null) return;
+        copySelectedLayer();
+        return;
+      }
+      if (mod && event.key.toLowerCase() === "v") {
+        pasteClipboardLayer();
+        return;
+      }
       if (event.key === "Delete" || event.key === "Backspace") {
         if (selectedId === null) return;
         event.preventDefault();
@@ -562,7 +810,16 @@ export default function CoverEditor() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editingId, selectedId, cancelEditing, deleteLayer, nudgeSelected]);
+  }, [
+    editingId,
+    selectedId,
+    cancelEditing,
+    deleteLayer,
+    duplicateLayer,
+    copySelectedLayer,
+    pasteClipboardLayer,
+    nudgeSelected,
+  ]);
 
   // ── Save / restore ────────────────────────────────────────────────
 
@@ -706,20 +963,24 @@ export default function CoverEditor() {
   const renderCanvas = (maxHeight: string) => (
     <div
       ref={canvasWrapRef}
-      className="relative w-full overflow-hidden rounded-xl border border-border shadow-sm"
+      className={
+        zoom > 1
+          ? "relative w-full overflow-auto rounded-xl border border-border shadow-sm"
+          : "relative w-full overflow-hidden rounded-xl border border-border shadow-sm"
+      }
       style={{
         maxWidth: CANVAS_W,
         maxHeight,
         aspectRatio: `${exportSize.width} / ${exportSize.height}`,
-        background: BG_COLOR[background] ?? "#030303",
+        background: bgCss(background) ?? "#030303",
       }}
     >
       <Stage
         ref={stageRef}
         width={CANVAS_W}
         height={CANVAS_H}
-        scaleX={displayScale}
-        scaleY={displayScale}
+        scaleX={stageScale}
+        scaleY={stageScale}
         aria-label={t("canvas.ariaLabel")}
         onMouseDown={(event) => {
           if (event.target === event.target.getStage()) {
@@ -736,16 +997,34 @@ export default function CoverEditor() {
           {/* Single Group wraps the whole design so it can be re-centered
               inside the export frame when the user picks a different
               aspect ratio. designOffsetX/Y are in design pixels. */}
-          <Group x={designOffsetX} y={designOffsetY}>
-            {BG_COLOR[background] !== null ? (
-              <Rect
-                x={0}
-                y={0}
-                width={CANVAS_W}
-                height={CANVAS_H}
-                fill={BG_COLOR[background] ?? "#000000"}
-                listening={false}
-              />
+          <Group ref={designGroupRef} x={designOffsetX} y={designOffsetY}>
+            {bgDef.color !== null ? (
+              bgDef.gradient !== undefined ? (
+                <Rect
+                  x={0}
+                  y={0}
+                  width={CANVAS_W}
+                  height={CANVAS_H}
+                  fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+                  fillLinearGradientEndPoint={gradientEndPoint(bgDef.gradient.angle)}
+                  fillLinearGradientColorStops={[
+                    0,
+                    bgDef.gradient.from,
+                    1,
+                    bgDef.gradient.to,
+                  ]}
+                  listening={false}
+                />
+              ) : (
+                <Rect
+                  x={0}
+                  y={0}
+                  width={CANVAS_W}
+                  height={CANVAS_H}
+                  fill={bgDef.color ?? "#000000"}
+                  listening={false}
+                />
+              )
             ) : null}
             {layers.map((layer) => {
               const register = registerNode(layer.id);
@@ -818,6 +1097,22 @@ export default function CoverEditor() {
                 />
               );
             })}
+            {/* Smart-guide lines (magenta dashes) drawn while a drag is
+                snapped to the canvas or to another layer. */}
+            {guides.map((guide) => (
+              <Line
+                key={`${guide.orientation}:${guide.position}`}
+                points={
+                  guide.orientation === "v"
+                    ? [guide.position, 0, guide.position, CANVAS_H]
+                    : [0, guide.position, CANVAS_W, guide.position]
+                }
+                stroke="#FF3DC8"
+                strokeWidth={1}
+                dash={[6, 4]}
+                listening={false}
+              />
+            ))}
           </Group>
           <Transformer
             ref={transformerRef}
@@ -856,7 +1151,7 @@ export default function CoverEditor() {
               width: editingRect.width,
               minHeight: editingRect.height,
               fontSize:
-                (editingLayer.kind === "text" ? editingLayer.fontSize : 16) * displayScale,
+                (editingLayer.kind === "text" ? editingLayer.fontSize : 16) * stageScale,
               // The overlay mirrors the layer's full typography — the old
               // editor only mapped fontStyle === "bold" and dropped both
               // fontFamily and italic, so the textarea never matched the
@@ -873,6 +1168,42 @@ export default function CoverEditor() {
           })()}
         />
       ) : null}
+      {/* Floating zoom controls (bottom-right). The percentage button
+          resets to the fit-to-wrapper zoom. */}
+      <div className="absolute bottom-2 right-2 z-10 flex items-center gap-0.5 rounded-lg border border-border bg-background/90 p-1 shadow-sm">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7 pressable"
+          disabled={zoom <= ZOOM_MIN}
+          onClick={() => setZoom((current) => clampZoom(current / 1.25))}
+          aria-label={t("canvas.zoomOut")}
+          title={t("canvas.zoomOut")}
+        >
+          <Minus className="size-3.5" aria-hidden />
+        </Button>
+        <button
+          type="button"
+          onClick={() => setZoom(1)}
+          title={t("canvas.zoomFit")}
+          className="min-w-11 rounded-sm px-1 py-1 text-center text-xs font-medium tabular-nums hover:text-herb"
+        >
+          {Math.round(zoom * 100)}%
+        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7 pressable"
+          disabled={zoom >= ZOOM_MAX}
+          onClick={() => setZoom((current) => clampZoom(current * 1.25))}
+          aria-label={t("canvas.zoomIn")}
+          title={t("canvas.zoomIn")}
+        >
+          <Plus className="size-3.5" aria-hidden />
+        </Button>
+      </div>
     </div>
   );
 
@@ -896,7 +1227,31 @@ export default function CoverEditor() {
       onMove={moveLayer}
       onDuplicate={duplicateLayer}
       onDelete={deleteLayer}
+      onAlign={alignSelected}
     />
+  );
+
+  // Right panel: Properties (inspector) and Layers tabs share the region.
+  const inspectorTabs = (
+    <Tabs defaultValue="properties" className="h-full gap-0 overflow-hidden">
+      <TabsList className="mx-2 mt-2 grid shrink-0 grid-cols-2">
+        <TabsTrigger value="properties">{t("inspector.tabProperties")}</TabsTrigger>
+        <TabsTrigger value="layers">{t("inspector.tabLayers")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="properties" className="min-h-0 overflow-hidden">
+        {inspector}
+      </TabsContent>
+      <TabsContent value="layers" className="min-h-0 overflow-hidden">
+        <LayersPanel
+          layers={layers}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onToggleVisible={toggleLayerVisible}
+          onToggleLock={toggleLayerLock}
+          onMove={moveLayer}
+        />
+      </TabsContent>
+    </Tabs>
   );
 
   return (
@@ -1134,7 +1489,7 @@ export default function CoverEditor() {
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize="22%" minSize="16%" maxSize="40%">
-              <div className="h-full overflow-hidden">{inspector}</div>
+              <div className="h-full overflow-hidden">{inspectorTabs}</div>
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
@@ -1151,7 +1506,7 @@ export default function CoverEditor() {
             {palette}
           </div>
           <div className="h-[18rem] overflow-hidden rounded-xl border border-border">
-            {inspector}
+            {inspectorTabs}
           </div>
         </div>
       )}

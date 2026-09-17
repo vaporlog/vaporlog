@@ -68,15 +68,70 @@ export function nextId(): string {
   return `L${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export type BackgroundFill = "transparent" | "solid" | "herb" | "night" | "paper";
+export type BackgroundFill =
+  | "transparent"
+  | "solid"
+  | "herb"
+  | "night"
+  | "paper"
+  | "grad-sunset"
+  | "grad-forest"
+  | "grad-ocean"
+  | "grad-berry";
 
-export const BG_COLOR: Record<BackgroundFill, string | null> = {
-  transparent: null,
-  solid: "#030303",
-  herb: "#0E2418",
-  night: "#0B1020",
-  paper: "#F5F0E6",
+/** Full paint definition of a background. `color` doubles as the flat
+ *  representative of a gradient (its `to` stop) for swatches, export
+ *  letterboxing and the Konva backdrop rect; `gradient` is the CSS-grade
+ *  definition consumers should prefer when they can paint one. */
+export type BackgroundDef = {
+  color: string | null;
+  gradient?: { from: string; to: string; angle: number };
 };
+
+export const BG_DEFS: Record<BackgroundFill, BackgroundDef> = {
+  transparent: { color: null },
+  solid: { color: "#030303" },
+  herb: { color: "#0E2418" },
+  night: { color: "#0B1020" },
+  paper: { color: "#F5F0E6" },
+  "grad-sunset": {
+    color: "#C9184A",
+    gradient: { from: "#FF8C42", to: "#C9184A", angle: 135 },
+  },
+  "grad-forest": {
+    color: "#74C69D",
+    gradient: { from: "#0E2418", to: "#74C69D", angle: 135 },
+  },
+  "grad-ocean": {
+    color: "#60A5FA",
+    gradient: { from: "#0B1020", to: "#60A5FA", angle: 135 },
+  },
+  "grad-berry": {
+    color: "#A21CAF",
+    gradient: { from: "#2E1065", to: "#A21CAF", angle: 135 },
+  },
+};
+
+/** Flat representative color per fill (gradients map to their `to`
+ *  stop). Used by swatches, letterbox and the Konva backdrop. */
+export const BG_COLOR = Object.fromEntries(
+  Object.entries(BG_DEFS).map(([fill, def]) => [fill, def.color]),
+) as Record<BackgroundFill, string | null>;
+
+/** Checkerboard that stands in for "transparent" in UI swatches —
+ *  centralized here so the palette and any other preview stay in sync. */
+const TRANSPARENT_CHECKER =
+  "repeating-conic-gradient(#3f3f46 0% 25%, #27272a 0% 50%) 0 0 / 12px 12px";
+
+/** CSS `background` value for a fill: hex color, linear-gradient for
+ *  grad-* fills, or the transparency checkerboard. */
+export function bgCss(fill: BackgroundFill): string {
+  const def = BG_DEFS[fill];
+  if (def.gradient !== undefined) {
+    return `linear-gradient(${def.gradient.angle}deg, ${def.gradient.from}, ${def.gradient.to})`;
+  }
+  return def.color ?? TRANSPARENT_CHECKER;
+}
 
 /** Font stacks offered by the inspector. Keys map to i18n canvas.fonts.*. */
 export const FONT_STACKS: Record<string, string> = {
@@ -100,6 +155,11 @@ export type LayerBase = {
   scaleY: number;
   /** 0-1, defaults to 1 when absent (legacy docs). */
   opacity?: number;
+  /** Locked layers don't drag and don't listen (click-through on
+   *  canvas). Absent = unlocked. */
+  locked?: boolean;
+  /** Absent = visible; `false` hides the layer from canvas and export. */
+  visible?: boolean;
 };
 
 /** Visual treatment for data-backed text layers. "text" is plain. */
@@ -137,6 +197,14 @@ export type LayerBind =
   | "activities"
   | "effectsChart";
 
+/** Drop shadow behind a text layer (Konva shadow props). */
+export type TextShadow = {
+  color: string;
+  blur: number;
+  offsetX: number;
+  offsetY: number;
+};
+
 export type TextLayer = LayerBase & {
   kind: "text";
   text: string;
@@ -147,6 +215,14 @@ export type TextLayer = LayerBase & {
   fontFamily?: string;
   width: number;
   align?: "left" | "center" | "right";
+  /** Tracking in px (Konva letterSpacing). Absent = 0. */
+  letterSpacing?: number;
+  /** Line-height multiplier (Konva lineHeight). Absent = 1. */
+  lineHeight?: number;
+  shadow?: TextShadow;
+  /** Text outline color; absent = no outline. */
+  stroke?: string;
+  strokeWidth?: number;
   presentation?: TextPresentation;
   /** Numeric value backing stars/thermometer/gauge presentations.
    *  Editable in the inspector; keeps the viz and `text` in sync.
@@ -156,12 +232,30 @@ export type TextLayer = LayerBase & {
   bind?: LayerBind;
 };
 
+/** Pixel filters for image layers. Ranges follow the Konva filter props:
+ *  brightness -1..1, contrast -100..100, saturate (HSL) -2..2,
+ *  blur radius in px. Absent fields = identity. */
+export type ImageFilters = {
+  brightness?: number;
+  contrast?: number;
+  saturate?: number;
+  grayscale?: boolean;
+  sepia?: boolean;
+  blur?: number;
+};
+
 export type ImageLayer = LayerBase & {
   kind: "image";
   /** Data URL — bytes live in memory only; export re-embeds. */
   src: string;
   width: number;
   height: number;
+  /** Rounded corners in px, clipped with a rounded-rect path. */
+  cornerRadius?: number;
+  /** In-place mirror; see the flip convention note in nodes.tsx. */
+  flipX?: boolean;
+  flipY?: boolean;
+  filters?: ImageFilters;
 };
 
 export type ChartEffect = {
@@ -200,17 +294,22 @@ export type ChipsLayer = LayerBase & {
   bind?: LayerBind;
 };
 
-export type ShapeKind = "rect" | "ellipse";
+export type ShapeKind = "rect" | "ellipse" | "line" | "triangle" | "star";
 
 export type ShapeLayer = LayerBase & {
   kind: "shape";
   shape: ShapeKind;
   width: number;
   height: number;
+  /** Fill color — for "line" shapes this IS the stroke color (the
+   *  thickness lives in strokeWidth). */
   fill: string;
   stroke?: string;
   strokeWidth?: number;
   cornerRadius?: number;
+  /** In-place mirror; see the flip convention note in nodes.tsx. */
+  flipX?: boolean;
+  flipY?: boolean;
 };
 
 export type CoverLayer = TextLayer | ImageLayer | ChartLayer | ChipsLayer | ShapeLayer;
@@ -237,7 +336,7 @@ export function parseCoverDoc(raw: string | null | undefined): CoverDoc | null {
     const parsed = JSON.parse(raw) as Partial<CoverDoc>;
     if (!Array.isArray(parsed.layers)) return null;
     const background =
-      typeof parsed.background === "string" && parsed.background in BG_COLOR
+      typeof parsed.background === "string" && parsed.background in BG_DEFS
         ? (parsed.background as BackgroundFill)
         : "night";
     return {
@@ -473,6 +572,18 @@ export function buildChipsLayer(
   };
 }
 
+const SHAPE_DEFAULTS: Record<
+  ShapeKind,
+  { width: number; height: number; cornerRadius?: number; strokeWidth?: number }
+> = {
+  rect: { width: 400, height: 200, cornerRadius: 16 },
+  ellipse: { width: 400, height: 200 },
+  // A line's thickness lives in strokeWidth; its color lives in fill.
+  line: { width: 400, height: 4, strokeWidth: 4 },
+  triangle: { width: 300, height: 260 },
+  star: { width: 240, height: 240 },
+};
+
 export function buildShapeLayer(shape: ShapeKind): ShapeLayer {
   return {
     id: nextId(),
@@ -481,10 +592,9 @@ export function buildShapeLayer(shape: ShapeKind): ShapeLayer {
     x: 400,
     y: 220,
     ...baseDefaults,
-    width: 400,
-    height: 200,
+    ...SHAPE_DEFAULTS[shape],
     fill: "#74C69D",
-    cornerRadius: shape === "rect" ? 16 : 0,
+    cornerRadius: SHAPE_DEFAULTS[shape].cornerRadius ?? 0,
   };
 }
 
