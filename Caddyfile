@@ -10,14 +10,19 @@ vaporlog.online {
 	# Security headers for the SPA + API. CSP lives here (not in fastify's
 	# helmet) so it also covers the static shell. script/frame/connect-src
 	# allow accounts.google.com: the GIS button loads its client script and
-	# renders its iframe from there (src/lib/google.ts).
+	# renders its iframe from there (src/lib/google.ts). script-src also
+	# allowlists the inline anti-flash theme script in index.html by hash —
+	# recompute it if that one-liner ever changes:
+	#   printf '%s' '<script bytes>' | openssl dgst -sha256 -binary | openssl base64
+	# img-src allows blob: — private-session OG thumbnails are rendered
+	# from blob URLs fetched with the owner's Bearer token (ShareRow).
 	header {
 		Strict-Transport-Security "max-age=63072000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "geolocation=(), camera=(), microphone=()"
-		Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-3XMN4OWpfjb/V1GuH+48/ZSJDIFVbC5MTzTXN2IqvIA=' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'"
 	}
 
 	# API → fastify container (routes themselves live under /api)

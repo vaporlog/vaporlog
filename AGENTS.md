@@ -93,7 +93,15 @@ Detalles Caddy: proxifica `/api/*` → api:4000; reescribe `/s/*` →
 `/api/og/s/:id` (inyección de meta OG); el bloque interno `:8080` sirve el
 shell SPA por HTTP plano para que la API lo fetchee sin redirect TLS
 (`OG_BASE_HTML_URL=http://web:8080/`). El fetch del shell usa `node:http`
-porque undici elimina el header `Host`.
+porque undici elimina el header `Host`. La CSP (bloque `header` del
+Caddyfile) es estricta, sin `'unsafe-inline'` en script-src: el script
+anti-flash del tema en `index.html` está allowlistado por hash SHA-256
+(es un one-liner a propósito — si se edita, hay que recomputar el hash, ver
+el comentario en el Caddyfile) y `img-src` incluye `blob:` para las
+miniaturas OG de sesiones privadas (ShareRow las fetchea como blobs con el
+Bearer del dueño). Ojo: sin esas dos excepciones, en prod el tema oscuro no
+sobrevive una recarga y las miniaturas privadas no cargan; en dev no hay
+CSP y nunca se reproduce.
 
 ## Reglas de privacidad (producto, no negociables)
 
