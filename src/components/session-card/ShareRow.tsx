@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { Link2, Pencil } from "lucide-react";
+import { Link2, Eye, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import i18n from "@/i18n";
 import { getToken } from "@/lib/api";
 import { COVER_EDITOR_ENABLED } from "@/lib/features";
@@ -263,6 +268,8 @@ export default function ShareRow({
   const { t } = useTranslation("sessionCard");
   const [template, setTemplate] = useState<OgTemplate>(readPreferredTemplate);
   const [downloading, setDownloading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const version = cardVersion(session);
   const url = canonicalUrl(session.id, template);
   const text = shareText(session, strainName);
@@ -281,6 +288,32 @@ export default function ShareRow({
       /* private mode — the in-memory pick still applies */
     }
   }
+
+  // Full-size preview source: public cards load straight from the API;
+  // private ones need the owner's Bearer token, so they go through a blob.
+  const lang = cardLang();
+  useEffect(() => {
+    if (!previewOpen) return;
+    if (session.isPublic) {
+      setPreviewSrc(cardPngUrl(session.id, template, version));
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setPreviewSrc(null);
+    void fetchCardBlobUrl(session.id, template, version).then((url) => {
+      if (cancelled) {
+        if (url) URL.revokeObjectURL(url);
+        return;
+      }
+      objectUrl = url;
+      setPreviewSrc(url);
+    });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [previewOpen, session.id, session.isPublic, template, version, lang]);
 
   async function handleCopy() {
     const ok = await copyToClipboard(url);
@@ -375,6 +408,16 @@ export default function ShareRow({
           type="button"
           variant="outline"
           size="sm"
+          onClick={() => setPreviewOpen(true)}
+          className="pressable"
+        >
+          <Eye className="size-4" aria-hidden />
+          {t("share.preview")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           onClick={handleCopy}
           className="pressable"
         >
@@ -408,6 +451,25 @@ export default function ShareRow({
           {t("share.toReddit")}
         </a>
       </div>
+
+      {/* Full-size preview of the selected card. The image keeps its own
+          aspect ratio: story cards are tall, link cards wide. */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="w-fit max-w-[calc(100vw-2rem)] gap-0 border-none bg-transparent p-0 shadow-none sm:max-w-[calc(100vw-4rem)] [&>button]:text-white">
+          <DialogTitle className="sr-only">{t("share.previewTitle")}</DialogTitle>
+          {previewSrc ? (
+            <img
+              src={previewSrc}
+              alt={t("share.previewTitle")}
+              className="max-h-[85dvh] w-auto max-w-full rounded-lg"
+            />
+          ) : (
+            <div className="flex h-40 w-72 items-center justify-center rounded-lg bg-secondary text-sm text-muted-foreground">
+              …
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
