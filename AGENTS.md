@@ -38,6 +38,22 @@ Principios de producto que rigen las decisiones de diseño/copy: ver
   - `server/assets/` — fuentes DejaVu + mascota para la imagen OG (resvg).
 - Raíz — `docker-compose.yml` (web/api/db), `Dockerfile` (web: build + Caddy),
   `Caddyfile`, `server/Dockerfile`, `DEPLOY.md`, `.env.example`.
+- `tui/` — cliente de terminal en Go (Bubble Tea), alternativa completa a la
+  web para el usuario (sin comunidad/feed ni miniaturas OG, por decisión del
+  dueño). Estética tipo btop (paneles con título en el borde, medidores con
+  gradiente verde→amarillo→rojo, `theme.go`). Tabs: Diario (CRUD completo de
+  sesiones + publicar), Strains (catálogo embebido `strains_full.json`, copia
+  de `src/data/strains.json` — regenerar si cambia), Descubrir (recomendador
+  content-based portado de `src/lib/recommend.ts`, solo sesiones propias),
+  Stats (gráficas privadas) y Perfil (handle/bio/privacidad/dispositivo
+  favorito/reviews/export JSON/borrar cuenta/marcas detox). Login con
+  handle+password (sin Google — GIS no es viable en terminal) contra la API
+  (`VAPORLOG_API_URL`, default `http://localhost:4000`); token en
+  `~/.config/vaporlog-tui/session.json` (0600). Ojo: bubbletea agrupa runas
+  tecleadas rápido en un KeyMsg multi-runa — `app.go` las expande antes de
+  despachar. Build: `cd tui && go build -o vaporlog-tui .` (binario
+  gitignored; Go no está en el sistema — en esta máquina Linux:
+  `mise exec go@1.27.2 -- go build -o vaporlog-tui .`).
 
 ## Desarrollo local (Windows, Git Bash)
 
@@ -220,6 +236,14 @@ diario, hint en comentarios para "primera sesión del día".
   zigzagueaba por el centro y quedaban líneas rectas en las aristas; ahora el
   área verde (positivos) y el área roja (negativos) siempre forman un abanico
   contiguo cada una.
+- `58a462e` — **actividades en las tarjetas OG split + story**: el switch
+  `activities_public` ya viajaba end-to-end (PATCH, DB, cache key) pero solo
+  story-journal renderizaba actividades, así que el toggle parecía roto en
+  las demás plantillas. `split` gana una segunda fila de chips en gris bajo
+  los moods (se omite si un strain a dos líneas no deja aire sobre el
+  footer); `story` gana una tercera fila de chips con guard inferior contra
+  el label superior del radar. Ojo: el guard usa `chipX > 80` para saber si
+  hubo fila de moods (el loop corta en x>700 sin marcar nada).
 ## Skills del proyecto (`.kimi/skills/`)
 
 - `grill-me` — entrevistar al dueño hasta cerrar cada rama del diseño antes
