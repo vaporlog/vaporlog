@@ -442,6 +442,31 @@ function buildSplitSvg(session, options = {}) {
     chipX += chipW + 18;
   }
 
+  // Activity chips: a second row in muted gray so it reads as a different
+  // category than the accent mood pills. Private by default — they render
+  // only when the session's activities_public flag is on (same rule as the
+  // feed) — and only when the row fits above the footer: a long two-line
+  // strain title pushes the layout down and the row is simply not drawn.
+  const activities =
+    session.activities_public === true && Array.isArray(session.activities)
+      ? session.activities
+      : [];
+  const activitiesTop = chipX > 80 ? chipsTop + 60 : chipsTop;
+  const activityChipSvgs = [];
+  if (activities.length > 0 && activitiesTop + 52 <= 556) {
+    let activityX = 80;
+    for (const activity of activities.slice(0, 4)) {
+      const label = String(activity);
+      const chipW = Math.ceil(label.length * 26 * 0.58) + 44;
+      if (activityX + chipW > 700) break;
+      activityChipSvgs.push(
+        `<rect x="${activityX}" y="${activitiesTop}" width="${chipW}" height="52" rx="26" fill="none" stroke="${GRAY}" stroke-width="2" />`,
+        `<text x="${activityX + 22}" y="${activitiesTop + 33}" font-family="DejaVu Sans" font-size="26" fill="${GRAY}">${esc(label)}</text>`,
+      );
+      activityX += chipW + 18;
+    }
+  }
+
   // Effect radar on the brand panel: public intensities with default 5 for
   // effects the author selected but never slid. With no effects at all the
   // panel falls back to the mascot.
@@ -479,6 +504,7 @@ function buildSplitSvg(session, options = {}) {
   <text x="80" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="60" fill="${ACCENT}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
   ${hasRitual ? `<text x="80" y="${ritualY}" font-family="DejaVu Sans" font-size="32"><tspan fill="#FFFFFF">${esc(device)}</tspan>${ritualRest ? `<tspan fill="${GRAY}">  ·  ${esc(ritualRest)}</tspan>` : ""}</text>` : ""}
   ${chipSvgs.join("\n  ")}
+  ${activityChipSvgs.join("\n  ")}
   <text x="80" y="578" font-family="DejaVu Sans" font-size="22" fill="${GRAY}">vaporlog — the journal of the art of vaporizing</text>
   ${mascot}
   ${radar}
@@ -625,8 +651,8 @@ const STORY_GLOW_DEFS = `<defs>
 
 /**
  * Template "story": vertical split. Strain top, rating, ritual, aroma/flavor
- * chips, effect chart (moods/unwanted effects live there — no duplicate
- * chips), author bottom.
+ * chips (+ activity chips when the author made them public), effect chart
+ * (moods/unwanted effects live there — no duplicate chips), author bottom.
  */
 function buildStorySvg(session, options = {}) {
   const strain = humanizeSlug(session.strain_slug || "session");
@@ -657,19 +683,28 @@ function buildStorySvg(session, options = {}) {
   const ratingY = strainY0 + (lines.length - 1) * lineHeight + 120;
   const ritualY = ratingY + 78;
 
-  // Aroma and flavor chips — two separate rows so each group reads on its
-  // own. Moods already show up as radar labels, so repeating them as chips
-  // would duplicate information.
+  // Aroma and flavor chips — separate rows so each group reads on its own.
+  // Moods already show up as radar labels, so repeating them as chips would
+  // duplicate information. Activities get their own row, private by default:
+  // they render only when the session's activities_public flag is on (same
+  // rule as the feed). Its 800px bottom guard keeps the row clear of the
+  // effect chart's top label when a long strain pushes the rows down.
   const aromas = Array.isArray(session.aromas) ? session.aromas : [];
   const flavors = Array.isArray(session.flavors) ? session.flavors : [];
+  const activities =
+    session.activities_public === true && Array.isArray(session.activities)
+      ? session.activities
+      : [];
   const chipRows = [
-    { label: "Aromas", values: aromas },
-    { label: "Sabores", values: flavors },
+    { label: "Aromas", values: aromas, maxBottom: Number.POSITIVE_INFINITY },
+    { label: "Sabores", values: flavors, maxBottom: Number.POSITIVE_INFINITY },
+    { label: "Actividades", values: activities, maxBottom: 800 },
   ];
   const chipSvgs = [];
   let chipRowY = ritualY + 56;
   for (const row of chipRows) {
     if (row.values.length === 0) continue;
+    if (chipRowY + 64 > row.maxBottom) continue;
     let chipX = 80;
     for (const note of row.values.slice(0, 4)) {
       const label = String(note);
