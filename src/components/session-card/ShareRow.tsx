@@ -86,6 +86,8 @@ function cardVersion(session: SessionLog): string {
     session.aromas,
     session.flavors,
     session.moods,
+    session.activities,
+    session.activitiesPublic,
     session.unwantedEffects,
     session.unwantedEffectsPublic,
     session.effectIntensities,
@@ -100,13 +102,18 @@ function cardVersion(session: SessionLog): string {
   return hash.toString(36);
 }
 
+/** Card locale from the active UI language (server only knows es|en). */
+function cardLang(): "es" | "en" {
+  return i18n.language?.toLowerCase().startsWith("es") ? "es" : "en";
+}
+
 /** OG card URL with the cache-busting content version. */
 function cardPngUrl(
   sessionId: string,
   template: OgTemplate,
   version: string,
 ): string {
-  return `/api/og/s/${sessionId}/card.png?t=${template}&v=${version}`;
+  return `/api/og/s/${sessionId}/card.png?t=${template}&v=${version}&lang=${cardLang()}`;
 }
 
 function shareText(session: SessionLog, strainName: string): string {
@@ -184,6 +191,7 @@ function TemplateThumbnail({
 }) {
   const vertical = isStoryTemplate(template);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const lang = cardLang();
 
   useEffect(() => {
     if (isPublic) return;
@@ -201,7 +209,7 @@ function TemplateThumbnail({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [sessionId, template, version, isPublic]);
+  }, [sessionId, template, version, isPublic, lang]);
 
   const src = isPublic ? cardPngUrl(sessionId, template, version) : blobUrl;
 

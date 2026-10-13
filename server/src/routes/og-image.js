@@ -87,6 +87,41 @@ function fitsOneLine(text, fontSize, maxWidth) {
   return text.length * fontSize * 0.58 <= maxWidth;
 }
 
+/** Temperature chip color by range: blue <170, herb 170-190, amber 190-205, red >205. */
+function tempRangeColor(tempC) {
+  const t = Number(tempC);
+  if (t < 170) return "#2563EB";
+  if (t <= 190) return "#2D6A4F";
+  if (t <= 205) return "#D97706";
+  return "#DC2626";
+}
+
+/**
+ * Greedy word wrap into at most `maxLines` lines. Overflowing text is
+ * truncated with an ellipsis on the last line (via fitLine).
+ */
+function wrapLines(text, fontSize, maxWidth, maxLines) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current === "" ? word : `${current} ${word}`;
+    if (fitsOneLine(candidate, fontSize, maxWidth)) {
+      current = candidate;
+    } else {
+      if (current !== "") lines.push(current);
+      current = word;
+    }
+  }
+  if (current !== "") lines.push(current);
+  if (lines.length > maxLines) {
+    const kept = lines.slice(0, maxLines - 1);
+    kept.push(fitLine(lines.slice(maxLines - 1).join(" "), fontSize, maxWidth));
+    return kept;
+  }
+  return lines;
+}
+
 /** Split text into two lines at a word boundary near the middle. */
 function wrapTwoLines(text, fontSize, maxWidth) {
   const words = text.split(" ");
@@ -821,22 +856,51 @@ function buildStoryStatsSvg(session, options = {}) {
 </svg>`;
 }
 
+/** Card copy for story-journal, keyed by ?t=…&lang=es|en (default en). */
+const JOURNAL_LABELS = {
+  en: {
+    aromas: "Aromas",
+    flavors: "Flavors",
+    activities: "Activities",
+    liked: "liked",
+    vaporizedThis: "vaporized this",
+    calm: "Calm",
+    energized: "Energized",
+    neutral: "Neutral",
+  },
+  es: {
+    aromas: "Aromas",
+    flavors: "Sabores",
+    activities: "Actividades",
+    liked: "le gustó",
+    vaporizedThis: "vaporizó esto",
+    calm: "Calma",
+    energized: "Energizado",
+    neutral: "Neutro",
+  },
+};
+
 /**
- * Template "story-journal": notebook-paper look. Every session field except
- * activities — strain, rating, ritual, aromas, flavors, effect chart, notes,
- * date, author — on lined paper with a red margin.
+ * Template "story-journal": notebook-paper look. Header (wordmark + date),
+ * strain + author, rating + liked, ritual with a range-colored temperature
+ * chip, aroma/flavor chip rows, big effect chart, calm↔energy bar, activity
+ * chips, notes (max 3 lines) and footer — on lined paper with a red margin.
+ * Card copy localizes via options.lang ("en" default, "es"). Activities are
+ * private by default: they only render when the session's activities_public
+ * flag is on, same rule as the feed.
  */
 function buildStoryJournalSvg(session, options = {}) {
+  const lang = options.lang === "es" ? "es" : "en";
+  const t = JOURNAL_LABELS[lang];
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
   const device = session.device_name || humanizeSlug(session.device_slug || "");
   const date = session.created_at
-    ? new Date(session.created_at).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+    ? new Date(session.created_at).toLocaleDateString(
+        lang === "es" ? "es-ES" : "en-US",
+        { month: "short", day: "numeric", year: "numeric" },
+      )
     : "";
 
   const paper = "#F5F0E6";
@@ -846,6 +910,7 @@ function buildStoryJournalSvg(session, options = {}) {
   const herb = "#2D6A4F";
   const red = "#DC2626";
   const black = "#000000";
+  const chipStroke = "#C9C2B0";
 
   // Lined paper: horizontal rules every 56px, red margin at x=96.
   const rules = [];
@@ -855,70 +920,160 @@ function buildStoryJournalSvg(session, options = {}) {
     );
   }
 
-  const ritual = [
-    device,
-    fmtNumber(session.temperature_c) !== null
-      ? `${fmtNumber(session.temperature_c)}°C`
-      : null,
-    fmtNumber(session.duration_min) !== null
-      ? `${fmtNumber(session.duration_min)} min`
-      : null,
-    fmtNumber(session.amount_g) !== null
-      ? `${fmtNumber(session.amount_g)} g`
-      : null,
-  ]
-    .filter(Boolean)
-    .join("  ·  ");
+  // Strain + author block. wrapLines (not layoutStrain) because wrapTwoLines
+  // never actually wraps — long strains would always hard-truncate.
+  const strainLayout = (() => {
+    for (const candidate of [64, 56, 48]) {
+      if (fitsOneLine(strain, candidate, 800)) {
+        return { lines: [strain], size: candidate };
+      }
+      const wrapped = wrapLines(strain, candidate, 800, 2);
+      if (!wrapped[wrapped.length - 1].endsWith("…")) {
+        return { lines: wrapped, size: candidate };
+      }
+    }
+    return { lines: [fitLine(strain, 42, 800)], size: 42 };
+  })();
+  const { lines, size } = strainLayout;
+  const lineHeight = size * 1.12;
+  const strainY0 = 214;
+  const strainTspans = lines
+    .map(
+      (strainLine, i) =>
+        `<text x="140" y="${strainY0 + i * lineHeight}" font-family="DejaVu Sans" font-weight="bold" font-size="${size}" fill="${ink}">${esc(strainLine)}</text>`,
+    )
+    .join("");
+  const authorY = strainY0 + (lines.length - 1) * lineHeight + 54;
+  const ratingY = authorY + 82;
+  const ritualY = ratingY + 78;
+
+  // Ritual: device · duration · grams, temperature as its own chip colored
+  // by range so the exact value always reads on paper.
+  const temp = fmtNumber(session.temperature_c);
+  const ritualText = fitLine(
+    [
+      device,
+      fmtNumber(session.duration_min) !== null
+        ? `${fmtNumber(session.duration_min)} min`
+        : null,
+      fmtNumber(session.amount_g) !== null
+        ? `${fmtNumber(session.amount_g)} g`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("  ·  "),
+    32,
+    temp !== null ? 740 : 800,
+  );
+  const tempChip =
+    temp !== null
+      ? (() => {
+          const tempLabel = `${temp}°C`;
+          const chipW = Math.ceil(tempLabel.length * 30 * 0.6) + 48;
+          // DejaVu at this mixed text runs narrower than the wrap estimate.
+          const chipX = 140 + Math.ceil(ritualText.length * 32 * 0.5) + 24;
+          return [
+            `<rect x="${chipX}" y="${ritualY - 38}" width="${chipW}" height="52" rx="26" fill="${tempRangeColor(temp)}" />`,
+            `<text x="${chipX + chipW / 2}" y="${ritualY - 3}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="30" fill="#FFFFFF">${esc(tempLabel)}</text>`,
+          ].join("");
+        })()
+      : "";
+
+  // Labeled chip rows (aromas / flavors / activities). Chips that would
+  // cross x=950 are simply not drawn.
+  const chipRow = (label, values, rowY, fontSize = 26, chipHeight = 52) => {
+    const labelWidth = Math.ceil(label.length * fontSize * 0.62);
+    let chipX = 140 + labelWidth + 30;
+    const parts = [
+      `<text x="140" y="${rowY + chipHeight - 15}" font-family="DejaVu Sans" font-weight="bold" font-size="${fontSize}" fill="${ink}">${esc(label)}</text>`,
+    ];
+    for (const value of values.slice(0, 5)) {
+      const text = String(value);
+      const chipW = Math.ceil(text.length * fontSize * 0.58) + 48;
+      if (chipX + chipW > 950) break;
+      parts.push(
+        `<rect x="${chipX}" y="${rowY}" width="${chipW}" height="${chipHeight}" rx="${chipHeight / 2}" fill="#FFFFFF" stroke="${chipStroke}" stroke-width="2" />`,
+        `<text x="${chipX + 24}" y="${rowY + chipHeight - 16}" font-family="DejaVu Sans" font-size="${fontSize}" fill="${ink}">${esc(text)}</text>`,
+      );
+      chipX += chipW + 18;
+    }
+    return parts.join("");
+  };
 
   const aromas = Array.isArray(session.aromas) ? session.aromas : [];
   const flavors = Array.isArray(session.flavors) ? session.flavors : [];
+  const activities =
+    session.activities_public === true && Array.isArray(session.activities)
+      ? session.activities
+      : [];
 
-  // Effect chart on paper: same data, paper-safe colors. Defaults
-  // selected-but-unslid effects to 5.
+  const chipRowSvgs = [];
+  let chipRowY = ritualY + 66;
+  for (const row of [
+    { label: t.aromas, values: aromas },
+    { label: t.flavors, values: flavors },
+  ]) {
+    if (row.values.length === 0) continue;
+    chipRowSvgs.push(chipRow(row.label, row.values, chipRowY));
+    chipRowY += 70;
+  }
+
+  // Effect chart on paper, sized up to fill the space between the chip rows
+  // and the energy bar. Defaults selected-but-unslid effects to 5.
   const { intensities: publicIntensities, unwanted: publicUnwanted } =
     publicIntensitiesWithDefaults(session, options);
+  const chartCy = Math.min(Math.max(chipRowY + 330, 1030), 1060);
   const chart = buildEffectChartSvg(
     publicIntensities,
     publicUnwanted,
     STORY_WIDTH / 2 + 40,
-    1150,
-    240,
-    { grid: black, axis: black, herb, red, label: ink },
+    chartCy,
+    300,
+    { grid: black, axis: black, herb, red, label: ink, track: line },
   );
 
   const energyBar = buildEnergyCalmBarSvg(
     session.energy_calm_score,
     STORY_WIDTH / 2 + 40,
-    1480,
+    1420,
     720,
+    { calm: t.calm, energized: t.energized, neutral: t.neutral },
   );
 
-  const notes = typeof session.notes === "string" ? session.notes.trim() : "";
-  const noteLines = notes ? wrapTwoLines(notes, 26, 820) : [];
+  const activitiesSvg =
+    activities.length > 0
+      ? chipRow(t.activities, activities, 1520, 24, 46)
+      : "";
 
-  const likedSuffix = session.liked === true ? " — liked" : "";
+  const notes = typeof session.notes === "string" ? session.notes.trim() : "";
+  const noteLines = notes ? wrapLines(notes, 26, 800, 3) : [];
+  const notesY = (activities.length > 0 ? 1566 : 1496) + 62;
+
+  const likedSuffix = session.liked === true ? ` — ${t.liked}` : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${STORY_WIDTH}" height="${STORY_HEIGHT}" viewBox="0 0 ${STORY_WIDTH} ${STORY_HEIGHT}">
   <rect width="${STORY_WIDTH}" height="${STORY_HEIGHT}" fill="${paper}" />
   ${rules.join("\n  ")}
   <line x1="96" y1="0" x2="96" y2="${STORY_HEIGHT}" stroke="${margin}" stroke-width="3" />
 
-  <text x="940" y="90" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(date)}</text>
-  <text x="140" y="180" font-family="DejaVu Sans" font-weight="bold" font-size="72" fill="${ink}">${esc(fitLine(strain, 72, 860))}</text>
-  <text x="140" y="270" font-family="DejaVu Sans" font-weight="bold" font-size="56" fill="${herb}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
-  <text x="140" y="340" font-family="DejaVu Sans" font-size="32" fill="${ink}">${esc(fitLine(ritual, 32, 860))}</text>
+  <text x="140" y="96" font-family="DejaVu Sans" font-weight="bold" font-size="34"><tspan fill="${ink}">vapor</tspan><tspan fill="${herb}">log</tspan></text>
+  <text x="940" y="96" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${ink}" opacity="0.7">${esc(date)}</text>
+  ${strainTspans}
+  <text x="140" y="${authorY}" font-family="DejaVu Sans" font-size="30"><tspan font-weight="bold" fill="${ink}">${esc(fitAuthor(author, 30, 320))}</tspan><tspan fill="${ink}" opacity="0.7"> · ${esc(t.vaporizedThis)}</tspan></text>
+  <text x="140" y="${ratingY}" font-family="DejaVu Sans" font-weight="bold" font-size="56" fill="${herb}">${rating.toFixed(1)}/10${esc(likedSuffix)}</text>
+  <text x="140" y="${ritualY}" font-family="DejaVu Sans" font-size="32" fill="${ink}">${esc(ritualText)}</text>
+  ${tempChip}
 
-  ${aromas.length > 0 ? `<text x="140" y="430" font-family="DejaVu Sans" font-size="28" fill="${ink}">Aromas: ${esc(aromas.slice(0, 5).join(", "))}</text>` : ""}
-  ${flavors.length > 0 ? `<text x="140" y="490" font-family="DejaVu Sans" font-size="28" fill="${ink}">Sabores: ${esc(flavors.slice(0, 5).join(", "))}</text>` : ""}
+  ${chipRowSvgs.join("\n  ")}
 
   ${chart}
   ${energyBar}
+  ${activitiesSvg}
 
-  ${noteLines.length > 0 ? noteLines.map((line, i) => `<text x="140" y="${1560 + i * 44}" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(line)}</text>`).join("\n  ") : ""}
+  ${noteLines.length > 0 ? noteLines.map((noteLine, i) => `<text x="140" y="${notesY + i * 42}" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(noteLine)}</text>`).join("\n  ") : ""}
 
-  <text x="140" y="1760" font-family="DejaVu Sans" font-size="30" fill="${ink}">${esc(fitAuthor(author, 30, 500))}</text>
-  <text x="140" y="1820" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog.online</text>
-  <text x="940" y="1820" text-anchor="end" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog — the journal of the art of vaporizing</text>
+  <text x="140" y="1840" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog.online</text>
+  <text x="940" y="1840" text-anchor="end" font-family="DejaVu Sans" font-size="22" fill="${ink}" opacity="0.6">vaporlog — the journal of the art of vaporizing</text>
 </svg>`;
 }
 
@@ -954,17 +1109,18 @@ const cardCache = new Map();
  * means the log slider was left at rest: render neutral (0), same as the
  * web cards.
  */
-function buildEnergyCalmBarSvg(score, cx, y, width) {
+function buildEnergyCalmBarSvg(score, cx, y, width, labels = {}) {
+  const { calm = "Calm", energized = "Energized", neutral = "Neutral" } = labels;
   const value = Math.min(Math.max(Number(score) || 0, -5), 5);
   const pct = (value + 5) / 10;
   const x = cx - width / 2 + pct * width;
   const herb = "#2D6A4F";
   const ink = "#1A1A1A";
   const track = "#E8E4D8";
-  const label = value === 0 ? "Neutral" : value > 0 ? `+${value}` : value;
+  const label = value === 0 ? neutral : value > 0 ? `+${value}` : value;
   return `
-  <text x="${cx - width / 2}" y="${y - 18}" font-family="DejaVu Sans" font-size="26" fill="${ink}">Calm</text>
-  <text x="${cx + width / 2}" y="${y - 18}" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${ink}">Energized</text>
+  <text x="${cx - width / 2}" y="${y - 18}" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(calm)}</text>
+  <text x="${cx + width / 2}" y="${y - 18}" text-anchor="end" font-family="DejaVu Sans" font-size="26" fill="${ink}">${esc(energized)}</text>
   <rect x="${cx - width / 2}" y="${y}" width="${width}" height="16" rx="8" fill="${track}" />
   <rect x="${x - 6}" y="${y - 5}" width="12" height="26" rx="6" fill="${herb}" />
   <text x="${cx}" y="${y + 56}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="30" fill="${herb}">${label}</text>`;
@@ -983,6 +1139,7 @@ export default async function ogImageRoutes(app) {
               s.moods, s.aromas, s.flavors, s.effect_intensities,
               s.unwanted_effects, s.unwanted_effects_public,
               s.energy_calm_score, s.created_at,
+              s.amount_g, s.notes, s.activities, s.activities_public,
               s.custom_og_image,
               p.handle as owner_handle,
               d.name   as device_name
@@ -1054,6 +1211,8 @@ export default async function ogImageRoutes(app) {
       // The share UI picks the card design via ?t= (see OG_TEMPLATES in
       // og.js); unknown values fall back to the default split layout.
       const template = normalizeTemplate(request.query?.t);
+      // Card copy language (?lang=es|en, default en) — story-journal today.
+      const lang = request.query?.lang === "es" ? "es" : "en";
       // Content flags live on the session row: the owner's own toggles
       // decide what the card shows, same rule for public and private views.
       const includeAllEffects = session.unwanted_effects_public === true;
@@ -1063,6 +1222,7 @@ export default async function ogImageRoutes(app) {
       const cacheKey = [
         id,
         template,
+        lang,
         includeAllEffects,
         session.rating,
         session.strain_slug,
@@ -1077,9 +1237,11 @@ export default async function ogImageRoutes(app) {
         session.created_at,
         session.energy_calm_score,
         session.notes,
+        session.activities_public,
         JSON.stringify(session.moods),
         JSON.stringify(session.aromas),
         JSON.stringify(session.flavors),
+        JSON.stringify(session.activities),
         JSON.stringify(session.effect_intensities),
         JSON.stringify(session.unwanted_effects),
       ].join("|");
@@ -1087,7 +1249,7 @@ export default async function ogImageRoutes(app) {
       if (png === undefined) {
         const { width, height } = templateSize(template);
         const resvg = new Resvg(
-          buildCardSvg(session, template, { includeAllEffects }),
+          buildCardSvg(session, template, { includeAllEffects, lang }),
           {
             fitTo: { mode: "width", value: width },
             font: { fontFiles: FONT_FILES, loadSystemFonts: false },
