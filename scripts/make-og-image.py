@@ -1,8 +1,8 @@
 """Generate public/brand/og-default.jpg — the default Open Graph card.
 
-1200x630, pure-black background (blends seamlessly with the mascot art),
-wordmark on the left, mascot on the right. WhatsApp/X/iMessage pick this
-up for every shared vaporlog link that has no session-specific image.
+1200x630, pure-black background, wordmark on the left, the flat leaf mark
+(bright herb variant) on the right. WhatsApp/X/iMessage pick this up for
+every shared vaporlog link that has no session-specific image.
 
 Run with the managed Python:  python scripts/make-og-image.py
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-MASCOT = ROOT / "public" / "brand" / "vaporlog-mascot.png"
+MARK = ROOT / "public" / "brand" / "logo-mark-bright.png"
 OUT = ROOT / "public" / "brand" / "og-default.jpg"
 
 W, H = 1200, 630
@@ -24,6 +24,7 @@ FONT_CANDIDATES = [
     "C:/Windows/Fonts/segoeuib.ttf",
     "C:/Windows/Fonts/arialbd.ttf",
     "C:/Windows/Fonts/arial.ttf",
+    str(ROOT / "server" / "assets" / "fonts" / "DejaVuSans-Bold.ttf"),
 ]
 
 
@@ -38,11 +39,11 @@ def main() -> None:
     card = Image.new("RGB", (W, H), (0, 0, 0))
     draw = ImageDraw.Draw(card)
 
-    # --- Mascot, right block (background is pure black → direct paste) ---
-    mascot = Image.open(MASCOT).convert("RGB")
-    size = 490
-    mascot = mascot.resize((size, size), Image.LANCZOS)
-    card.paste(mascot, (W - size - 50, (H - size) // 2))
+    # --- Brand mark, top-right (clear of the tagline band) ---
+    mark = Image.open(MARK).convert("RGBA")
+    size = 330
+    mark = mark.resize((size, size), Image.LANCZOS)
+    card.paste(mark, (W - size - 60, 20), mark)
 
     # --- Wordmark, left block ---
     word_font = load_font(118)

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
-import mascotUrl from "@/assets/mascot.png";
+import logoUrl from "@/assets/logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -141,7 +141,7 @@ export default function AppLayout() {
             className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
           >
             <img
-              src={mascotUrl}
+              src={logoUrl}
               alt=""
               className="size-7"
             />
