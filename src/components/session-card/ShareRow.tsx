@@ -13,64 +13,29 @@ import {
 import i18n from "@/i18n";
 import { getToken } from "@/lib/api";
 import { COVER_EDITOR_ENABLED } from "@/lib/features";
-import { cn } from "@/lib/utils";
 import type { SessionLog } from "@/lib/types";
 
 /**
- * Share row: OG template picker with live thumbnails, copy-link button
+ * Share row: OG card thumbnail with live preview, copy-link button
  * (clipboard + sonner toast), image download, plus plain share-to-X /
  * share-to-Reddit text links. No SDKs, no trackers — the Toaster itself is
  * mounted by the page that renders this row.
  *
- * The template choice travels in the shared URL (?t=) — crawlers only see
- * the link, so the design has to be encoded in it. The server validates
- * the param (see OG_TEMPLATES in server/src/routes/og.js) and renders that
- * card; the last pick is remembered in localStorage for the next share.
+ * The only card design is "story-journal" (vertical 1080×1920), so shared
+ * links stay param-less. The server renders the same card the thumbnail
+ * shows (see OG_TEMPLATES in server/src/routes/og.js).
  *
- * Private sessions: the owner can still download and preview every card —
- * the API serves them only with the owner's Bearer token, so thumbnails and
+ * Private sessions: the owner can still download and preview the card —
+ * the API serves it only with the owner's Bearer token, so thumbnails and
  * the download go through fetch with the auth header instead of plain img.
  */
 
-type OgTemplate =
-  | "split"
-  | "minimal"
-  | "stats"
-  | "story"
-  | "story-minimal"
-  | "story-stats"
-  | "story-journal";
+/** Card design rendered by the server — the only template left. */
+const OG_TEMPLATE = "story-journal" as const;
 
-const OG_TEMPLATES: OgTemplate[] = [
-  "split",
-  "minimal",
-  "stats",
-  "story",
-  "story-minimal",
-  "story-stats",
-  "story-journal",
-];
-const OG_TEMPLATE_KEY = "vaporlog.og-template";
-
-function isStoryTemplate(template: OgTemplate): boolean {
-  return template.startsWith("story");
-}
-
-function readPreferredTemplate(): OgTemplate {
-  try {
-    const raw = localStorage.getItem(OG_TEMPLATE_KEY);
-    return OG_TEMPLATES.includes(raw as OgTemplate)
-      ? (raw as OgTemplate)
-      : "split";
-  } catch {
-    return "split";
-  }
-}
-
-function canonicalUrl(sessionId: string, template: OgTemplate): string {
-  const base = `${window.location.origin}/s/${sessionId}`;
-  // The default design keeps clean param-less links.
-  return template === "split" ? base : `${base}?t=${template}`;
+/** Canonical share URL — with a single design the link stays param-less. */
+function canonicalUrl(sessionId: string): string {
+  return `${window.location.origin}/s/${sessionId}`;
 }
 
 /**
@@ -113,12 +78,8 @@ function cardLang(): "es" | "en" {
 }
 
 /** OG card URL with the cache-busting content version. */
-function cardPngUrl(
-  sessionId: string,
-  template: OgTemplate,
-  version: string,
-): string {
-  return `/api/og/s/${sessionId}/card.png?t=${template}&v=${version}&lang=${cardLang()}`;
+function cardPngUrl(sessionId: string, version: string): string {
+  return `/api/og/s/${sessionId}/card.png?v=${version}&lang=${cardLang()}`;
 }
 
 function shareText(session: SessionLog, strainName: string): string {
@@ -157,14 +118,10 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /** Fetches an OG card with the owner's Bearer token; returns a blob URL. */
-async function fetchCardBlobUrl(
-  sessionId: string,
-  template: OgTemplate,
-  version: string,
-) {
+async function fetchCardBlobUrl(sessionId: string, version: string) {
   const token = getToken();
   if (!token) return null;
-  const response = await fetch(cardPngUrl(sessionId, template, version), {
+  const response = await fetch(cardPngUrl(sessionId, version), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) return null;
@@ -173,28 +130,21 @@ async function fetchCardBlobUrl(
 }
 
 /**
- * One template thumbnail. Public sessions load straight from the API;
+ * The card thumbnail. Public sessions load straight from the API;
  * private ones use a blob URL fetched with the owner's token.
  */
 function TemplateThumbnail({
   sessionId,
-  template,
   version,
   isPublic,
-  active,
-  onSelect,
   label,
 }: {
   sessionId: string;
-  template: OgTemplate;
   /** Content hash — changes re-fetch the card (busts browser cache). */
   version: string;
   isPublic: boolean;
-  active: boolean;
-  onSelect: () => void;
   label: string;
 }) {
-  const vertical = isStoryTemplate(template);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const lang = cardLang();
 
@@ -202,7 +152,7 @@ function TemplateThumbnail({
     if (isPublic) return;
     let cancelled = false;
     let objectUrl: string | null = null;
-    void fetchCardBlobUrl(sessionId, template, version).then((url) => {
+    void fetchCardBlobUrl(sessionId, version).then((url) => {
       if (cancelled) {
         if (url) URL.revokeObjectURL(url);
         return;
@@ -214,26 +164,13 @@ function TemplateThumbnail({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [sessionId, template, version, isPublic, lang]);
+  }, [sessionId, version, isPublic, lang]);
 
-  const src = isPublic ? cardPngUrl(sessionId, template, version) : blobUrl;
+  const src = isPublic ? cardPngUrl(sessionId, version) : blobUrl;
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      className="pressable flex flex-col items-center gap-1.5"
-    >
-      <span
-        className={cn(
-          "block overflow-hidden rounded-lg border-2 transition-colors duration-150",
-          vertical
-            ? "aspect-[1080/1920] w-20 sm:w-24"
-            : "aspect-[1200/630] w-24 sm:w-28",
-          active ? "border-herb" : "border-border hover:border-foreground/30",
-        )}
-      >
+    <span className="flex flex-col items-center gap-1.5">
+      <span className="block aspect-[1080/1920] w-20 overflow-hidden rounded-lg border-2 border-herb sm:w-24">
         {src ? (
           <img src={src} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
@@ -242,15 +179,8 @@ function TemplateThumbnail({
           </span>
         )}
       </span>
-      <span
-        className={cn(
-          "text-xs",
-          active ? "font-medium text-foreground" : "text-muted-foreground",
-        )}
-      >
-        {label}
-      </span>
-    </button>
+      <span className="text-xs font-medium text-foreground">{label}</span>
+    </span>
   );
 }
 
@@ -266,12 +196,11 @@ export default function ShareRow({
   isOwner?: boolean;
 }) {
   const { t } = useTranslation("sessionCard");
-  const [template, setTemplate] = useState<OgTemplate>(readPreferredTemplate);
   const [downloading, setDownloading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const version = cardVersion(session);
-  const url = canonicalUrl(session.id, template);
+  const url = canonicalUrl(session.id);
   const text = shareText(session, strainName);
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     text,
@@ -280,28 +209,19 @@ export default function ShareRow({
     url,
   )}&title=${encodeURIComponent(text)}`;
 
-  function selectTemplate(next: OgTemplate) {
-    setTemplate(next);
-    try {
-      localStorage.setItem(OG_TEMPLATE_KEY, next);
-    } catch {
-      /* private mode — the in-memory pick still applies */
-    }
-  }
-
   // Full-size preview source: public cards load straight from the API;
   // private ones need the owner's Bearer token, so they go through a blob.
   const lang = cardLang();
   useEffect(() => {
     if (!previewOpen) return;
     if (session.isPublic) {
-      setPreviewSrc(cardPngUrl(session.id, template, version));
+      setPreviewSrc(cardPngUrl(session.id, version));
       return;
     }
     let cancelled = false;
     let objectUrl: string | null = null;
     setPreviewSrc(null);
-    void fetchCardBlobUrl(session.id, template, version).then((url) => {
+    void fetchCardBlobUrl(session.id, version).then((url) => {
       if (cancelled) {
         if (url) URL.revokeObjectURL(url);
         return;
@@ -313,7 +233,7 @@ export default function ShareRow({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [previewOpen, session.id, session.isPublic, template, version, lang]);
+  }, [previewOpen, session.id, session.isPublic, version, lang]);
 
   async function handleCopy() {
     const ok = await copyToClipboard(url);
@@ -329,15 +249,15 @@ export default function ShareRow({
     setDownloading(true);
     try {
       const blobUrl = session.isPublic
-        ? cardPngUrl(session.id, template, version)
-        : await fetchCardBlobUrl(session.id, template, version);
+        ? cardPngUrl(session.id, version)
+        : await fetchCardBlobUrl(session.id, version);
       if (!blobUrl) {
         toast.error(t("share.downloadError"));
         return;
       }
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `vaporlog-${session.id}-${template}.png`;
+      link.download = `vaporlog-${session.id}-${OG_TEMPLATE}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -351,36 +271,19 @@ export default function ShareRow({
     }
   }
 
-  const rows = [
-    OG_TEMPLATES.filter((tp) => !isStoryTemplate(tp)),
-    OG_TEMPLATES.filter((tp) => isStoryTemplate(tp)),
-  ];
-
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Template picker — the thumbnails are the real OG cards the
-          crawler will render for each design. Two rows: horizontal link
-          previews first, vertical story cards below. */}
+      {/* The thumbnail is the real OG card the crawler will render. */}
       <div className="flex flex-col items-center gap-3">
         <span className="text-xs font-medium text-muted-foreground">
           {t("share.templateLabel")}
         </span>
-        {rows.map((rowTemplates, rowIndex) => (
-          <div key={rowIndex} className="flex flex-wrap justify-center gap-2.5">
-            {rowTemplates.map((tp) => (
-              <TemplateThumbnail
-                key={tp}
-                sessionId={session.id}
-                template={tp}
-                version={version}
-                isPublic={session.isPublic}
-                active={template === tp}
-                onSelect={() => selectTemplate(tp)}
-                label={t(`share.templates.${tp}`)}
-              />
-            ))}
-          </div>
-        ))}
+        <TemplateThumbnail
+          sessionId={session.id}
+          version={version}
+          isPublic={session.isPublic}
+          label={t("share.templates.story-journal")}
+        />
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
@@ -452,8 +355,7 @@ export default function ShareRow({
         </a>
       </div>
 
-      {/* Full-size preview of the selected card. The image keeps its own
-          aspect ratio: story cards are tall, link cards wide. */}
+      {/* Full-size preview of the story-journal card (vertical 1080×1920). */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="w-fit max-w-[calc(100vw-2rem)] gap-0 border-none bg-transparent p-0 shadow-none sm:max-w-[calc(100vw-4rem)] [&>button]:text-white">
           <DialogTitle className="sr-only">{t("share.previewTitle")}</DialogTitle>

@@ -77,12 +77,6 @@
     "text": "{{author}}'s {{strain}} session on vaporlog — {{rating}}/10",
     "templateLabel": "Thumbnail",
     "templates": {
-      "split": "Classic",
-      "minimal": "Minimal",
-      "stats": "Stats",
-      "story": "Story",
-      "story-minimal": "Story minimal",
-      "story-stats": "Story stats",
       "story-journal": "Story journal"
     },
     "preview": "Preview",

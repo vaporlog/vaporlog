@@ -110,24 +110,15 @@ function esc(value) {
 }
 
 /**
- * OG card templates offered by the share UI. "split" is the default and
- * keeps clean param-less URLs; the others travel as ?t=<name> on both the
- * shared /s/:id link and the card.png it points at. og-image.js imports
- * this list to validate the param on its side.
+ * OG card template offered by the share UI. "story-journal" is the only
+ * design and keeps clean param-less URLs; unknown ?t= values normalize to
+ * it. og-image.js imports this list to validate the param on its side.
  */
-export const OG_TEMPLATES = [
-  "split",
-  "minimal",
-  "stats",
-  "story",
-  "story-minimal",
-  "story-stats",
-  "story-journal",
-];
+export const OG_TEMPLATES = ["story-journal"];
 
-/** Validates the ?t= share param; anything unknown falls back to "split". */
+/** Validates the ?t= share param; anything unknown falls back to "story-journal". */
 export function normalizeTemplate(value) {
-  return OG_TEMPLATES.includes(value) ? value : "split";
+  return OG_TEMPLATES.includes(value) ? value : "story-journal";
 }
 
 /** Path to the bundled mascot PNG (also read by og-image.js for cards). */
@@ -144,7 +135,7 @@ const MASCOT_PATH = path.join(
  * markers are ever missing, the session tags go right after <head> so they
  * still win.
  */
-function injectSessionMeta(html, session, id, template = "split") {
+function injectSessionMeta(html, session, id, template = "story-journal") {
   const strain = humanizeSlug(session.strain_slug || "session");
   const rating = Number(session.rating);
   const author = session.owner_handle || session.author || "anonymous";
@@ -159,7 +150,7 @@ function injectSessionMeta(html, session, id, template = "split") {
     .filter(Boolean)
     .join(" · ");
   const description = `${ritual ? `${ritual} — ` : ""}logged by @${author}. Terps, effects and ritual notes on vaporlog.`;
-  const templateQuery = template === "split" ? "" : `?t=${template}`;
+  const templateQuery = template === "story-journal" ? "" : `?t=${template}`;
   const url = `${SITE_URL}/s/${id}${templateQuery}`;
   // Public sessions get a dynamically rendered card (see og-image.js);
   // private/unknown ids keep the static brand image from index.html.

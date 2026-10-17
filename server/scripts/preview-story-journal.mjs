@@ -1,11 +1,11 @@
 /**
- * Offline preview: renders the story OG templates with a mock session so
+ * Offline preview: renders the story-journal OG card with a mock session so
  * layout changes can be eyeballed without booting the API.
  *
- *   node scripts/preview-story-journal.mjs [template...] [lang]
+ *   node scripts/preview-story-journal.mjs [lang]
  *
- * Defaults to story-journal in English; pass "es" as the last argument for
- * the Spanish card copy. PNGs land in /tmp/vaporlog-og-<template>[-es].png.
+ * Defaults to English; pass "es" as the last argument for the Spanish card
+ * copy. PNGs land in /tmp/vaporlog-og-story-journal[-es].png.
  */
 import fs from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
@@ -48,23 +48,19 @@ const mockSession = {
 
 const args = process.argv.slice(2);
 const lang = ["es", "en"].includes(args[args.length - 1]) ? args.pop() : "en";
-const templates = args.length > 0 ? args : ["story-journal"];
 
-for (const template of templates) {
-  const vertical = template.startsWith("story");
-  const resvg = new Resvg(
-    buildCardSvg(mockSession, template, { includeAllEffects: true, lang }),
-    {
-      fitTo: { mode: "width", value: vertical ? 1080 : 1200 },
-      font: { fontFiles: FONT_FILES, loadSystemFonts: false },
-      background: "#000000",
-    },
-  );
-  const out = `/tmp/vaporlog-og-${template}${lang === "en" ? "" : `-${lang}`}.png`;
-  fs.writeFileSync(out, resvg.render().asPng());
-  console.log(out);
-}
+const resvg = new Resvg(
+  buildCardSvg(mockSession, "story-journal", { includeAllEffects: true, lang }),
+  {
+    fitTo: { mode: "width", value: 1080 },
+    font: { fontFiles: FONT_FILES, loadSystemFonts: false },
+    background: "#000000",
+  },
+);
+const out = `/tmp/vaporlog-og-story-journal${lang === "en" ? "" : `-${lang}`}.png`;
+fs.writeFileSync(out, resvg.render().asPng());
+console.log(out);
 
 // Importing og-image.js boots the embedded dev DB (PGlite), which keeps the
-// event loop alive — exit explicitly once the renders are done.
+// event loop alive — exit explicitly once the render is done.
 process.exit(0);
